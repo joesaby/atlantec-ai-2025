@@ -1,8 +1,3 @@
----
-title: Atlantec AI Challenge
-description: "The Atlantec AI Challenge is a competition that encourages participants to develop innovative AI solutions to address pressing societal challenges in Ireland. It aims to foster collaboration between academia, industry, and government to leverage AI for the benefit of society."
----
-
 This repo contains output research and solution of work done as part of Atlantec AI Challenge 2025. 
 
 ## Overview
