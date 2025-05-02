@@ -1,4 +1,4 @@
-This repo contains output research and solution of work done as part of [Atlantec AI Challenge 2025](https://atlantec.ie/atlantec-ai-challenge/). 
+This repo contains output research and solution of work done of the "AI Alchemists" team as part of [Atlantec AI Challenge 2025](https://atlantec.ie/atlantec-ai-challenge/). 
 
 ## Overview
 
