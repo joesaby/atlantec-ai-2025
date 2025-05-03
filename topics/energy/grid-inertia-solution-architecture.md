@@ -429,29 +429,17 @@ steps:
 
 ## Development Timeline
 
-### Week 1: Infrastructure Setup
+### Infrastructure Setup
 - Set up GCP project
 - Configure Airflow for data collection
 - Establish BigQuery tables
 - Basic API framework
 
-### Week 2: Core Development
+### Core Development
 - Implement data pipeline
 - Develop ML models
 - Create basic frontend
 - Integrate AI services
-
-### Week 3: Enhancement & Testing
-- Refine UI/UX
-- Optimize ML models
-- Add advanced visualizations
-- Perform load testing
-
-### Week 4: Final Preparation
-- Documentation
-- Demo preparation
-- Bug fixes
-- Performance optimization
 
 ## Cost Optimization
 
