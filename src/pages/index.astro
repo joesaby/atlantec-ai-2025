@@ -1,0 +1,238 @@
+---
+import Layout from '../components/common/Layout.astro';
+import { db } from 'astro:db';
+import { WeatherData, Plants, SeasonalTips } from '../database/schema.js';
+import { getCurrentWeather } from '../utils/weather-client.js';
+import { seedKnowledgeGraph } from '../database/seed-knowledge-graph.js';
+import WeatherForecast from '../components/weather/WeatherForecast.jsx';
+import PlantCard from '../components/plants/PlantCard.jsx';
+
+// Get the current month for seasonal tips
+const currentMonth = new Date().getMonth() + 1; // 1-12
+
+// Query database for recent weather data (default to Dublin if no specific location)
+let weatherData;
+try {
+  weatherData = await getCurrentWeather('Dublin');
+} catch (error) {
+  console.error('Error fetching weather data:', error);
+  // Provide fallback weather data
+  weatherData = {
+    location: 'Dublin',
+    date: new Date(),
+    temperature: 12,
+    rainfall: 2.5,
+    windSpeed: 15,
+    windDirection: 'SW',
+    humidity: 75,
+    weatherDescription: 'Partly Cloudy',
+    forecast: JSON.stringify([
+      { date: new Date(), temperature: { min: 10, max: 14 }, rainfall: 1.2, description: 'Light Rain' },
+      { date: new Date(Date.now() + 86400000), temperature: { min: 11, max: 15 }, rainfall: 0.5, description: 'Partly Cloudy' }
+    ]),
+    created_at: new Date()
+  };
+}
+
+// Get featured plants
+const featuredPlants = await db.select().from(Plants).limit(4);
+
+// Get seasonal tips
+const seasonalTips = await db.select()
+  .from(SeasonalTips)
+  .where(tip => tip.month === currentMonth)
+  .orderBy(tip => tip.priority, 'desc')
+  .limit(3);
+
+// Ensure knowledge graph is populated (in a real app, this would be done during initial setup)
+try {
+  await seedKnowledgeGraph();
+} catch (error) {
+  console.error('Error seeding knowledge graph:', error);
+}
+
+// Get current season name
+const getSeasonName = () => {
+  const month = new Date().getMonth();
+  if (month >= 2 && month <= 4) return 'Spring';
+  if (month >= 5 && month <= 7) return 'Summer';
+  if (month >= 8 && month <= 10) return 'Autumn';
+  return 'Winter';
+};
+
+const currentSeason = getSeasonName();
+---
+
+<Layout title="Home">
+  <!-- Hero Section -->
+  <section class="relative bg-green-700 text-white rounded-lg overflow-hidden mb-8">
+    <div class="absolute inset-0 bg-[url('/images/garden-bg.jpg')] bg-cover bg-center opacity-20"></div>
+    <div class="relative px-6 py-12 md:py-20 md:px-12">
+      <h1 class="text-3xl md:text-4xl font-bold mb-4">Welcome to Irish Garden Assistant</h1>
+      <p class="text-xl md:max-w-2xl mb-6">
+        Your sustainable gardening companion, designed specifically for Irish growing conditions.
+      </p>
+      <div class="flex flex-wrap gap-4">
+        <a href="/plants" class="bg-white text-green-700 px-6 py-3 rounded-md font-medium hover:bg-green-50">
+          Explore Plants
+        </a>
+        <a href="/planner" class="bg-green-600 text-white px-6 py-3 rounded-md font-medium hover:bg-green-500 border border-white">
+          Plan Your Garden
+        </a>
+      </div>
+    </div>
+  </section>
+  
+  <!-- Main Content Grid -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <!-- Main Content -->
+    <div class="lg:col-span-2 space-y-8">
+      <!-- Current Season Section -->
+      <section class="bg-white rounded-lg shadow-md p-6">
+        <div class="flex justify-between items-center mb-6">
+          <h2 class="text-xl font-semibold">
+            {currentSeason} in Your Garden
+          </h2>
+          <span class="bg-green-100 text-green-800 text-sm px-3 py-1 rounded-full">
+            {new Date().toLocaleDateString('en-IE', { month: 'long' })}
+          </span>
+        </div>
+        
+        <div class="space-y-4">
+          {seasonalTips.map(tip => (
+            <div class="border-l-4 border-green-500 pl-4 py-2">
+              <h3 class="font-medium">{tip.title}</h3>
+              <p class="text-gray-600 text-sm mt-1">{tip.description}</p>
+            </div>
+          ))}
+          
+          {seasonalTips.length === 0 && (
+            <p class="text-gray-600">Seasonal tips for this month will appear here.</p>
+          )}
+        </div>
+        
+        <div class="mt-6 text-center">
+          <a href="/seasonal-guide" class="text-green-700 hover:underline text-sm font-medium">
+            View Complete Seasonal Guide →
+          </a>
+        </div>
+      </section>
+      
+      <!-- Featured Plants -->
+      <section class="bg-white rounded-lg shadow-md p-6">
+        <h2 class="text-xl font-semibold mb-6">Featured Irish Plants</h2>
+        
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {featuredPlants.map(plant => (
+            <div class="relative">
+              <PlantCard plant={plant} />
+            </div>
+          ))}
+        </div>
+        
+        <div class="mt-6 text-center">
+          <a href="/plants" class="text-green-700 hover:underline text-sm font-medium">
+            Explore All Plants →
+          </a>
+        </div>
+      </section>
+      
+      <!-- Natural Gardening Tips -->
+      <section class="bg-green-50 rounded-lg shadow-md p-6">
+        <h2 class="text-xl font-semibold mb-4">Natural Gardening Tips</h2>
+        
+        <ul class="space-y-3">
+          <li class="flex items-start">
+            <svg class="h-5 w-5 text-green-600 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+            </svg>
+            <span>Use compost from kitchen scraps to enrich soil naturally.</span>
+          </li>
+          <li class="flex items-start">
+            <svg class="h-5 w-5 text-green-600 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+            </svg>
+            <span>Plant native Irish wildflowers to attract beneficial insects.</span>
+          </li>
+          <li class="flex items-start">
+            <svg class="h-5 w-5 text-green-600 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+            </svg>
+            <span>Collect rainwater in barrels to reduce water usage.</span>
+          </li>
+          <li class="flex items-start">
+            <svg class="h-5 w-5 text-green-600 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+            </svg>
+            <span>Practice crop rotation to maintain soil health and prevent pests.</span>
+          </li>
+        </ul>
+      </section>
+    </div>
+    
+    <!-- Sidebar -->
+    <div class="space-y-8">
+      <!-- Weather Widget -->
+      <WeatherForecast weatherData={weatherData} client:load />
+      
+      <!-- Quick Links -->
+      <div class="bg-white rounded-lg shadow-md p-6">
+        <h2 class="text-lg font-medium mb-4">Quick Links</h2>
+        <ul class="space-y-3">
+          <li>
+            <a href="/soil-guide" class="flex items-center text-green-700 hover:underline">
+              <svg class="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path>
+              </svg>
+              Irish Soil Guide
+            </a>
+          </li>
+          <li>
+            <a href="/planting-calendar" class="flex items-center text-green-700 hover:underline">
+              <svg class="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+              </svg>
+              Planting Calendar
+            </a>
+          </li>
+          <li>
+            <a href="/tools" class="flex items-center text-green-700 hover:underline">
+              <svg class="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+              </svg>
+              Gardening Tools
+            </a>
+          </li>
+          <li>
+            <a href="/sustainability" class="flex items-center text-green-700 hover:underline">
+              <svg class="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+              Sustainability Tracker
+            </a>
+          </li>
+        </ul>
+      </div>
+      
+      <!-- Ask a Question -->
+      <div class="bg-white rounded-lg shadow-md p-6">
+        <h2 class="text-lg font-medium mb-4">Ask a Garden Question</h2>
+        <form class="space-y-4">
+          <div>
+            <label for="question" class="block text-sm font-medium text-gray-700 mb-1">Your Question</label>
+            <textarea 
+              id="question" 
+              rows="3" 
+              class="w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring focus:ring-green-200"
+              placeholder="E.g., What plants grow well in clay soil?"
+            ></textarea>
+          </div>
+          <button type="submit" class="w-full bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700">
+            Get Advice
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</Layout>

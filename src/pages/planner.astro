@@ -1,0 +1,273 @@
+---
+import Layout from '../components/common/Layout.astro';
+import { db } from 'astro:db';
+import { Plants, Gardens, GardenPlants } from '../database/schema.js';
+import GardenPlanner from '../components/tools/GardenPlanner.jsx';
+import { IrishCropRecommender } from '../ml/crop-recommender.js';
+
+// In a real app, we would get the user's current garden
+// For now, we'll mock this data
+const currentGarden = {
+  id: 1,
+  name: "My Irish Garden",
+  size: 50, // square meters
+  soilType: "Brown Earth",
+  sunExposure: "Partial Shade",
+  soilPh: 6.5,
+  rainfall: 900, // annual average for the area in mm
+  temperature: 14 // current average in celsius
+};
+
+// Get all plants for the planner
+const plants = await db.select().from(Plants);
+
+// Get existing garden plants (if any)
+const existingGardenPlants = await db.select()
+  .from(GardenPlants)
+  .where(gp => gp.gardenId === currentGarden.id);
+
+// Get crop recommendations using our machine learning model
+let cropRecommendations = [];
+try {
+  const recommender = new IrishCropRecommender();
+  cropRecommendations = await recommender.getRecommendations(currentGarden, 'Dublin');
+} catch (error) {
+  console.error('Error getting crop recommendations:', error);
+  // Provide some fallback recommendations
+  cropRecommendations = [
+    { name: 'Cabbage', confidence: 0.95 },
+    { name: 'Potato', confidence: 0.92 },
+    { name: 'Kale', confidence: 0.85 },
+    { name: 'Leeks', confidence: 0.82 },
+    { name: 'Carrot', confidence: 0.78 }
+  ];
+}
+
+// Handle form submission (in a real app, this would be an API endpoint)
+if (Astro.request.method === 'POST') {
+  try {
+    const formData = await Astro.request.formData();
+    const plannerData = JSON.parse(formData.get('plannerData'));
+    
+    // In a real app, we'd update the database with the new garden layout
+    console.log('Garden plan submitted:', plannerData);
+  } catch (error) {
+    console.error('Error processing garden plan submission:', error);
+  }
+}
+
+// Irish garden inspiration examples
+const gardenInspirations = [
+  {
+    title: 'Traditional Cottage Garden',
+    description: 'A mix of vegetables, herbs, and flowers that suits the Irish climate perfectly.',
+    image: '/images/gardens/cottage.jpg',
+    plants: ['Foxglove', 'Cabbage', 'Thyme', 'Potato', 'Lavender']
+  },
+  {
+    title: 'Rain Garden',
+    description: 'Designed to manage rainfall and runoff in Ireland\'s wet climate.',
+    image: '/images/gardens/rain.jpg',
+    plants: ['Irish Rush', 'Meadowsweet', 'Monkeyflower', 'Marsh Marigold']
+  },
+  {
+    title: 'Pollinator Garden',
+    description: 'Support Irish bees and butterflies with these pollinator-friendly plants.',
+    image: '/images/gardens/pollinator.jpg',
+    plants: ['Heather', 'Wild Thyme', 'Primrose', 'Clover', 'Hawthorn']
+  }
+];
+---
+
+<Layout title="Garden Planner">
+  <div class="max-w-7xl mx-auto">
+    <header class="mb-8">
+      <h1 class="text-3xl font-bold text-gray-900">Garden Planner</h1>
+      <p class="mt-2 text-lg text-gray-600">
+        Design your perfect Irish garden with our interactive planning tool.
+      </p>
+    </header>
+    
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <!-- Main Garden Planner -->
+      <div class="lg:col-span-2">
+        <GardenPlanner 
+          garden={currentGarden} 
+          plants={plants} 
+          client:load 
+          onSave={(plannerData) => {
+            // In a real app, we'd submit this data to the server
+            console.log('Garden plan saved:', plannerData);
+          }}
+        />
+      </div>
+      
+      <!-- Sidebar -->
+      <div class="space-y-8">
+        <!-- Current Garden Info -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+          <h2 class="text-lg font-semibold mb-4">Your Garden</h2>
+          
+          <div class="space-y-3 text-sm">
+            <div class="flex justify-between">
+              <span class="text-gray-600">Name:</span>
+              <span class="font-medium">{currentGarden.name}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-600">Size:</span>
+              <span class="font-medium">{currentGarden.size} m²</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-600">Soil Type:</span>
+              <span class="font-medium">{currentGarden.soilType}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-600">Soil pH:</span>
+              <span class="font-medium">{currentGarden.soilPh}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-600">Sun Exposure:</span>
+              <span class="font-medium">{currentGarden.sunExposure}</span>
+            </div>
+          </div>
+          
+          <div class="mt-4">
+            <a href="/garden-settings" class="text-sm text-green-700 hover:underline">
+              Edit Garden Settings
+            </a>
+          </div>
+        </div>
+        
+        <!-- AI Crop Recommendations -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+          <h2 class="text-lg font-semibold mb-4">Recommended Crops</h2>
+          <p class="text-sm text-gray-600 mb-4">
+            Based on your garden conditions and local Irish climate:
+          </p>
+          
+          <ul class="space-y-3">
+            {cropRecommendations.map(crop => (
+              <li class="flex items-center justify-between">
+                <span>{crop.name}</span>
+                <div class="flex items-center">
+                  <div class="w-24 bg-gray-200 rounded-full h-2.5 mr-2">
+                    <div 
+                      class="bg-green-600 h-2.5 rounded-full" 
+                      style={`width: ${crop.confidence * 100}%`}
+                    ></div>
+                  </div>
+                  <span class="text-xs text-gray-600">{Math.round(crop.confidence * 100)}%</span>
+                </div>
+              </li>
+            ))}
+          </ul>
+          
+          <div class="mt-6 text-xs text-gray-500">
+            <p>Recommendations are based on your soil type, local climate data, and Irish growing conditions.</p>
+          </div>
+        </div>
+        
+        <!-- Companion Planting Guide -->
+        <div class="bg-green-50 rounded-lg shadow-md p-6">
+          <h2 class="text-lg font-semibold mb-4">Companion Planting</h2>
+          <p class="text-sm text-gray-700 mb-4">
+            These plants grow well together in Irish gardens:
+          </p>
+          
+          <div class="space-y-4 text-sm">
+            <div>
+              <h3 class="font-medium">Potatoes</h3>
+              <p class="text-gray-600">Good companions: Horseradish, Marigold, Cabbage</p>
+              <p class="text-gray-600">Avoid planting with: Tomatoes, Cucumber, Pumpkin</p>
+            </div>
+            
+            <div>
+              <h3 class="font-medium">Carrots</h3>
+              <p class="text-gray-600">Good companions: Onions, Leeks, Rosemary, Sage</p>
+              <p class="text-gray-600">Avoid planting with: Dill, Parsnips</p>
+            </div>
+            
+            <div>
+              <h3 class="font-medium">Cabbage</h3>
+              <p class="text-gray-600">Good companions: Thyme, Mint, Sage, Rosemary</p>
+              <p class="text-gray-600">Avoid planting with: Strawberries, Tomatoes</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Garden Inspiration Section -->
+    <section class="mt-12">
+      <h2 class="text-2xl font-semibold mb-6">Garden Inspiration for Irish Conditions</h2>
+      
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {gardenInspirations.map(inspiration => (
+          <div class="bg-white rounded-lg shadow-md overflow-hidden">
+            <div class="h-48 bg-gray-200">
+              {/* In a real app, we'd have actual images */}
+              <div class="h-full w-full flex items-center justify-center bg-gradient-to-r from-green-500 to-green-700 text-white">
+                {inspiration.title}
+              </div>
+            </div>
+            <div class="p-4">
+              <h3 class="font-medium mb-2">{inspiration.title}</h3>
+              <p class="text-sm text-gray-600 mb-3">{inspiration.description}</p>
+              
+              <div class="flex flex-wrap gap-2">
+                {inspiration.plants.map(plant => (
+                  <span class="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">
+                    {plant}
+                  </span>
+                ))}
+              </div>
+              
+              <button class="mt-4 text-sm text-green-700 hover:underline">
+                Apply to My Garden
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+    
+    <!-- Tips for Irish Garden Planning -->
+    <section class="mt-12 bg-amber-50 rounded-lg shadow-md p-6">
+      <h2 class="text-xl font-semibold mb-4">Tips for Planning Your Irish Garden</h2>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+          <h3 class="font-medium text-amber-800 mb-2">Consider Microclimates</h3>
+          <p class="text-sm text-gray-700">
+            Irish gardens often have varied microclimates. South-facing walls provide warmth for tender plants,
+            while low areas may be prone to frost pockets. Map these areas in your garden plan to optimize plant placement.
+          </p>
+        </div>
+        
+        <div>
+          <h3 class="font-medium text-amber-800 mb-2">Plan for Rainfall</h3>
+          <p class="text-sm text-gray-700">
+            With abundant rainfall in most parts of Ireland, ensure your garden has proper drainage.
+            Consider raised beds in areas with heavy clay soil, and include rain gardens to manage water sustainably.
+          </p>
+        </div>
+        
+        <div>
+          <h3 class="font-medium text-amber-800 mb-2">Wind Protection</h3>
+          <p class="text-sm text-gray-700">
+            Many Irish gardens, particularly along the Atlantic coast, experience strong winds.
+            Incorporate hedges, fences or windbreak plants like hawthorn on exposed sides of your garden.
+          </p>
+        </div>
+        
+        <div>
+          <h3 class="font-medium text-amber-800 mb-2">Year-Round Interest</h3>
+          <p class="text-sm text-gray-700">
+            Plan your garden to provide interest through all seasons. Include early spring bulbs,
+            summer flowering perennials, autumn color from native trees, and winter structure from evergreens.
+          </p>
+        </div>
+      </div>
+    </section>
+  </div>
+</Layout>

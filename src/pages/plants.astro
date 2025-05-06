@@ -1,0 +1,260 @@
+---
+import Layout from '../components/common/Layout.astro';
+import { db } from 'astro:db';
+import { Plants, PlantCategories } from '../database/schema.js';
+import PlantCard from '../components/plants/PlantCard.jsx';
+
+// Get query parameters for filtering
+const { category, search, sunNeeds, waterNeeds, native } = Astro.url.searchParams;
+
+// Build query based on filters
+let query = db.select().from(Plants);
+
+// Apply filters if they exist
+if (category) {
+  query = query.where(plant => plant.categoryId === parseInt(category));
+}
+
+if (search) {
+  const searchTerm = `%${search}%`;
+  query = query.where(plant => 
+    plant.commonName.like(searchTerm) || 
+    plant.latinName.like(searchTerm) || 
+    plant.description.like(searchTerm)
+  );
+}
+
+if (sunNeeds) {
+  query = query.where(plant => plant.sunNeeds === sunNeeds);
+}
+
+if (waterNeeds) {
+  query = query.where(plant => plant.waterNeeds === waterNeeds);
+}
+
+if (native === 'true') {
+  query = query.where(plant => plant.nativeToIreland === true);
+}
+
+// Execute query and get plants
+const plants = await query;
+
+// Get all categories for the filter dropdown
+const categories = await db.select().from(PlantCategories);
+
+// Get unique values for filter options
+const allSunNeeds = ['Full Sun', 'Partial Shade', 'Full Shade'];
+const allWaterNeeds = ['Low', 'Medium', 'High'];
+---
+
+<Layout title="Plants">
+  <div class="max-w-7xl mx-auto">
+    <header class="mb-8">
+      <h1 class="text-3xl font-bold text-gray-900">Irish Plants Database</h1>
+      <p class="mt-2 text-lg text-gray-600">
+        Find the perfect plants for your Irish garden with our comprehensive database.
+      </p>
+    </header>
+    
+    <!-- Filters and Search -->
+    <div class="bg-white p-6 rounded-lg shadow-md mb-8">
+      <form class="space-y-4">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <!-- Search -->
+          <div>
+            <label for="search" class="block text-sm font-medium text-gray-700 mb-1">
+              Search Plants
+            </label>
+            <input
+              type="text"
+              id="search"
+              name="search"
+              value={search || ''}
+              placeholder="Enter plant name..."
+              class="w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring focus:ring-green-200"
+            />
+          </div>
+          
+          <!-- Category Filter -->
+          <div>
+            <label for="category" class="block text-sm font-medium text-gray-700 mb-1">
+              Category
+            </label>
+            <select
+              id="category"
+              name="category"
+              class="w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring focus:ring-green-200"
+            >
+              <option value="">All Categories</option>
+              {categories.map(cat => (
+                <option value={cat.id} selected={category === cat.id.toString()}>
+                  {cat.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          
+          <!-- Sun Needs Filter -->
+          <div>
+            <label for="sunNeeds" class="block text-sm font-medium text-gray-700 mb-1">
+              Sun Requirements
+            </label>
+            <select
+              id="sunNeeds"
+              name="sunNeeds"
+              class="w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring focus:ring-green-200"
+            >
+              <option value="">Any Sun Exposure</option>
+              {allSunNeeds.map(sun => (
+                <option value={sun} selected={sunNeeds === sun}>
+                  {sun}
+                </option>
+              ))}
+            </select>
+          </div>
+          
+          <!-- Water Needs Filter -->
+          <div>
+            <label for="waterNeeds" class="block text-sm font-medium text-gray-700 mb-1">
+              Water Requirements
+            </label>
+            <select
+              id="waterNeeds"
+              name="waterNeeds"
+              class="w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring focus:ring-green-200"
+            >
+              <option value="">Any Water Needs</option>
+              {allWaterNeeds.map(water => (
+                <option value={water} selected={waterNeeds === water}>
+                  {water}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+        
+        <!-- Additional Filters -->
+        <div class="flex items-center space-x-6">
+          <div class="flex items-center">
+            <input
+              type="checkbox"
+              id="native"
+              name="native"
+              value="true"
+              checked={native === 'true'}
+              class="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
+            />
+            <label for="native" class="ml-2 text-sm text-gray-700">
+              Native to Ireland Only
+            </label>
+          </div>
+          
+          <div class="flex items-center">
+            <input
+              type="checkbox"
+              id="pollinatorFriendly"
+              name="pollinatorFriendly"
+              value="true"
+              class="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
+            />
+            <label for="pollinatorFriendly" class="ml-2 text-sm text-gray-700">
+              Pollinator Friendly
+            </label>
+          </div>
+          
+          <div class="flex items-center">
+            <input
+              type="checkbox"
+              id="pestResistant"
+              name="pestResistant"
+              value="true"
+              class="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
+            />
+            <label for="pestResistant" class="ml-2 text-sm text-gray-700">
+              Pest Resistant
+            </label>
+          </div>
+        </div>
+        
+        <div class="flex justify-between">
+          <button
+            type="submit"
+            class="bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700"
+          >
+            Filter Plants
+          </button>
+          
+          <a
+            href="/plants"
+            class="bg-gray-100 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-200"
+          >
+            Clear Filters
+          </a>
+        </div>
+      </form>
+    </div>
+    
+    <!-- Plants Grid -->
+    <div>
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-xl font-semibold">
+          {plants.length} Plant{plants.length !== 1 ? 's' : ''} Found
+        </h2>
+        
+        <div class="text-sm text-gray-600">
+          Sort by:
+          <select class="ml-2 border-gray-300 rounded-md text-sm">
+            <option>Most Relevant</option>
+            <option>Name (A-Z)</option>
+            <option>Sustainability Rating</option>
+            <option>Native First</option>
+          </select>
+        </div>
+      </div>
+      
+      {plants.length > 0 ? (
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-8">
+          {plants.map(plant => (
+            <PlantCard plant={plant} />
+          ))}
+        </div>
+      ) : (
+        <div class="text-center py-12 bg-gray-50 rounded-lg">
+          <h3 class="text-xl font-medium text-gray-700">No Plants Found</h3>
+          <p class="mt-2 text-gray-500">Try adjusting your filters or search terms.</p>
+        </div>
+      )}
+    </div>
+    
+    <!-- Plant Care Tips -->
+    <div class="bg-green-50 p-6 rounded-lg shadow-md mt-12">
+      <h2 class="text-xl font-semibold mb-4">Plant Care Tips for Irish Gardens</h2>
+      
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="bg-white p-4 rounded-md shadow">
+          <h3 class="font-medium text-green-700 mb-2">Soil Preparation</h3>
+          <p class="text-gray-600 text-sm">
+            Most Irish soils are naturally acidic. Add lime to raise pH for plants that prefer alkaline conditions.
+            Incorporate compost to improve drainage in heavy clay soils common in many Irish counties.
+          </p>
+        </div>
+        
+        <div class="bg-white p-4 rounded-md shadow">
+          <h3 class="font-medium text-green-700 mb-2">Weather Considerations</h3>
+          <p class="text-gray-600 text-sm">
+            Irish gardens benefit from mild temperatures but face frequent rainfall. Ensure proper drainage to prevent
+            waterlogging, and consider wind protection in coastal areas where salt spray can damage sensitive plants.
+          </p>
+        </div>
+        
+        <div class="bg-white p-4 rounded-md shadow">
+          <h3 class="font-medium text-green-700 mb-2">Native Advantages</h3>
+          <p class="text-gray-600 text-sm">
+            Native Irish plants are naturally adapted to local conditions and support local wildlife. They typically
+            require less maintenance and are more resistant to regional pests and diseases.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</Layout>
