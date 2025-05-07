@@ -1,0 +1,27 @@
+---
+// src/pages/weather-soil.astro
+import Layout from '../layouts/Layout.astro';
+import WeatherWidget from '../components/weather/WeatherWidget';
+import SoilInfo from '../components/garden/SoilInfo';
+import CountySelector from '../components/common/CountySelector';
+---
+
+<Layout title="Weather & Soil Information">
+  <main class="container mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold mb-6">Irish Garden Conditions</h1>
+    
+    <div class="mb-6">
+      <CountySelector client:load />
+    </div>
+    
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+      <div>
+        <WeatherWidget client:load />
+      </div>
+      
+      <div>
+        <SoilInfo client:load />
+      </div>
+    </div>
+  </main>
+</Layout> 
