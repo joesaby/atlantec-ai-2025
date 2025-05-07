@@ -33,7 +33,18 @@ const getUserProgress = () => {
 
   try {
     const storedData = localStorage.getItem(STORAGE_KEY);
-    return storedData ? JSON.parse(storedData) : defaultUserProgress;
+    if (!storedData) {
+      return defaultUserProgress;
+    }
+
+    const parsedData = JSON.parse(storedData);
+
+    // Ensure sdgScores object exists in case we're loading older data
+    if (!parsedData.sdgScores) {
+      parsedData.sdgScores = { ...defaultUserProgress.sdgScores };
+    }
+
+    return parsedData;
   } catch (error) {
     console.error("Error accessing localStorage:", error);
     return defaultUserProgress;
@@ -100,6 +111,10 @@ export const addSustainablePractice = (
     // Update SDG scores if the practice has SDG tags
     if (practice && practice.sdgs) {
       practice.sdgs.forEach((sdg) => {
+        if (!userProgress.sdgScores) {
+          userProgress.sdgScores = { ...defaultUserProgress.sdgScores };
+        }
+
         if (userProgress.sdgScores[sdg] !== undefined) {
           // Add points based on impact
           const impactPoints =
@@ -114,6 +129,7 @@ export const addSustainablePractice = (
     }
 
     saveUserProgress(userProgress);
+    console.log("Updated user progress after adding practice:", userProgress);
   }
 
   return userProgress;
@@ -158,6 +174,10 @@ export const removeSustainablePractice = (practiceId) => {
   // Update SDG scores if the practice has SDG tags
   if (practice && practice.sdgs) {
     practice.sdgs.forEach((sdg) => {
+      if (!userProgress.sdgScores) {
+        userProgress.sdgScores = { ...defaultUserProgress.sdgScores };
+      }
+
       if (userProgress.sdgScores[sdg] !== undefined) {
         // Remove points based on impact
         const impactPoints =
@@ -175,6 +195,7 @@ export const removeSustainablePractice = (practiceId) => {
   }
 
   saveUserProgress(userProgress);
+  console.log("Updated user progress after removing practice:", userProgress);
   return userProgress;
 };
 
@@ -216,7 +237,13 @@ export const recordResourceUsage = (
 
 // Get all user progress data
 export const getAllUserProgress = () => {
-  return getUserProgress();
+  const progress = getUserProgress();
+  // Ensure SDG scores are initialized
+  if (!progress.sdgScores) {
+    progress.sdgScores = { ...defaultUserProgress.sdgScores };
+    saveUserProgress(progress);
+  }
+  return progress;
 };
 
 // Get practice by ID
@@ -257,6 +284,10 @@ export const calculateSustainabilityScore = () => {
 // Get SDG scores
 export const getSDGScores = () => {
   const userProgress = getUserProgress();
+  if (!userProgress.sdgScores) {
+    userProgress.sdgScores = { ...defaultUserProgress.sdgScores };
+    saveUserProgress(userProgress);
+  }
   return userProgress.sdgScores;
 };
 
@@ -273,7 +304,60 @@ export const calculateSDGImpact = () => {
   );
   const maxScore = maxPerSDG * totalSDGs;
 
-  return Math.min(100, Math.round((totalScore / maxScore) * 100));
+  const impact = Math.min(100, Math.round((totalScore / maxScore) * 100));
+  console.log("Calculated SDG impact:", impact, "Total SDG score:", totalScore);
+  return impact;
+};
+
+// Recalculate all SDG scores based on active practices
+export const recalculateSDGScores = () => {
+  if (!isClient) return null;
+
+  const userProgress = getUserProgress();
+  // Reset SDG scores
+  userProgress.sdgScores = { ...defaultUserProgress.sdgScores };
+
+  try {
+    const { sustainablePractices } = require("../data/sustainability-metrics");
+
+    // For each active practice
+    userProgress.activePractices.forEach((activePractice) => {
+      // Find the practice data
+      let practice = null;
+      for (const category of Object.values(sustainablePractices)) {
+        const foundPractice = category.practices.find(
+          (p) => p.id === activePractice.id
+        );
+        if (foundPractice) {
+          practice = foundPractice;
+          break;
+        }
+      }
+
+      // Update SDG scores if the practice has SDG tags
+      if (practice && practice.sdgs) {
+        practice.sdgs.forEach((sdg) => {
+          if (userProgress.sdgScores[sdg] !== undefined) {
+            // Add points based on impact
+            const impactPoints =
+              practice.impact === "high"
+                ? 15
+                : practice.impact === "medium"
+                ? 10
+                : 5;
+            userProgress.sdgScores[sdg] += impactPoints;
+          }
+        });
+      }
+    });
+
+    console.log("Recalculated SDG scores:", userProgress.sdgScores);
+    saveUserProgress(userProgress);
+    return userProgress;
+  } catch (error) {
+    console.error("Error recalculating SDG scores:", error);
+    return userProgress;
+  }
 };
 
 // Reset all user data

@@ -72,6 +72,7 @@ export const sustainablePractices = {
           "Collecting rainwater for garden use. With Ireland's average rainfall of 1000+ mm annually, this can significantly reduce mains water usage.",
         impact: "high",
         difficulty: "medium",
+        sdgs: ["sdg6", "sdg12"],
         tips: "Install water butts on downpipes from gutters. A typical Irish roof can collect about 85,000 liters of water annually.",
       },
       {
@@ -81,6 +82,7 @@ export const sustainablePractices = {
           "Applying organic mulch to retain soil moisture and reduce evaporation.",
         impact: "medium",
         difficulty: "easy",
+        sdgs: ["sdg6", "sdg12", "sdg15"],
         tips: "Apply a 5-7cm layer of mulch around plants but keep away from stems. Grass clippings, compost, and leaf mould work well in Irish gardens.",
       },
       {
@@ -90,6 +92,7 @@ export const sustainablePractices = {
           "Using plants that require minimal watering once established.",
         impact: "medium",
         difficulty: "easy",
+        sdgs: ["sdg6", "sdg13"],
         tips: "Native plants like Sea Holly, Red Valerian, and Wild Marjoram are adapted to Irish conditions and need less water.",
       },
       {
@@ -99,6 +102,7 @@ export const sustainablePractices = {
           "Using water-efficient irrigation methods like drip systems or soaker hoses.",
         impact: "high",
         difficulty: "medium",
+        sdgs: ["sdg6", "sdg12"],
         tips: "Water plants at the base rather than overhead, and water in morning or evening to reduce evaporation.",
       },
     ],
@@ -117,6 +121,7 @@ export const sustainablePractices = {
           "Creating and using compost from garden and kitchen waste.",
         impact: "high",
         difficulty: "easy",
+        sdgs: ["sdg13", "sdg15", "sdg12"],
         tips: "A good compost mix for Irish conditions includes brown materials (cardboard, dried leaves) and green materials (grass clippings, vegetable scraps) in a ratio of 3:1.",
       },
       {
@@ -126,6 +131,7 @@ export const sustainablePractices = {
           "Avoiding digging or tilling to preserve soil structure and microorganisms.",
         impact: "high",
         difficulty: "easy",
+        sdgs: ["sdg13", "sdg15"],
         tips: "Add compost to the top of beds rather than digging it in. Works particularly well with raised beds that are common in wetter Irish areas.",
       },
       {
@@ -135,6 +141,7 @@ export const sustainablePractices = {
           "Growing cover crops to improve soil quality when beds would otherwise be empty.",
         impact: "medium",
         difficulty: "easy",
+        sdgs: ["sdg13", "sdg15", "sdg12"],
         tips: "Phacelia, clover, and winter rye work well in Irish conditions and can be sown after summer crops are harvested.",
       },
       {
@@ -144,6 +151,7 @@ export const sustainablePractices = {
           "Avoiding peat-based composts to help preserve Irish peatlands.",
         impact: "high",
         difficulty: "medium",
+        sdgs: ["sdg13", "sdg15"],
         tips: "Use peat-free compost for potting. Make your own compost for garden beds using local materials.",
       },
     ],
@@ -162,6 +170,7 @@ export const sustainablePractices = {
           "Including Irish native plants in your garden to support local wildlife.",
         impact: "high",
         difficulty: "easy",
+        sdgs: ["sdg15", "sdg11"],
         tips: "Irish natives like Hawthorn, Blackthorn, Wild Strawberry, and Primrose support pollinators and other wildlife.",
       },
       {
@@ -171,6 +180,7 @@ export const sustainablePractices = {
           "Creating habitats like bug hotels, hedgehog houses, or bird boxes.",
         impact: "medium",
         difficulty: "easy",
+        sdgs: ["sdg15", "sdg11"],
         tips: "Use local materials to create shelters. Even a small pile of logs can provide habitat for insects and small animals.",
       },
       {
@@ -180,6 +190,7 @@ export const sustainablePractices = {
           "Growing flowers that support bees, butterflies, and other pollinators.",
         impact: "high",
         difficulty: "easy",
+        sdgs: ["sdg15", "sdg11", "sdg2"],
         tips: "Plant flowers that bloom from early spring to late autumn to provide continuous food sources. All-Ireland Pollinator Plan provides region-specific advice.",
       },
       {
@@ -189,6 +200,7 @@ export const sustainablePractices = {
           "Avoiding artificial pesticides and herbicides to protect wildlife.",
         impact: "high",
         difficulty: "medium",
+        sdgs: ["sdg15", "sdg11", "sdg12"],
         tips: "Use companion planting and physical barriers like netting for pest control. Encourage natural predators like ladybirds and birds.",
       },
     ],
@@ -207,6 +219,7 @@ export const sustainablePractices = {
           "Collecting and storing seeds from your plants for future growing seasons.",
         impact: "medium",
         difficulty: "medium",
+        sdgs: ["sdg12", "sdg11", "sdg2"],
         tips: "Focus on open-pollinated varieties. Store seeds in paper envelopes in a cool, dry place. Irish climate requires proper drying before storage.",
       },
       {
@@ -215,6 +228,7 @@ export const sustainablePractices = {
         description: "Using recycled or repurposed materials in the garden.",
         impact: "medium",
         difficulty: "easy",
+        sdgs: ["sdg12", "sdg11"],
         tips: "Old baths can become planters, pallets can be used for vertical gardens, and plastic bottles can be used as cloches in spring.",
       },
       {
@@ -224,6 +238,7 @@ export const sustainablePractices = {
           "Properly maintaining and repairing tools rather than replacing them.",
         impact: "low",
         difficulty: "easy",
+        sdgs: ["sdg12"],
         tips: "Clean tools after use and store them in a dry place to prevent rust, which is common in Ireland's damp climate. Sharpen blades annually.",
       },
       {
@@ -233,6 +248,7 @@ export const sustainablePractices = {
           "Sourcing materials locally to reduce transportation impacts.",
         impact: "medium",
         difficulty: "medium",
+        sdgs: ["sdg12", "sdg11", "sdg13"],
         tips: "Use local stone, wood, and soil. Consider community sharing of resources like compost, mulch, or even tools.",
       },
     ],
@@ -293,6 +309,11 @@ export const getAllPractices = () => {
 
   Object.values(sustainablePractices).forEach((category) => {
     category.practices.forEach((practice) => {
+      // If practice doesn't have sdgs defined, use category sdgs
+      if (!practice.sdgs && category.sdgs) {
+        practice.sdgs = [...category.sdgs];
+      }
+
       allPractices.push({
         ...practice,
         category: category.name,
@@ -317,6 +338,11 @@ export const getPracticeById = (id) => {
   Object.values(sustainablePractices).forEach((category) => {
     const practice = category.practices.find((p) => p.id === id);
     if (practice) {
+      // If practice doesn't have sdgs defined, use category sdgs
+      if (!practice.sdgs && category.sdgs) {
+        practice.sdgs = [...category.sdgs];
+      }
+
       foundPractice = {
         ...practice,
         category: category.name,

@@ -69,15 +69,19 @@ const PracticeCard = ({ practice, isActive = false, onStatusChange }) => {
         onStatusChange(practice.id, !active);
       }
 
-      // Trigger dashboard refresh if the global function exists
-      if (
-        typeof window !== "undefined" &&
-        window.updateSustainabilityDashboard
-      ) {
-        console.log("Calling updateSustainabilityDashboard from PracticeCard");
-        window.updateSustainabilityDashboard();
-      } else {
-        console.warn("updateSustainabilityDashboard function is not available");
+      // Force dashboard update
+      if (typeof window !== "undefined") {
+        if (window.updateSustainabilityDashboard) {
+          // Update with a slight delay to ensure localStorage is updated
+          setTimeout(() => {
+            console.log("Triggering dashboard update after practice change");
+            window.updateSustainabilityDashboard();
+          }, 100);
+        } else {
+          // If the update function isn't available, try refreshing the component
+          console.warn("Dashboard update function not found - trying fallback");
+          window.location.hash = Date.now();
+        }
       }
     } catch (error) {
       console.error("Error toggling practice status:", error);
@@ -192,6 +196,16 @@ const PracticeCard = ({ practice, isActive = false, onStatusChange }) => {
           <div className="mt-4 bg-base-200 p-3 rounded-lg">
             <h4 className="font-medium text-sm mb-1">Irish Gardening Tips:</h4>
             <p className="text-xs">{practice.tips}</p>
+          </div>
+        )}
+
+        {/* Display SDG impact information if available */}
+        {practice.sdgs && practice.sdgs.length > 0 && (
+          <div className="mt-2">
+            <p className="text-xs text-muted">
+              <strong>SDG Impact:</strong>{" "}
+              {practice.sdgs.map((sdg) => sdg.replace("sdg", "")).join(", ")}
+            </p>
           </div>
         )}
       </div>

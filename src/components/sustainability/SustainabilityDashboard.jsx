@@ -3,45 +3,46 @@ import {
   getAllUserProgress,
   calculateSDGImpact,
 } from "../../utils/sustainability-store";
+import { sdgGoals } from "../../data/sustainability-metrics";
 
 const SustainabilityDashboard = () => {
   const [userProgress, setUserProgress] = useState(null);
   const [isLoaded, setIsLoaded] = useState(false);
-  const [refreshCounter, setRefreshCounter] = useState(0); // Add counter to force refreshes
+  const [sdgImpact, setSdgImpact] = useState(0);
 
-  const loadUserData = () => {
+  // Load user data
+  useEffect(() => {
     try {
-      // Get latest user progress data from storage
       const progress = getAllUserProgress();
       setUserProgress(progress);
-      console.log("Dashboard loaded user progress:", progress);
 
-      // Make this function available globally so other components can trigger a refresh
+      // Calculate SDG impact
+      const impact = calculateSDGImpact();
+      setSdgImpact(impact);
+
+      // Make the refresh function available globally
       if (typeof window !== "undefined") {
         window.updateSustainabilityDashboard = () => {
-          console.log("Dashboard refresh triggered");
-          setRefreshCounter((prev) => prev + 1); // Increment counter to force refresh
+          const updatedProgress = getAllUserProgress();
+          const updatedImpact = calculateSDGImpact();
+
+          setUserProgress(updatedProgress);
+          setSdgImpact(updatedImpact);
         };
       }
     } catch (e) {
       console.error("Error loading sustainability data:", e);
     } finally {
-      // Always mark as loaded even if there was an error
       setIsLoaded(true);
     }
-  };
 
-  // Load data initially and whenever the refresh counter changes
-  useEffect(() => {
-    loadUserData();
-
-    // Cleanup function to remove the global reference when component unmounts
+    // Cleanup
     return () => {
       if (typeof window !== "undefined") {
         delete window.updateSustainabilityDashboard;
       }
     };
-  }, [refreshCounter]); // Add refreshCounter dependency
+  }, []);
 
   if (!isLoaded || !userProgress) {
     return (
@@ -70,19 +71,25 @@ const SustainabilityDashboard = () => {
 
   // Calculate how many practices are active out of total available
   const activePracticeCount = userProgress.activePractices.length;
-
-  // For a rough estimate, assume there are around 20 total practices
-  // (this should be updated to use actual count from sustainability-metrics.js if needed)
   const totalPracticeCount = 20;
   const practiceProgress = Math.min(
     100,
     Math.round((activePracticeCount / totalPracticeCount) * 100)
   );
 
-  // Get SDG impact percentage
-  const sdgImpact = calculateSDGImpact();
-
   const sustainabilityLevel = getSustainabilityLevel(userProgress.score);
+
+  // Get active SDGs (those with scores > 0)
+  const activeSDGs = Object.entries(userProgress.sdgScores || {})
+    .filter(([_, score]) => score > 0)
+    .sort(([_, scoreA], [__, scoreB]) => scoreB - scoreA);
+
+  // SDG badge colors by progress level
+  const getSDGProgressColor = (score) => {
+    if (score >= 30) return "opacity-100";
+    if (score >= 15) return "opacity-80";
+    return "opacity-60";
+  };
 
   return (
     <div className="bg-base-100 rounded-lg shadow-lg p-6 mb-8">
@@ -135,11 +142,45 @@ const SustainabilityDashboard = () => {
                 {sdgImpact}%
               </div>
             </div>
-            <p className="mt-4">
-              {sdgImpact > 0
-                ? "Contributing to UN Sustainable Development Goals"
-                : "Add sustainable practices to track your SDG impact"}
-            </p>
+            {activeSDGs.length > 0 ? (
+              <div className="mt-4">
+                <p className="mb-2">Contributing to these UN SDGs:</p>
+                <div className="flex flex-wrap gap-2 justify-center">
+                  {activeSDGs.map(([sdgKey, score]) => {
+                    const sdg = sdgGoals[sdgKey];
+                    if (!sdg) return null;
+                    return (
+                      <div
+                        key={sdgKey}
+                        className={`badge badge-lg gap-1 tooltip ${getSDGProgressColor(
+                          score
+                        )}`}
+                        data-tip={`${sdg.name} (Score: ${score})`}
+                        style={{
+                          backgroundColor: sdg.color,
+                          color: "#fff",
+                          textShadow: "0px 0px 2px rgba(0,0,0,0.5)",
+                          border: "none",
+                        }}
+                      >
+                        <span className="text-lg">{sdg.icon}</span>
+                        <span className="font-bold">{sdg.number}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : (
+              <p className="mt-4">
+                Add sustainable practices to track your SDG impact
+              </p>
+            )}
+            <div className="mt-4 text-xs text-opacity-70 text-center">
+              <p>
+                UN Sustainable Development Goals measure your garden's wider
+                impact
+              </p>
+            </div>
           </div>
         </div>
 
@@ -179,6 +220,15 @@ const SustainabilityDashboard = () => {
           className="btn btn-outline btn-sm"
         >
           Reset Data
+        </button>
+        <button
+          onClick={() =>
+            window.updateSustainabilityDashboard &&
+            window.updateSustainabilityDashboard()
+          }
+          className="btn btn-primary btn-sm ml-2"
+        >
+          Refresh Dashboard
         </button>
       </div>
     </div>
