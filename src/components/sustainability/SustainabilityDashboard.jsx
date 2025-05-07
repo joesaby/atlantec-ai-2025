@@ -221,15 +221,6 @@ const SustainabilityDashboard = () => {
         >
           Reset Data
         </button>
-        <button
-          onClick={() =>
-            window.updateSustainabilityDashboard &&
-            window.updateSustainabilityDashboard()
-          }
-          className="btn btn-primary btn-sm ml-2"
-        >
-          Refresh Dashboard
-        </button>
       </div>
     </div>
   );
