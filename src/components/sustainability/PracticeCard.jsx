@@ -87,7 +87,12 @@ const PracticeCard = ({ practice, isActive = false, onStatusChange }) => {
     }
   };
 
-  const handleToggleTips = () => {
+  const handleToggleTips = (event) => {
+    // Ensure event is completely stopped
+    if (event) {
+      event.stopPropagation();
+      event.preventDefault(); // Add preventDefault to be extra safe
+    }
     console.log("Toggling tips for practice:", practice.id);
     console.log("Current tips content:", practice.tips);
     setIsExpanded(!isExpanded);
@@ -103,6 +108,7 @@ const PracticeCard = ({ practice, isActive = false, onStatusChange }) => {
       className={`card bg-base-100 shadow-md hover:shadow-lg transition-shadow border-l-4 ${
         active ? "border-success" : "border-base-300"
       }`}
+      onClick={(e) => e.stopPropagation()} // Stop clicks on the card itself from bubbling
     >
       <div className="card-body p-4">
         <div className="flex justify-between items-start">
