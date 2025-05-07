@@ -1,11 +1,95 @@
 ---
-import Welcome from '../components/Welcome.astro';
 import Layout from '../layouts/Layout.astro';
+
+const description = "Your personal guide to successful gardening in Ireland. Get weather updates, soil information, and expert advice tailored to your location.";
 
 // Welcome to Astro! Wondering what to do next? Check out the Astro documentation at https://docs.astro.build
 // Don't want to use any of this? Delete everything in this file, the `assets`, `components`, and `layouts` directories, and start fresh.
 ---
 
-<Layout>
-	<Welcome />
+<Layout title="Irish Gardening Assistant" description={description}>
+	<main class="min-h-screen bg-base-100">
+		<!-- Hero Section -->
+		<div class="hero min-h-[60vh]" style="background-image: url('https://images.unsplash.com/photo-1416879595882-3373a0480b5b?q=80&w=2070');">
+			<div class="hero-overlay bg-opacity-60"></div>
+			<div class="hero-content text-center text-neutral-content">
+				<div class="max-w-md">
+					<h1 class="mb-5 text-5xl font-bold">Irish Gardening Assistant</h1>
+					<p class="mb-5">
+						Your personal guide to successful gardening in Ireland. Get weather updates, soil information, and expert advice tailored to your location.
+					</p>
+					<div class="flex gap-4 justify-center">
+						<a href="/weather-soil" class="btn btn-primary">Get Started</a>
+						<a href="/about" class="btn btn-outline btn-secondary">Learn More</a>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Features Section -->
+		<div class="container mx-auto px-4 py-16">
+			<h2 class="text-3xl font-bold text-center mb-12">Why Choose Us?</h2>
+			
+			<div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+				<div class="card bg-base-100 shadow-xl hover:shadow-2xl transition-shadow">
+					<figure class="flex justify-center items-center p-6">
+						<svg xmlns="http://www.w3.org/2000/svg" class="h-24 w-24 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" />
+						</svg>
+					</figure>
+					<div class="card-body items-center text-center">
+						<h2 class="card-title">Weather Insights</h2>
+						<p>Get real-time weather data and forecasts specific to your county, helping you plan your gardening activities.</p>
+						<div class="card-actions">
+							<a href="/weather-soil" class="btn btn-primary">View Weather</a>
+						</div>
+					</div>
+				</div>
+
+				<div class="card bg-base-100 shadow-xl hover:shadow-2xl transition-shadow">
+					<figure class="flex justify-center items-center p-6">
+						<svg xmlns="http://www.w3.org/2000/svg" class="h-24 w-24 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+						</svg>
+					</figure>
+					<div class="card-body items-center text-center">
+						<h2 class="card-title">Soil Information</h2>
+						<p>Learn about your local soil type, its properties, and get recommendations for optimal plant growth.</p>
+						<div class="card-actions">
+							<a href="/weather-soil" class="btn btn-primary">View Soil Data</a>
+						</div>
+					</div>
+				</div>
+
+				<div class="card bg-base-100 shadow-xl hover:shadow-2xl transition-shadow">
+					<figure class="flex justify-center items-center p-6">
+						<svg xmlns="http://www.w3.org/2000/svg" class="h-24 w-24 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+						</svg>
+					</figure>
+					<div class="card-body items-center text-center">
+						<h2 class="card-title">Plant Recommendations</h2>
+						<p>Discover which plants thrive in your area based on local conditions and soil type.</p>
+						<div class="card-actions">
+							<a href="/weather-soil" class="btn btn-primary">View Plants</a>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Call to Action -->
+		<div class="hero bg-base-200">
+			<div class="hero-content text-center py-16">
+				<div class="max-w-md">
+					<h2 class="text-3xl font-bold mb-6">Ready to Start Your Garden?</h2>
+					<p class="mb-8">Get personalized advice for your location and start growing your perfect garden today.</p>
+					<div class="flex gap-4 justify-center">
+						<a href="/weather-soil" class="btn btn-primary">Get Started</a>
+						<a href="/contact" class="btn btn-outline">Contact Us</a>
+					</div>
+				</div>
+			</div>
+		</div>
+	</main>
 </Layout>
