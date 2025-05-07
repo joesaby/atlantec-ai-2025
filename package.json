@@ -1,5 +1,5 @@
 {
-  "name": "garden-app",
+  "name": "astro-temp",
   "type": "module",
   "version": "0.0.1",
   "scripts": {
@@ -9,14 +9,10 @@
     "astro": "astro"
   },
   "dependencies": {
-    "@astrojs/react": "^4.2.7",
-    "@astrojs/tailwind": "^6.0.2",
-    "astro": "^5.7.10",
-    "better-sqlite3": "^11.9.1",
-    "chart.js": "^4.4.9",
+    "@tailwindcss/vite": "^4.1.5",
+    "astro": "^5.7.11",
+    "daisyui": "^5.0.35",
     "react": "^19.1.0",
-    "react-chartjs-2": "^5.3.0",
-    "react-dom": "^19.1.0",
     "tailwindcss": "^4.1.5"
   }
 }

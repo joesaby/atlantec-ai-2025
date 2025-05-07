@@ -1,0 +1,76 @@
+---
+import Layout from '../layouts/Layout.astro';
+import WeatherWidget from '../components/weather/WeatherWidget';
+import SoilInfo from '../components/tools/SoilInfo';
+import { seedDatabase, db } from '../database/schema';
+
+// Seed the database
+seedDatabase();
+
+// Get seasonal tips
+const currentMonth = new Date().getMonth() + 1;
+const seasonalTips = db.getTipsByMonth(currentMonth);
+---
+
+<Layout title="Data Integration Test">
+  <main class="container mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold mb-6">Data Integration Test</h1>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+      <div>
+        <h2 class="text-xl font-semibold mb-4">Weather Data Integration</h2>
+        <WeatherWidget client:load county="Dublin" />
+      </div>
+      
+      <div>
+        <h2 class="text-xl font-semibold mb-4">Soil Data Integration</h2>
+        <SoilInfo client:load county="Dublin" />
+      </div>
+    </div>
+    
+    <div class="mb-8">
+      <h2 class="text-xl font-semibold mb-4">Database Integration</h2>
+      <div class="card bg-base-100 shadow-xl">
+        <div class="card-body">
+          <h3 class="card-title">Seasonal Tips</h3>
+          <div class="space-y-4">
+            {seasonalTips.map(tip => (
+              <div class="border-l-4 border-primary pl-4 py-2">
+                <h4 class="font-medium">{tip.title}</h4>
+                <p class="text-sm">{tip.description}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="card bg-base-100 shadow-xl mb-8">
+      <div class="card-body">
+        <h2 class="card-title">Plant Database Test</h2>
+        <div class="overflow-x-auto">
+          <table class="table table-zebra">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Native to Ireland</th>
+                <th>Sustainability Rating</th>
+                <th>Water Needs</th>
+              </tr>
+            </thead>
+            <tbody>
+              {db.getPlants().map(plant => (
+                <tr>
+                  <td>{plant.commonName}</td>
+                  <td>{plant.nativeToIreland ? 'Yes' : 'No'}</td>
+                  <td>{plant.sustainabilityRating}/5</td>
+                  <td>{plant.waterNeeds}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+</Layout> 
