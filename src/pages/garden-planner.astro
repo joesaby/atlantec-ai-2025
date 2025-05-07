@@ -1,0 +1,58 @@
+---
+import Layout from '../layouts/Layout.astro';
+import GardeningCalendar from '../components/garden/GardeningCalendar';
+import SeasonalOverview from '../components/garden/SeasonalOverview';
+---
+
+<Layout title="Seasonal Garden Planner">
+  <main class="container mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold mb-2 text-center">Irish Seasonal Garden Planner</h1>
+    <p class="text-center text-base-content/70 mb-8 max-w-2xl mx-auto">
+      Plan your gardening activities throughout the year with our seasonal planner tailored to Irish growing conditions.
+    </p>
+    
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div>
+        <SeasonalOverview client:load />
+        
+        <div class="card bg-base-100 shadow-xl mt-6">
+          <div class="card-body">
+            <h3 class="font-bold text-lg">Irish Gardening Resources</h3>
+            <div class="py-2">
+              <ul class="menu bg-base-200 rounded-box">
+                <li>
+                  <a href="https://www.giy.ie/" target="_blank" rel="noopener noreferrer">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                    </svg>
+                    Grow It Yourself (GIY)
+                  </a>
+                </li>
+                <li>
+                  <a href="https://www.teagasc.ie/crops/horticulture/gardening/" target="_blank" rel="noopener noreferrer">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    Teagasc Gardening Advice
+                  </a>
+                </li>
+                <li>
+                  <a href="https://www.rhs.org.uk/" target="_blank" rel="noopener noreferrer">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                    </svg>
+                    Royal Horticultural Society
+                  </a>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="lg:col-span-2" id="calendar-container">
+        <GardeningCalendar client:load months={4} />
+      </div>
+    </div>
+  </main>
+</Layout>
