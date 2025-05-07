@@ -1,0 +1,46 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { sustainablePractices } from '../data/sustainability-metrics';
+import SustainabilityDashboard from '../components/sustainability/SustainabilityDashboard';
+import ResourceUsageTracker from '../components/sustainability/ResourceUsageTracker';
+import SustainabilityPractices from '../components/sustainability/SustainabilityPractices';
+---
+
+<Layout title="Sustainability Tracker - Irish Garden Assistant">
+  <div class="container mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold text-center mb-2">Sustainability Tracker</h1>
+    <p class="text-center mb-8 max-w-2xl mx-auto">
+      Monitor your garden's environmental impact and improve your sustainability 
+      practices with personalized recommendations for Irish gardening conditions.
+    </p>
+    
+    <!-- Sustainability Dashboard -->
+    <SustainabilityDashboard client:load />
+    
+    <!-- Resource Usage Tracker -->
+    <ResourceUsageTracker client:load />
+    
+    <!-- Sustainable Practices Categories -->
+    <h2 class="text-2xl font-bold mb-6">Sustainable Gardening Practices</h2>
+    <SustainabilityPractices client:load />
+    
+    <div class="mt-12 bg-base-200 p-6 rounded-lg">
+      <h3 class="text-xl font-bold mb-4">About Irish Sustainable Gardening</h3>
+      <p class="mb-4">
+        Sustainable gardening in Ireland takes advantage of the unique climate and growing 
+        conditions while preserving the rich biodiversity and natural resources of the island.
+      </p>
+      <p class="mb-4">
+        With abundant rainfall (1000+ mm annually in most regions), water conservation may seem 
+        less critical than in other countries, but proper management during increasingly common 
+        dry spells is becoming important. Ireland's mild, maritime climate allows year-round 
+        growing with proper planning.
+      </p>
+      <p>
+        The protection of Ireland's peatlands is a particular sustainability focus, as these 
+        environments serve as valuable carbon sinks and unique habitats. Using peat-free gardening 
+        methods helps preserve these important ecosystems.
+      </p>
+    </div>
+  </div>
+</Layout>
