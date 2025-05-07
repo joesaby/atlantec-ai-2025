@@ -42,13 +42,7 @@ const MonthlyTasks = ({ monthData, expanded = false }) => {
         {isExpanded && (
           <div className="mt-4 grid gap-4 md:grid-cols-2">
             {monthData.tasks.map((task) => (
-              <TaskCard
-                key={task.id}
-                title={task.title}
-                description={task.description}
-                category={task.category}
-                priority={task.priority}
-              />
+              <TaskCard key={task.id} task={task} />
             ))}
           </div>
         )}
