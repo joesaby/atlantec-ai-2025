@@ -2,57 +2,62 @@
 // Run with: node --experimental-json-modules scripts/test-vertex-ai.js
 
 import { VertexAI } from "@google-cloud/vertexai";
-import * as dotenv from "dotenv";
 import { fileURLToPath } from "url";
-import { dirname, resolve } from "path";
-import fs from "fs";
+import { dirname } from "path";
+import dotenv from "dotenv";
+
+// Load environment variables from .env file
+dotenv.config();
 
 // Get the directory of the current module
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Resolve the path to the .env file in the project root
-const envPath = resolve(__dirname, "..", ".env");
+// Default configuration
+const config = {
+  projectId: process.env.VERTEX_CLOUD_PROJECT || "your-project-id",
+  location: process.env.VERTEX_LOCATION || "europe-west4",
+  modelName: process.env.VERTEX_MODEL || "gemini-1.0-pro",
+  temperature: parseFloat(process.env.TEMPERATURE || "0.7"),
+  maxOutputTokens: parseInt(process.env.MAX_TOKENS || "1024"),
+  credentials: {
+    type: "service_account",
+    project_id: process.env.VERTEX_CLOUD_PROJECT,
+    private_key_id: process.env.VERTEX_PRIVATE_KEY_ID,
+    private_key: process.env.VERTEX_PRIVATE_KEY?.replace(/\\n/g, "\n"),
+    client_email: process.env.VERTEX_CLIENT_EMAIL,
+    client_id: process.env.VERTEX_CLIENT_ID,
+    auth_uri:
+      process.env.VERTEX_OAUTH_URI ||
+      "https://accounts.google.com/o/oauth2/auth",
+    token_uri:
+      process.env.VERTEX_TOKEN_URI || "https://oauth2.googleapis.com/token",
+    auth_provider_x509_cert_url:
+      process.env.VERTEX_OAUTH_URI_PROVIDER_X509_CERT_URL ||
+      "https://www.googleapis.com/oauth2/v1/certs",
+    client_x509_cert_url: process.env.VERTEX_CLIENT_X509_CERT_URL,
+  },
+};
 
-// Check if .env file exists
-if (fs.existsSync(envPath)) {
-  dotenv.config({ path: envPath });
-  console.log("Environment variables loaded from .env file");
-} else {
-  console.warn(
-    "\x1b[33m%s\x1b[0m",
-    "Warning: No .env file found. Make sure environment variables are set."
-  );
-}
-
-// Check required environment variables
+// Check if required credentials are present
 const requiredEnvVars = [
-  "GOOGLE_CLOUD_PROJECT",
-  "GOOGLE_APPLICATION_CREDENTIALS",
+  "VERTEX_CLOUD_PROJECT",
+  "VERTEX_PRIVATE_KEY_ID",
+  "VERTEX_PRIVATE_KEY",
+  "VERTEX_CLIENT_EMAIL",
+  "VERTEX_CLIENT_ID",
+  "VERTEX_CLIENT_CERT_URL",
 ];
+
 const missingVars = requiredEnvVars.filter((varName) => !process.env[varName]);
 
 if (missingVars.length > 0) {
   console.error(
     "\x1b[31m%s\x1b[0m",
-    `Error: Missing required environment variables: ${missingVars.join(", ")}`
+    "Error: Missing required environment variables:"
   );
-  console.log(
-    "Please run the setup script first: ./scripts/setup-vertex-ai.sh"
-  );
-  process.exit(1);
-}
-
-// Check if credentials file exists
-const credentialsPath = process.env.GOOGLE_APPLICATION_CREDENTIALS;
-if (!fs.existsSync(credentialsPath)) {
-  console.error(
-    "\x1b[31m%s\x1b[0m",
-    `Error: Credentials file not found at ${credentialsPath}`
-  );
-  console.log(
-    "Please run the setup script first: ./scripts/setup-vertex-ai.sh"
-  );
+  missingVars.forEach((varName) => console.error(`- ${varName}`));
+  console.log("\nPlease ensure all required environment variables are set.");
   process.exit(1);
 }
 
@@ -62,22 +67,21 @@ async function testVertexAI() {
 
   try {
     // Initialize Vertex AI
-    const projectId = process.env.GOOGLE_CLOUD_PROJECT;
-    const location = "europe-west4"; // Use a region close to Ireland
-    console.log(`Project ID: ${projectId}`);
-    console.log(`Location: ${location}`);
+    console.log(`Project ID: ${config.projectId}`);
+    console.log(`Location: ${config.location}`);
+    console.log(`Model: ${config.modelName}`);
 
-    const vertexAI = new VertexAI({ project: projectId, location });
-
-    // Get the generative model (Gemini)
-    const modelName = process.env.GOOGLE_AI_MODEL || "gemini-1.0-pro";
-    console.log(`Model: ${modelName}`);
+    const vertexAI = new VertexAI({
+      project: config.projectId,
+      location: config.location,
+      credentials: config.credentials,
+    });
 
     const generativeModel = vertexAI.preview.getGenerativeModel({
-      model: modelName,
+      model: config.modelName,
       generationConfig: {
-        temperature: parseFloat(process.env.TEMPERATURE || "0.7"),
-        maxOutputTokens: parseInt(process.env.MAX_TOKENS || "1024"),
+        temperature: config.temperature,
+        maxOutputTokens: config.maxOutputTokens,
       },
     });
 
