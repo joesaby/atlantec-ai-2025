@@ -1896,26 +1896,44 @@ describe('GraphRAG System Tests', () => {
 
 ## Deployment Considerations
 
-1. **Production Environment Setup**:
-   - Set up Neo4j AuraDB for the graph database in production
-   - Configure a server with sufficient resources to run Ollama
-   - Use environment variables for all configuration
+### Database Options for Netlify Deployment
 
-2. **Environment Variables**:
-   - `NEO4J_URI`: Neo4j connection URI
-   - `NEO4J_USER`: Neo4j username
-   - `NEO4J_PASSWORD`: Neo4j password
-   - `OLLAMA_ENDPOINT`: Ollama API endpoint
-   - `DEFAULT_LLM`: Default LLM model to use
+When deploying to Netlify, you have several database options for implementing graph-based functionality:
 
-3. **Backup and Restore**:
-   - Implement regular backups of the Neo4j database
-   - Create scripts to restore the database if needed
+1. **SQLite (Recommended for Netlify)**:
+   - File-based database that works well with Netlify's deployment model
+   - Store in your repository for read-only data
+   - For write operations, use Netlify Functions with temporary storage
+   - Can model graph relationships using tables and joins
+   - Best for smaller datasets or read-heavy applications
+   - Limited concurrent write capabilities
 
-4. **Performance Monitoring**:
-   - Add monitoring for Neo4j connection performance
-   - Track LLM response times and errors
+2. **Neo4j AuraDB Cloud Service**:
+   - Neo4j's fully managed cloud database service
+   - Connect from Netlify via environment variables
+   - Offloads database management complexity
+   - Offers free tier for small projects
+   - Full graph capabilities but requires external service
+
+3. **Alternative Graph Solutions**:
+   - Use MongoDB Atlas with graph-like querying
+   - Firebase with carefully structured collections
+   - Other graph-as-a-service providers
+
+4. **Implementation Architecture**:
+   - Frontend: Deployed on Netlify
+   - API Layer: Netlify Functions (serverless)
+   - Database: External service or SQLite
+
+5. **Environment Variables**:
+   - For Neo4j: `NEO4J_URI`, `NEO4J_USER`, `NEO4J_PASSWORD`
+   - For SQLite: Typically packaged with application
+   - For Ollama or other LLMs: `OLLAMA_ENDPOINT`, `DEFAULT_LLM`
+
+6. **Performance Considerations**:
    - Implement query caching for common requests
+   - Consider edge caching for frequently accessed data
+   - Monitor response times and optimize queries
 
 ## Future Enhancements
 
