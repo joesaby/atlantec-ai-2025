@@ -13,8 +13,7 @@ import { fileURLToPath } from "url";
 dotenv.config();
 
 // Configuration
-const projectId =
-  process.env.VERTEX_PROJECT_ID || process.env.VERTEX_PROJECT_ID;
+const projectId = process.env.VERTEX_PROJECT_ID;
 const location = process.env.VERTEX_LOCATION || "us-central1";
 const modelName = process.env.VERTEX_MODEL || "gemini-2.0-flash-001";
 const credentialsPath = process.env.VERTEX_SERVICE_ACCOUNT_KEY;
@@ -46,7 +45,7 @@ function validateEnvironment() {
   // Check project ID
   if (!projectId) {
     error(
-      "VERTEX_PROJECT_ID or VERTEX_PROJECT_ID environment variable is not set"
+      "VERTEX_PROJECT_ID environment variable is not set"
     );
     isValid = false;
   } else {

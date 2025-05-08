@@ -44,3 +44,4 @@ pnpm-debug.log*
 .gcloudignore
 
 
+service-account-key.json
