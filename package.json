@@ -1,5 +1,5 @@
 {
-  "name": "astro-temp",
+  "name": "atlantic-gardening-assistant",
   "type": "module",
   "version": "0.0.1",
   "scripts": {
@@ -14,6 +14,7 @@
     "@tailwindcss/vite": "^4.1.5",
     "astro": "^5.7.11",
     "daisyui": "^5.0.35",
+    "openai": "^4.97.0",
     "prop-types": "^15.8.1",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
