@@ -1,16 +1,3 @@
-# Phase 4: Sustainability Tracking System
-
-This phase implements a sustainability tracking system that helps Irish gardeners monitor and improve their environmental impact. Users can record sustainable gardening practices, track resource usage, and see their progress over time. The system also tracks contribution to UN Sustainable Development Goals (SDGs).
-
-## Implementation Steps
-
-### 1. Create a Sustainability Metrics Database
-
-First, create a database of sustainable gardening metrics and practices:
-
-```javascript
-// src/data/sustainability-metrics.js
-
 /**
  * Database of sustainable gardening metrics and best practices
  * Tailored to Irish gardening conditions
@@ -105,6 +92,7 @@ export const sustainablePractices = {
           "Using plants that require minimal watering once established.",
         impact: "medium",
         difficulty: "easy",
+        sdgs: ["sdg6", "sdg13"],
         tips: "Native plants like Sea Holly, Red Valerian, and Wild Marjoram are adapted to Irish conditions and need less water.",
       },
       {
@@ -114,6 +102,7 @@ export const sustainablePractices = {
           "Using water-efficient irrigation methods like drip systems or soaker hoses.",
         impact: "high",
         difficulty: "medium",
+        sdgs: ["sdg6", "sdg12"],
         tips: "Water plants at the base rather than overhead, and water in morning or evening to reduce evaporation.",
       },
     ],
@@ -132,6 +121,7 @@ export const sustainablePractices = {
           "Creating and using compost from garden and kitchen waste.",
         impact: "high",
         difficulty: "easy",
+        sdgs: ["sdg13", "sdg15", "sdg12"],
         tips: "A good compost mix for Irish conditions includes brown materials (cardboard, dried leaves) and green materials (grass clippings, vegetable scraps) in a ratio of 3:1.",
       },
       {
@@ -141,6 +131,7 @@ export const sustainablePractices = {
           "Avoiding digging or tilling to preserve soil structure and microorganisms.",
         impact: "high",
         difficulty: "easy",
+        sdgs: ["sdg13", "sdg15"],
         tips: "Add compost to the top of beds rather than digging it in. Works particularly well with raised beds that are common in wetter Irish areas.",
       },
       {
@@ -150,6 +141,7 @@ export const sustainablePractices = {
           "Growing cover crops to improve soil quality when beds would otherwise be empty.",
         impact: "medium",
         difficulty: "easy",
+        sdgs: ["sdg13", "sdg15", "sdg12"],
         tips: "Phacelia, clover, and winter rye work well in Irish conditions and can be sown after summer crops are harvested.",
       },
       {
@@ -159,6 +151,7 @@ export const sustainablePractices = {
           "Avoiding peat-based composts to help preserve Irish peatlands.",
         impact: "high",
         difficulty: "medium",
+        sdgs: ["sdg13", "sdg15"],
         tips: "Use peat-free compost for potting. Make your own compost for garden beds using local materials.",
       },
     ],
@@ -168,7 +161,7 @@ export const sustainablePractices = {
     icon: "flower",
     description:
       "Enhancing biodiversity supports wildlife and creates a balanced garden ecosystem.",
-    sdgs: ["sdg15"],
+    sdgs: ["sdg15", "sdg11"],
     practices: [
       {
         id: "biodiversity-1",
@@ -177,6 +170,7 @@ export const sustainablePractices = {
           "Including Irish native plants in your garden to support local wildlife.",
         impact: "high",
         difficulty: "easy",
+        sdgs: ["sdg15", "sdg11"],
         tips: "Irish natives like Hawthorn, Blackthorn, Wild Strawberry, and Primrose support pollinators and other wildlife.",
       },
       {
@@ -186,6 +180,7 @@ export const sustainablePractices = {
           "Creating habitats like bug hotels, hedgehog houses, or bird boxes.",
         impact: "medium",
         difficulty: "easy",
+        sdgs: ["sdg15", "sdg11"],
         tips: "Use local materials to create shelters. Even a small pile of logs can provide habitat for insects and small animals.",
       },
       {
@@ -195,6 +190,7 @@ export const sustainablePractices = {
           "Growing flowers that support bees, butterflies, and other pollinators.",
         impact: "high",
         difficulty: "easy",
+        sdgs: ["sdg15", "sdg11", "sdg2"],
         tips: "Plant flowers that bloom from early spring to late autumn to provide continuous food sources. All-Ireland Pollinator Plan provides region-specific advice.",
       },
       {
@@ -204,6 +200,7 @@ export const sustainablePractices = {
           "Avoiding artificial pesticides and herbicides to protect wildlife.",
         impact: "high",
         difficulty: "medium",
+        sdgs: ["sdg15", "sdg11", "sdg12"],
         tips: "Use companion planting and physical barriers like netting for pest control. Encourage natural predators like ladybirds and birds.",
       },
     ],
@@ -213,7 +210,7 @@ export const sustainablePractices = {
     icon: "recycle",
     description:
       "Reducing waste and conserving resources lowers your garden's environmental impact.",
-    sdgs: ["sdg12"],
+    sdgs: ["sdg12", "sdg11"],
     practices: [
       {
         id: "resources-1",
@@ -222,6 +219,7 @@ export const sustainablePractices = {
           "Collecting and storing seeds from your plants for future growing seasons.",
         impact: "medium",
         difficulty: "medium",
+        sdgs: ["sdg12", "sdg11", "sdg2"],
         tips: "Focus on open-pollinated varieties. Store seeds in paper envelopes in a cool, dry place. Irish climate requires proper drying before storage.",
       },
       {
@@ -230,6 +228,7 @@ export const sustainablePractices = {
         description: "Using recycled or repurposed materials in the garden.",
         impact: "medium",
         difficulty: "easy",
+        sdgs: ["sdg12", "sdg11"],
         tips: "Old baths can become planters, pallets can be used for vertical gardens, and plastic bottles can be used as cloches in spring.",
       },
       {
@@ -239,6 +238,7 @@ export const sustainablePractices = {
           "Properly maintaining and repairing tools rather than replacing them.",
         impact: "low",
         difficulty: "easy",
+        sdgs: ["sdg12"],
         tips: "Clean tools after use and store them in a dry place to prevent rust, which is common in Ireland's damp climate. Sharpen blades annually.",
       },
       {
@@ -248,6 +248,7 @@ export const sustainablePractices = {
           "Sourcing materials locally to reduce transportation impacts.",
         impact: "medium",
         difficulty: "medium",
+        sdgs: ["sdg12", "sdg11", "sdg13"],
         tips: "Use local stone, wood, and soil. Consider community sharing of resources like compost, mulch, or even tools.",
       },
     ],
@@ -265,6 +266,7 @@ export const sustainablePractices = {
         description: "Planting trees or shrubs to sequester carbon.",
         impact: "high",
         difficulty: "medium",
+        sdgs: ["sdg13", "sdg15"],
         tips: "Native trees like Rowan, Hazel, and Holly work well in smaller Irish gardens. A single tree can absorb about 1 tonne of CO2 over its lifetime.",
       },
       {
@@ -274,6 +276,7 @@ export const sustainablePractices = {
           "Mowing less frequently to reduce emissions from petrol mowers.",
         impact: "low",
         difficulty: "easy",
+        sdgs: ["sdg13", "sdg15"],
         tips: "Consider creating a wildflower meadow area or using a push mower for smaller lawns. Irish grasses often grow rapidly in our mild, wet climate.",
       },
       {
@@ -283,6 +286,7 @@ export const sustainablePractices = {
           "Growing your own food to reduce food miles and packaging.",
         impact: "medium",
         difficulty: "medium",
+        sdgs: ["sdg2", "sdg12", "sdg13"],
         tips: "Focus on crops that grow well in Ireland and have high yields like potatoes, kale, and berries. Extend seasons with simple protection.",
       },
       {
@@ -292,6 +296,7 @@ export const sustainablePractices = {
           "Growing perennial vegetables and fruits that don't need replanting each year.",
         impact: "medium",
         difficulty: "easy",
+        sdgs: ["sdg2", "sdg12", "sdg13"],
         tips: "Rhubarb, asparagus, and fruit bushes are well-suited to Irish gardens and provide harvests year after year with minimal input.",
       },
     ],
@@ -347,305 +352,3 @@ export const getPracticeById = (id) => {
 
   return foundPractice;
 };
-```
-
-### 2. Create a User Progress Store
-
-Create a store to track user progress and SDG impact:
-
-```javascript
-// src/utils/sustainability-store.js
-
-// Use localStorage to persist user data
-const STORAGE_KEY = "irish-garden-sustainability";
-
-// Default user progress data
-const defaultUserProgress = {
-  activePractices: [],
-  resourceUsage: {
-    water: [],
-    compost: [],
-    harvest: [],
-  },
-  milestones: [],
-  score: 0,
-  sdgScores: {
-    sdg2: 0, // Zero Hunger
-    sdg6: 0, // Clean Water
-    sdg11: 0, // Sustainable Cities
-    sdg12: 0, // Responsible Consumption
-    sdg13: 0, // Climate Action
-    sdg15: 0, // Life on Land
-  },
-};
-
-// Helper to get user data from localStorage
-const getUserProgress = () => {
-  if (typeof window === "undefined") {
-    return defaultUserProgress;
-  }
-
-  const storedData = localStorage.getItem(STORAGE_KEY);
-  return storedData ? JSON.parse(storedData) : defaultUserProgress;
-};
-
-// Helper to save user data to localStorage
-const saveUserProgress = (data) => {
-  if (typeof window === "undefined") {
-    return;
-  }
-
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-};
-
-// Add a sustainable practice to user's active practices
-export const addSustainablePractice = (
-  practiceId,
-  implementationDate = new Date()
-) => {
-  const userProgress = getUserProgress();
-
-  // Import the metrics dynamically
-  let practice = null;
-  try {
-    // Find the practice from the sustainability metrics
-    if (typeof window !== "undefined") {
-      const {
-        sustainablePractices,
-      } = require("../data/sustainability-metrics");
-
-      for (const category of Object.values(sustainablePractices)) {
-        const foundPractice = category.practices.find(
-          (p) => p.id === practiceId
-        );
-        if (foundPractice) {
-          practice = foundPractice;
-          practice.category = category.name;
-          break;
-        }
-      }
-    }
-  } catch (error) {
-    console.error("Error finding practice:", error);
-  }
-
-  // Check if practice is already active
-  if (!userProgress.activePractices.some((p) => p.id === practiceId)) {
-    userProgress.activePractices.push({
-      id: practiceId,
-      implementedOn: implementationDate.toISOString(),
-      notes: "",
-    });
-
-    // Update sustainability score
-    userProgress.score += 10;
-
-    // Update SDG scores if the practice has SDG tags
-    if (practice && practice.sdgs) {
-      practice.sdgs.forEach((sdg) => {
-        if (!userProgress.sdgScores) {
-          userProgress.sdgScores = { ...defaultUserProgress.sdgScores };
-        }
-
-        if (userProgress.sdgScores[sdg] !== undefined) {
-          // Add points based on impact
-          const impactPoints =
-            practice.impact === "high"
-              ? 15
-              : practice.impact === "medium"
-              ? 10
-              : 5;
-          userProgress.sdgScores[sdg] += impactPoints;
-        }
-      });
-    }
-
-    saveUserProgress(userProgress);
-  }
-
-  return userProgress;
-};
-
-// Remove a practice from user's active practices
-export const removeSustainablePractice = (practiceId) => {
-  const userProgress = getUserProgress();
-
-  // Find the practice from sustainability metrics
-  let practice = null;
-  try {
-    // Similar code to find the practice as in addSustainablePractice
-    // ...
-  } catch (error) {
-    console.error("Error finding practice:", error);
-  }
-
-  userProgress.activePractices = userProgress.activePractices.filter(
-    (p) => p.id !== practiceId
-  );
-
-  // Update sustainability score
-  userProgress.score = Math.max(0, userProgress.score - 10);
-
-  // Update SDG scores if the practice has SDG tags
-  if (practice && practice.sdgs) {
-    practice.sdgs.forEach((sdg) => {
-      if (!userProgress.sdgScores) {
-        userProgress.sdgScores = { ...defaultUserProgress.sdgScores };
-      }
-
-      if (userProgress.sdgScores[sdg] !== undefined) {
-        // Remove points based on impact
-        const impactPoints =
-          practice.impact === "high"
-            ? 15
-            : practice.impact === "medium"
-            ? 10
-            : 5;
-        userProgress.sdgScores[sdg] = Math.max(
-          0,
-          userProgress.sdgScores[sdg] - impactPoints
-        );
-      }
-    });
-  }
-
-  saveUserProgress(userProgress);
-  return userProgress;
-};
-
-// Update notes for a practice
-export const updatePracticeNotes = (practiceId, notes) => {
-  const userProgress = getUserProgress();
-
-  const practiceIndex = userProgress.activePractices.findIndex(
-    (p) => p.id === practiceId
-  );
-  if (practiceIndex !== -1) {
-    userProgress.activePractices[practiceIndex].notes = notes;
-    saveUserProgress(userProgress);
-  }
-
-  return userProgress;
-};
-
-// Record resource usage (water, compost, harvest)
-export const recordResourceUsage = (
-  resourceType,
-  amount,
-  date = new Date()
-) => {
-  const userProgress = getUserProgress();
-
-  if (!userProgress.resourceUsage[resourceType]) {
-    userProgress.resourceUsage[resourceType] = [];
-  }
-
-  userProgress.resourceUsage[resourceType].push({
-    date: date.toISOString(),
-    amount: amount,
-  });
-
-  saveUserProgress(userProgress);
-  return userProgress;
-};
-
-// Get all user progress data
-export const getAllUserProgress = () => {
-  const progress = getUserProgress();
-  // Ensure SDG scores are initialized
-  if (!progress.sdgScores) {
-    progress.sdgScores = { ...defaultUserProgress.sdgScores };
-    saveUserProgress(progress);
-  }
-  return progress;
-};
-
-// Calculate sustainability score
-export const calculateSustainabilityScore = () => {
-  const userProgress = getUserProgress();
-  return userProgress.score;
-};
-
-// Get SDG scores
-export const getSDGScores = () => {
-  const userProgress = getUserProgress();
-  if (!userProgress.sdgScores) {
-    userProgress.sdgScores = { ...defaultUserProgress.sdgScores };
-    saveUserProgress(userProgress);
-  }
-  return userProgress.sdgScores;
-};
-
-// Calculate overall SDG impact percentage
-export const calculateSDGImpact = () => {
-  const sdgScores = getSDGScores();
-  // Maximum possible score per SDG based on our implementation
-  const maxPerSDG = 100;
-  const totalSDGs = Object.keys(sdgScores).length;
-
-  const totalScore = Object.values(sdgScores).reduce(
-    (sum, score) => sum + score,
-    0
-  );
-  const maxScore = maxPerSDG * totalSDGs;
-
-  const impact = Math.min(100, Math.round((totalScore / maxScore) * 100));
-  return impact;
-};
-
-// Recalculate all SDG scores based on active practices
-export const recalculateSDGScores = () => {
-  if (typeof window === "undefined") return null;
-
-  const userProgress = getUserProgress();
-  // Reset SDG scores
-  userProgress.sdgScores = { ...defaultUserProgress.sdgScores };
-
-  try {
-    const { sustainablePractices } = require("../data/sustainability-metrics");
-
-    // For each active practice
-    userProgress.activePractices.forEach((activePractice) => {
-      // Find the practice data
-      let practice = null;
-      for (const category of Object.values(sustainablePractices)) {
-        const foundPractice = category.practices.find(
-          (p) => p.id === activePractice.id
-        );
-        if (foundPractice) {
-          practice = foundPractice;
-          break;
-        }
-      }
-
-      // Update SDG scores if the practice has SDG tags
-      if (practice && practice.sdgs) {
-        practice.sdgs.forEach((sdg) => {
-          if (userProgress.sdgScores[sdg] !== undefined) {
-            // Add points based on impact
-            const impactPoints =
-              practice.impact === "high"
-                ? 15
-                : practice.impact === "medium"
-                ? 10
-                : 5;
-            userProgress.sdgScores[sdg] += impactPoints;
-          }
-        });
-      }
-    });
-
-    saveUserProgress(userProgress);
-    return userProgress;
-  } catch (error) {
-    console.error("Error recalculating SDG scores:", error);
-    return userProgress;
-  }
-};
-
-// Reset all user data
-export const resetUserProgress = () => {
-  saveUserProgress(defaultUserProgress);
-  return defaultUserProgress;
-};
-```
