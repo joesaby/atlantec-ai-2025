@@ -123,8 +123,16 @@ import Layout from '../../layouts/Layout.astro';
     document.getElementById('logs-content').innerHTML = 'Loading logs...';
     document.getElementById('logs-container').classList.remove('hidden');
     document.getElementById('error-container').classList.add('hidden');
-
-    fetch(`/api/logs?key=${apiKey}`)
+    
+    // Try Netlify-compatible endpoint first, fallback to regular one if that fails
+    fetch(`/api/netlify-logs?key=${apiKey}`)
+      .then(response => {
+        if (!response.ok) {
+          // If netlify-logs fails, try the regular logs endpoint
+          return fetch(`/api/logs?key=${apiKey}`);
+        }
+        return response;
+      })
       .then(response => {
         if (!response.ok) {
           throw new Error(`Error ${response.status}: ${response.statusText}`);

@@ -83,8 +83,15 @@ import Layout from '../../layouts/Layout.astro';
   function initLogSystem() {
     document.getElementById('logs-output').textContent = 'Initializing log system...';
     
-    // Try to fetch logs with fallback key
-    fetch('/api/logs?key=password')
+    // Try Netlify-compatible endpoint first, fallback to regular one if that fails
+    fetch('/api/netlify-logs?key=password')
+      .then(response => {
+        if (!response.ok) {
+          // If netlify-logs fails, try the regular logs endpoint
+          return fetch('/api/logs?key=password');
+        }
+        return response;
+      })
       .then(response => response.json())
       .then(data => {
         if (data.error) {
