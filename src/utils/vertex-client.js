@@ -46,7 +46,14 @@ if (process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
     console.log("[VERTEX-AUTH] Using credentials from GOOGLE_APPLICATION_CREDENTIALS_JSON env var");
     
     const credentials = JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON);
+    
+    // IMPORTANT: Set the credentials object as expected by Google Auth Library
+    // This is different from setting it directly on vertexOptions
+    process.env.GOOGLE_APPLICATION_CREDENTIALS = JSON.stringify(credentials);
+    
+    // Use the credentials directly with the client
     vertexOptions.credentials = credentials;
+    
     logger.info("Using service account credentials from environment variable (JSON)");
     
     // Log partial info about the credentials to help with debugging
@@ -60,6 +67,7 @@ if (process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
     }
   } catch (error) {
     console.error("[VERTEX-AUTH] Error parsing credentials from environment variable:", error.message);
+    console.error("[VERTEX-AUTH] Credential content length:", process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON?.length || 0);
     logger.error("Error parsing credentials from environment variable", error);
   }
 } else if (credentialsPath) {

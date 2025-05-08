@@ -22,6 +22,9 @@ import Layout from '../../layouts/Layout.astro';
         <button id="generate-logs" class="btn btn-outline btn-accent">
           Generate Test Logs
         </button>
+        <button id="test-auth" class="btn btn-outline btn-error">
+          Test Vertex Auth
+        </button>
       </div>
     </div>
 
@@ -42,6 +45,7 @@ import Layout from '../../layouts/Layout.astro';
     document.getElementById('check-env').addEventListener('click', checkEnvironment);
     document.getElementById('init-logs').addEventListener('click', initLogSystem);
     document.getElementById('generate-logs').addEventListener('click', generateTestLogs);
+    document.getElementById('test-auth').addEventListener('click', testVertexAuth);
   });
   
   function checkEnvironment() {
@@ -137,6 +141,34 @@ import Layout from '../../layouts/Layout.astro';
       })
       .catch(error => {
         document.getElementById('logs-output').textContent = `Error: ${error.message}`;
+      });
+  }
+  
+  function testVertexAuth() {
+    document.getElementById('logs-output').textContent = 'Testing Vertex AI authentication...';
+    
+    fetch('/api/auth-test')
+      .then(response => response.json())
+      .then(data => {
+        if (!data.success) {
+          document.getElementById('logs-output').textContent = 
+            `❌ Authentication failed!\n\n` +
+            `Error: ${data.error}\n` +
+            `Error type: ${data.errorName}\n` +
+            `Cause: ${data.cause || 'Unknown'}\n\n` +
+            `Stack trace:\n${data.stack}`;
+        } else {
+          document.getElementById('logs-output').textContent = 
+            `✅ Vertex AI authentication successful!\n\n` +
+            `Authentication method: ${data.authMethod}\n` +
+            `Project ID: ${data.projectId}\n` +
+            `Location: ${data.location}\n` +
+            `Model: ${data.modelName}\n\n` +
+            `Sample response: "${data.modelResponse}"`;
+        }
+      })
+      .catch(error => {
+        document.getElementById('logs-output').textContent = `Error making auth test request: ${error.message}`;
       });
   }
 </script>
