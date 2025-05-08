@@ -7,7 +7,8 @@
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro",
-    "vertex-test": "node src/scripts/test-vertex-ai.js"
+    "vertex-test": "node src/scripts/test-vertex-ai.js",
+    "validate-vertex": "node scripts/validate-vertex-ai.js"
   },
   "dependencies": {
     "@astrojs/react": "^4.2.7",
@@ -15,7 +16,7 @@
     "@tailwindcss/vite": "^4.1.5",
     "astro": "^5.7.11",
     "daisyui": "^5.0.35",
-    "dotenv": "^16.5.0",
+    "dotenv": "^16.7.1",
     "openai": "^4.97.0",
     "prop-types": "^15.8.1",
     "react": "^19.1.0",
