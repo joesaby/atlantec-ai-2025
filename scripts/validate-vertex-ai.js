@@ -41,6 +41,7 @@ function validateEnvironment() {
   header("Environment Validation");
 
   let isValid = true;
+  let credentials = null;
 
   // Check project ID
   if (!projectId) {
@@ -52,10 +53,40 @@ function validateEnvironment() {
     success(`Project ID: ${projectId}`);
   }
 
-  // Check credentials path
-  if (!credentialsPath) {
-    error("VERTEX_SERVICE_ACCOUNT_KEY environment variable is not set");
-    warn("Set this variable to point to your service account key file");
+  // Check for JSON credential content in environment
+  if (process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
+    try {
+      credentials = JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON);
+      success("Using service account credentials from GOOGLE_APPLICATION_CREDENTIALS_JSON");
+      
+      if (credentials.type !== "service_account") {
+        error("Invalid credentials: Not a service account key");
+        isValid = false;
+      } else {
+        success("Credentials are a valid service account key");
+        console.log(`  - Project ID in credentials: ${credentials.project_id}`);
+        console.log(`  - Client email: ${credentials.client_email}`);
+
+        // Check if project IDs match
+        if (
+          projectId &&
+          credentials.project_id &&
+          projectId !== credentials.project_id
+        ) {
+          warn(
+            `Project ID mismatch: Environment (${projectId}) vs Credentials (${credentials.project_id})`
+          );
+        }
+      }
+    } catch (e) {
+      error(`Failed to parse credentials from environment variable: ${e.message}`);
+      isValid = false;
+    }
+  }
+  // Check credentials path if JSON credentials not found in environment
+  else if (!credentialsPath) {
+    error("Neither GOOGLE_APPLICATION_CREDENTIALS_JSON nor VERTEX_SERVICE_ACCOUNT_KEY is set");
+    warn("Set one of these variables for authentication");
     isValid = false;
   } else {
     success(`Credentials path: ${credentialsPath}`);
@@ -70,7 +101,7 @@ function validateEnvironment() {
       // Verify the file is valid JSON
       try {
         const credentialsContent = fs.readFileSync(credentialsPath, "utf8");
-        const credentials = JSON.parse(credentialsContent);
+        credentials = JSON.parse(credentialsContent);
 
         if (credentials.type !== "service_account") {
           error("Invalid credentials file: Not a service account key");
@@ -117,15 +148,27 @@ async function testVertexAI() {
   try {
     console.log("Initializing Vertex AI client...");
 
-    // Initialize Vertex AI with explicit credentials
+    // Initialize Vertex AI with appropriate credentials
     const vertexOptions = {
       project: projectId,
       location: location,
     };
 
-    // Only add googleAuthOptions if credentials path is set
-    if (credentialsPath) {
+    // Use JSON credentials from environment variable if available
+    if (process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
+      try {
+        const credentials = JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON);
+        vertexOptions.credentials = credentials;
+        console.log("Using service account credentials from environment variable");
+      } catch (error) {
+        console.error("Error parsing credentials from environment variable:", error);
+        throw error; // Re-throw to fail the test
+      }
+    } 
+    // Otherwise use credentials file path
+    else if (credentialsPath) {
       vertexOptions.googleAuthOptions = { keyFilename: credentialsPath };
+      console.log("Using service account credentials from file:", credentialsPath);
     }
 
     const vertexAI = new VertexAI(vertexOptions);

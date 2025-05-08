@@ -35,9 +35,20 @@ const vertexOptions = {
   location: location,
 };
 
-// Only add googleAuthOptions if credentials path is set
-if (credentialsPath) {
+// Handle credentials based on environment
+if (process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
+  // Running on Netlify - use the environment variable with JSON content
+  try {
+    const credentials = JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON);
+    vertexOptions.credentials = credentials;
+    console.log("Using service account credentials from environment variable");
+  } catch (error) {
+    console.error("Error parsing credentials from environment variable:", error);
+  }
+} else if (credentialsPath) {
+  // Running locally - use the file path
   vertexOptions.googleAuthOptions = { keyFilename: credentialsPath };
+  console.log("Using service account credentials from file:", credentialsPath);
 }
 
 const vertexAI = new VertexAI(vertexOptions);
