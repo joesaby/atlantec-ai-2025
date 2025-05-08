@@ -12,16 +12,35 @@
  * - Google Cloud credentials configured properly
  *
  * Install dependencies:
- * npm install @google-cloud/vertexai
+ * npm install @google-cloud/vertexai dotenv
  */
 
 import { VertexAI } from "@google-cloud/vertexai";
+import dotenv from "dotenv";
 
-// Initialize Vertex with project and location from environment variables
-const vertexAI = new VertexAI({
-  project: import.meta.env.VERTEX_PROJECT_ID,
-  location: import.meta.env.VERTEX_LOCATION || "us-central1",
-});
+// Load environment variables
+dotenv.config();
+
+// Configuration
+const projectId = process.env.VERTEX_PROJECT_ID;
+const location = process.env.VERTEX_LOCATION || "europe-west1";
+const modelName = process.env.VERTEX_MODEL || "gemini-2.0-flash-001";
+const credentialsPath = process.env.VERTEX_SERVICE_ACCOUNT_KEY;
+const temperature = parseFloat(process.env.TEMPERATURE || "0.7");
+const maxTokens = parseInt(process.env.MAX_TOKENS || "1024");
+
+// Initialize Vertex with configuration
+const vertexOptions = {
+  project: projectId,
+  location: location,
+};
+
+// Only add googleAuthOptions if credentials path is set
+if (credentialsPath) {
+  vertexOptions.googleAuthOptions = { keyFilename: credentialsPath };
+}
+
+const vertexAI = new VertexAI(vertexOptions);
 
 // System prompt for gardening assistance
 const GARDENING_SYSTEM_INSTRUCTION = `You are an expert Irish gardening assistant that specializes in providing advice for gardeners in Ireland.
@@ -51,18 +70,16 @@ export async function generateVertexResponse(messages, options = {}) {
       parts: [{ text: msg.content }],
     }));
 
-    // Initialize the model
-    const modelName = import.meta.env.VERTEX_MODEL || "gemini-1.0-pro";
+    // Initialize the model with configuration
     const generativeModel = vertexAI.getGenerativeModel({
       model: modelName,
+      generationConfig: {
+        temperature: temperature,
+        maxOutputTokens: maxTokens,
+      },
       systemInstruction: {
         role: "system",
         parts: [{ text: GARDENING_SYSTEM_INSTRUCTION }],
-      },
-      generationConfig: {
-        temperature: options.temperature || 0.7,
-        maxOutputTokens: options.max_tokens || 1024,
-        topP: options.top_p || 1,
       },
     });
 
@@ -78,6 +95,34 @@ export async function generateVertexResponse(messages, options = {}) {
     return responseText;
   } catch (error) {
     console.error("Error calling Vertex AI API:", error);
+
+    // Enhanced error handling
+    if (
+      error.message.includes("authentication") ||
+      error.name === "GoogleAuthError"
+    ) {
+      console.error(
+        "Authentication error. Please check your service account credentials."
+      );
+    } else if (
+      error.message.includes("Permission denied") ||
+      error.message.includes("permission")
+    ) {
+      console.error(
+        "Permission error. Please check your service account permissions."
+      );
+    } else if (
+      error.message.includes("API not enabled") ||
+      error.message.includes("has not been used")
+    ) {
+      console.error(
+        "Vertex AI API not enabled. Please enable it in your Google Cloud project."
+      );
+    } else if (error.message.includes("billing")) {
+      console.error(
+        "Billing error. Please ensure billing is enabled for your project."
+      );
+    }
 
     // Return a graceful fallback message
     return "I'm having trouble connecting to my gardening knowledge base at the moment. Please try again shortly or ask another gardening question.";
@@ -138,7 +183,6 @@ export async function countTokens(messages) {
     }));
 
     // Initialize the model
-    const modelName = import.meta.env.VERTEX_MODEL || "gemini-1.0-pro";
     const generativeModel = vertexAI.getGenerativeModel({
       model: modelName,
     });
@@ -158,34 +202,16 @@ export async function countTokens(messages) {
 }
 
 /**
- * Creates a unified client that can switch between OpenAI and Vertex AI
- * based on environment configuration
- * @returns {Object} - A unified client with the same interface for both APIs
+ * Creates a unified client that uses Vertex AI
+ * @returns {Object} - A client with the Vertex AI interface
  */
 export async function createUnifiedClient() {
-  // Check if we should use Vertex AI or OpenAI
-  const useVertex = import.meta.env.USE_VERTEX_AI === "true";
-
-  if (useVertex) {
-    return {
-      generateChatResponse: generateVertexResponse,
-      processGardeningQuery: processGardeningQueryWithVertex,
-      countTokens,
-      provider: "vertex",
-    };
-  } else {
-    // Import the OpenAI client dynamically
-    const { generateChatResponse, processGardeningQuery } = await import(
-      "./openai-client.js"
-    );
-
-    return {
-      generateChatResponse,
-      processGardeningQuery,
-      countTokens: async () => 0, // OpenAI client doesn't have this method
-      provider: "openai",
-    };
-  }
+  return {
+    generateChatResponse: generateVertexResponse,
+    processGardeningQuery: processGardeningQueryWithVertex,
+    countTokens,
+    provider: "vertex",
+  };
 }
 
 export default {

@@ -1,13 +1,16 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import GardenAgent from '../components/garden/GardenAgent';
+
+// Ensure this page is always server-rendered
+export const prerender = false;
 ---
 
 <Layout title="Gardening Agent - Your Interactive Garden Assistant">
   <main class="container mx-auto px-4 py-8">
     <h1 class="text-3xl font-bold mb-2 text-center">Gardening Agent</h1>
     <p class="text-center text-base-content/70 mb-4 max-w-2xl mx-auto">
-      Chat with our gardening assistant to get personalized advice, plant recommendations, and seasonal task suggestions for your Irish garden.
+      Chat with our gardening assistant powered by Google Vertex AI to get personalized advice, plant recommendations, and seasonal task suggestions for your Irish garden.
     </p>
     
     <div class="max-w-5xl mx-auto">

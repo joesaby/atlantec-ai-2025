@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import PlantCard from "../plants/PlantCard";
 import TaskCard from "./TaskCard";
-import { processQuery, getProviderInfo } from "../../utils/ai-client";
 import { selectCardsForResponse } from "../../utils/cards";
 import { samplePlants } from "../../data/plants";
 import { sampleTasks } from "../../data/gardening-tasks";
@@ -17,23 +16,11 @@ const GardenAgent = () => {
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [providerInfo, setProviderInfo] = useState({ provider: "loading..." });
+  const [providerInfo, setProviderInfo] = useState({
+    provider: "vertex",
+    model: "gemini-2.0-flash-001",
+  });
   const messagesEndRef = useRef(null);
-
-  // Get AI provider info on component mount
-  useEffect(() => {
-    const loadProviderInfo = async () => {
-      try {
-        const info = await getProviderInfo();
-        setProviderInfo(info);
-      } catch (error) {
-        console.error("Failed to load provider info:", error);
-        setProviderInfo({ provider: "unknown" });
-      }
-    };
-
-    loadProviderInfo();
-  }, []);
 
   // Auto-scroll to the bottom when messages change
   useEffect(() => {
@@ -71,14 +58,44 @@ const GardenAgent = () => {
         content: msg.content,
       }));
 
-      // Process the query using the configured AI provider
-      const aiResponse = await processQuery(input, conversationHistory);
+      // Call the API endpoint instead of using Vertex AI directly
+      const requestBody = JSON.stringify({
+        query: input,
+        conversationHistory,
+      });
+      
+      console.log("Sending request to garden API:", requestBody);
+      
+      const response = await fetch("/api/garden", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: requestBody,
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("API response error:", response.status, errorText);
+        throw new Error(`Failed to get response from garden assistant: ${response.status}`);
+      }
+
+      const responseText = await response.text();
+      console.log("API response text:", responseText);
+      
+      let aiResponse;
+      try {
+        aiResponse = JSON.parse(responseText);
+      } catch (error) {
+        console.error("Error parsing API response:", error);
+        throw new Error("Invalid response format from garden assistant");
+      }
 
       // Select appropriate cards to display based on the response
       const cards = selectCardsForResponse(input, aiResponse);
 
       // Build the response object
-      let response = {
+      let responseObj = {
         role: "assistant",
         content: aiResponse.content,
         timestamp: new Date(),
@@ -86,10 +103,10 @@ const GardenAgent = () => {
 
       // Add cards if they were selected
       if (cards && cards.length > 0) {
-        response.cards = cards;
+        responseObj.cards = cards;
       }
 
-      setMessages((prevMessages) => [...prevMessages, response]);
+      setMessages((prevMessages) => [...prevMessages, responseObj]);
     } catch (error) {
       console.error("Error processing query:", error);
       // Add fallback response in case of error
@@ -120,10 +137,10 @@ const GardenAgent = () => {
 
   // Format timestamp
   const formatTime = (date) => {
-    return new Date(date).toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+    const d = new Date(date);
+    const hours = d.getHours().toString().padStart(2, "0");
+    const minutes = d.getMinutes().toString().padStart(2, "0");
+    return `${hours}:${minutes}`;
   };
 
   // Render different card types
@@ -169,9 +186,7 @@ const GardenAgent = () => {
               </svg>
               Garden Assistant Chat
               <span className="text-xs font-normal opacity-70 ml-2">
-                {providerInfo.provider === "vertex"
-                  ? `Powered by Google Vertex AI (${providerInfo.model})`
-                  : `Powered by OpenAI (${providerInfo.model})`}
+                Powered by Google Vertex AI ({providerInfo.model})
               </span>
             </h2>
           </div>

@@ -236,3 +236,5 @@ export const plants = [
     suitableSoilTypes: ["brown-earth", "grey-brown-podzolic"],
   },
 ];
+
+export const samplePlants = plants;
