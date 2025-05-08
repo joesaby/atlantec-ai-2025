@@ -7,7 +7,6 @@
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro",
-    "vertex-test": "node src/scripts/test-vertex-ai.js",
     "validate-vertex": "node scripts/validate-vertex-ai.js"
   },
   "dependencies": {
