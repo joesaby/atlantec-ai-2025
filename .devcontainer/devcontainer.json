@@ -1,6 +1,6 @@
 {
-  "name": "Node.js 23 & Astro",
-  "image": "node:23-slim",
+  "name": "Node.js & Astro",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:1-20",
   "features": {
     "ghcr.io/devcontainers/features/git:1": {},
     "ghcr.io/devcontainers/features/github-cli:1": {}
@@ -20,5 +20,11 @@
   },
   "forwardPorts": [4321],
   "postCreateCommand": "npm install",
-  "remoteUser": "node"
-} 
+  "remoteUser": "node",
+
+  // Performance optimizations for macOS/Windows
+  "mounts": [
+    // Cache npm modules between container rebuilds
+    "source=npm-cache,target=/home/node/.npm,type=volume"
+  ]
+}
