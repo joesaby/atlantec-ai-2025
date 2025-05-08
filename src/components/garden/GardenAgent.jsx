@@ -441,12 +441,6 @@ const GardenAgent = () => {
                 >
                   {message.content}
                 </div>
-                {/* Display cards if present */}
-                {message.cards && message.cards.length > 0 && (
-                  <div className="grid grid-cols-1 gap-4 mt-2 mb-4">
-                    {message.cards.map((card) => renderCard(card))}
-                  </div>
-                )}
               </div>
             ))}
             <div ref={messagesEndRef} />
