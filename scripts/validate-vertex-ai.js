@@ -17,7 +17,7 @@ const projectId =
   process.env.VERTEX_PROJECT_ID || process.env.VERTEX_PROJECT_ID;
 const location = process.env.VERTEX_LOCATION || "us-central1";
 const modelName = process.env.VERTEX_MODEL || "gemini-2.0-flash-001";
-const credentialsPath = process.env.VERTEX_AUTH_TOKEN;
+const credentialsPath = process.env.VERTEX_SERVICE_ACCOUNT_KEY;
 const temperature = parseFloat(process.env.TEMPERATURE || "0.7");
 const maxTokens = parseInt(process.env.MAX_TOKENS || "1024");
 
@@ -55,7 +55,7 @@ function validateEnvironment() {
 
   // Check credentials path
   if (!credentialsPath) {
-    error("VERTEX_AUTH_TOKEN environment variable is not set");
+    error("VERTEX_SERVICE_ACCOUNT_KEY environment variable is not set");
     warn("Set this variable to point to your service account key file");
     isValid = false;
   } else {
@@ -187,9 +187,9 @@ async function testVertexAI() {
       console.log("4. Ensure billing is enabled for the Google Cloud project");
       console.log("\nTo authenticate manually, try one of these methods:");
       console.log("- Run: gcloud auth application-default login");
-      console.log("- Set the VERTEX_AUTH_TOKEN environment variable:");
+      console.log("- Set the VERTEX_SERVICE_ACCOUNT_KEY environment variable:");
       console.log(
-        `  export VERTEX_AUTH_TOKEN="${path.resolve(
+        `  export VERTEX_SERVICE_ACCOUNT_KEY="${path.resolve(
           process.cwd(),
           "service-account-key.json"
         )}"`
