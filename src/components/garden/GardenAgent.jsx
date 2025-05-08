@@ -95,6 +95,8 @@ const GardenAgent = () => {
 
       // Select appropriate cards to display based on the response
       const cards = selectCardsForResponse(input, aiResponse);
+      console.log("Selected cards:", cards);
+      console.log("Card count:", cards.length);
 
       // Build the response object
       let responseObj = {
@@ -288,9 +290,19 @@ const GardenAgent = () => {
                     {formatTime(messages[messages.length - 1].timestamp)}
                   </time>
                 </div>
-                <div className="chat-bubble chat-bubble-primary">
-                  {messages[messages.length - 1].content}
-                </div>
+                {/* Only show text response if there are no cards */}
+                {(!messages[messages.length - 1].cards || messages[messages.length - 1].cards.length === 0) ? (
+                  <div className="chat-bubble chat-bubble-primary">
+                    {messages[messages.length - 1].content}
+                  </div>
+                ) : (
+                  <div className="card bg-primary text-primary-content shadow-xl mb-4">
+                    <div className="card-body">
+                      <h2 className="card-title">Here are some suggestions for you:</h2>
+                    </div>
+                  </div>
+                )}
+                
                 {/* Display cards if present in the most recent message */}
                 {messages[messages.length - 1].cards &&
                   messages[messages.length - 1].cards.length > 0 && (

@@ -158,18 +158,30 @@ export async function processGardeningQueryWithVertex(
   let content = responseText;
   let cardType = null;
 
+  console.log("Checking response for card indicators...");
+  console.log("Contains SHOWING_PLANT_CARDS:", responseText.includes("SHOWING_PLANT_CARDS"));
+  console.log("Contains SHOWING_TASK_CARDS:", responseText.includes("SHOWING_TASK_CARDS"));
+
   if (responseText.includes("SHOWING_PLANT_CARDS")) {
     content = responseText.replace("SHOWING_PLANT_CARDS", "").trim();
     cardType = "plant";
+    console.log("Set cardType to 'plant'");
   } else if (responseText.includes("SHOWING_TASK_CARDS")) {
     content = responseText.replace("SHOWING_TASK_CARDS", "").trim();
     cardType = "task";
+    console.log("Set cardType to 'task'");
+  } else {
+    console.log("No card indicators found in response");
   }
 
-  return {
+  const result = {
     content,
     cardType,
   };
+  
+  console.log("Final structured response:", result);
+  
+  return result;
 }
 
 /**

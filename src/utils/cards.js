@@ -46,9 +46,11 @@ export function selectCardsForResponse(query, llmResponse) {
  * @returns {Array} - Array of plant card objects
  */
 function getPlantCards(query, content) {
-  // For now, return all sample plants
-  // In a more advanced implementation, this would filter plants based on the query
-  return samplePlants.map(plant => ({ 
+  // Limit to 6 plants to avoid overwhelming the UI
+  const limitedPlants = samplePlants.slice(0, 6);
+  
+  // Return plants as cards
+  return limitedPlants.map(plant => ({ 
     type: CARD_TYPES.PLANT, 
     data: plant 
   }));
@@ -61,12 +63,34 @@ function getPlantCards(query, content) {
  * @returns {Array} - Array of task card objects
  */
 function getTaskCards(query, content) {
-  // For now, return all sample tasks
-  // In a more advanced implementation, this would filter tasks based on the query
-  return sampleTasks.map(task => ({ 
-    type: CARD_TYPES.TASK, 
-    data: task 
-  }));
+  // Get the current month
+  const currentMonth = new Date().getMonth() + 1; // JavaScript months are 0-indexed
+  
+  // Find tasks for the current month
+  const monthData = sampleTasks.find(month => month.month === currentMonth);
+  
+  // If we have tasks for this month, return them as cards
+  if (monthData && monthData.tasks && monthData.tasks.length > 0) {
+    return monthData.tasks.map(task => ({
+      type: CARD_TYPES.TASK,
+      data: task
+    }));
+  }
+  
+  // Fallback to just showing a few sample tasks from March (spring tasks)
+  const springMonth = 3; // March
+  const springData = sampleTasks.find(month => month.month === springMonth);
+  
+  if (springData && springData.tasks) {
+    // Select max 5 tasks to avoid overwhelming the UI
+    return springData.tasks.slice(0, 5).map(task => ({
+      type: CARD_TYPES.TASK,
+      data: task
+    }));
+  }
+  
+  // If all else fails, return an empty array
+  return [];
 }
 
 /**
