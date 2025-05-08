@@ -10,30 +10,48 @@ const WeatherWidget = () => {
   useEffect(() => {
     // Listen for county changes
     const handleCountyChange = (event) => {
+      console.log("Weather widget received county change:", event.detail);
       setCounty(event.detail);
     };
 
+    // Register global refresh function for direct calls
+    window.refreshWeatherData = (newCounty) => {
+      console.log("Weather widget direct refresh for county:", newCounty);
+      setCounty(newCounty);
+      fetchWeather(newCounty);
+    };
+
     window.addEventListener("countyChange", handleCountyChange);
-    return () => window.removeEventListener("countyChange", handleCountyChange);
+    
+    // Fetch initial data
+    fetchWeather(county);
+    
+    return () => {
+      window.removeEventListener("countyChange", handleCountyChange);
+      window.refreshWeatherData = null;
+    };
   }, []);
 
   useEffect(() => {
-    async function fetchWeather() {
-      try {
-        setLoading(true);
-        const data = await getCurrentWeather(county);
-        setWeather(data);
-        setError(null);
-      } catch (err) {
-        console.error("Failed to fetch weather:", err);
-        setError("Could not load weather data");
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    fetchWeather();
+    console.log("Weather widget county state changed to:", county);
+    fetchWeather(county);
   }, [county]);
+  
+  async function fetchWeather(countyName) {
+    try {
+      console.log("Fetching weather for:", countyName);
+      setLoading(true);
+      const data = await getCurrentWeather(countyName);
+      console.log("Weather data received:", data);
+      setWeather(data);
+      setError(null);
+    } catch (err) {
+      console.error("Failed to fetch weather:", err);
+      setError("Could not load weather data");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   if (loading) {
     return (
