@@ -43,7 +43,23 @@ const CountySelector = () => {
     // Dispatch a custom event when the county changes
     const event = new CustomEvent("countyChange", { detail: selectedCounty });
     window.dispatchEvent(event);
+    console.log("County changed to:", selectedCounty); // Debug output
   }, [selectedCounty]);
+
+  const handleCountyChange = (e) => {
+    const newCounty = e.target.value;
+    setSelectedCounty(newCounty);
+    
+    // Force immediate refresh by directly calling the functions
+    window.refreshWeatherData && window.refreshWeatherData(newCounty);
+    window.refreshSoilData && window.refreshSoilData(newCounty);
+    
+    // Also dispatch the event for components that might be listening
+    const event = new CustomEvent("countyChange", { detail: newCounty });
+    window.dispatchEvent(event);
+    
+    console.log("County manually changed to:", newCounty); // Debug output
+  };
 
   return (
     <div className="form-control w-full max-w-xs">
@@ -53,7 +69,7 @@ const CountySelector = () => {
       <select
         className="select select-bordered"
         value={selectedCounty}
-        onChange={(e) => setSelectedCounty(e.target.value)}
+        onChange={handleCountyChange}
       >
         {irishCounties.map((county) => (
           <option key={county} value={county}>

@@ -294,8 +294,7 @@ export const gardeningTasks = [
       {
         id: "jul-2",
         title: "Harvest early potatoes",
-        description:
-          "Harvest early potatoes when plants begin to flower.",
+        description: "Harvest early potatoes when plants begin to flower.",
         category: "harvesting",
         priority: "medium",
       },
@@ -356,16 +355,14 @@ export const gardeningTasks = [
       {
         id: "aug-4",
         title: "Prepare for autumn planting",
-        description:
-          "Clear spent crops and prepare soil for autumn planting.",
+        description: "Clear spent crops and prepare soil for autumn planting.",
         category: "preparation",
         priority: "medium",
       },
       {
         id: "aug-5",
         title: "Plant autumn onion sets",
-        description:
-          "Plant autumn onion sets for overwintering.",
+        description: "Plant autumn onion sets for overwintering.",
         category: "planting",
         priority: "medium",
       },
@@ -386,8 +383,7 @@ export const gardeningTasks = [
       {
         id: "sep-2",
         title: "Plant spring bulbs",
-        description:
-          "Begin planting spring flowering bulbs such as daffodils.",
+        description: "Begin planting spring flowering bulbs such as daffodils.",
         category: "planting",
         priority: "medium",
       },
@@ -424,16 +420,14 @@ export const gardeningTasks = [
       {
         id: "oct-1",
         title: "Plant garlic",
-        description:
-          "Plant garlic cloves for a crop next summer.",
+        description: "Plant garlic cloves for a crop next summer.",
         category: "planting",
         priority: "high",
       },
       {
         id: "oct-2",
         title: "Harvest apples and pears",
-        description:
-          "Harvest and store late-season apples and pears.",
+        description: "Harvest and store late-season apples and pears.",
         category: "harvesting",
         priority: "high",
       },
@@ -624,3 +618,5 @@ export function getTasksByCategory(category) {
 
   return allTasks;
 }
+
+export const sampleTasks = gardeningTasks;

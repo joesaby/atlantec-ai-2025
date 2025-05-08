@@ -10,30 +10,48 @@ const SoilInfo = () => {
   useEffect(() => {
     // Listen for county changes
     const handleCountyChange = (event) => {
+      console.log("SoilInfo received county change:", event.detail);
       setCounty(event.detail);
     };
 
+    // Register global refresh function for direct calls
+    window.refreshSoilData = (newCounty) => {
+      console.log("SoilInfo direct refresh for county:", newCounty);
+      setCounty(newCounty);
+      fetchSoilData(newCounty);
+    };
+
     window.addEventListener("countyChange", handleCountyChange);
-    return () => window.removeEventListener("countyChange", handleCountyChange);
+    
+    // Fetch initial data
+    fetchSoilData(county);
+    
+    return () => {
+      window.removeEventListener("countyChange", handleCountyChange);
+      window.refreshSoilData = null;
+    };
   }, []);
 
   useEffect(() => {
-    async function fetchSoilData() {
-      try {
-        setLoading(true);
-        const data = await getSoilDataByLocation(county);
-        setSoilData(data);
-        setError(null);
-      } catch (err) {
-        console.error("Failed to fetch soil data:", err);
-        setError("Could not load soil information");
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    fetchSoilData();
+    console.log("SoilInfo county state changed to:", county);
+    fetchSoilData(county);
   }, [county]);
+  
+  async function fetchSoilData(countyName) {
+    try {
+      console.log("Fetching soil data for:", countyName);
+      setLoading(true);
+      const data = await getSoilDataByLocation(countyName);
+      console.log("Soil data received:", data);
+      setSoilData(data);
+      setError(null);
+    } catch (err) {
+      console.error("Failed to fetch soil data:", err);
+      setError("Could not load soil information");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   if (loading) {
     return (

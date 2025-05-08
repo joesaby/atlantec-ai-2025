@@ -31,3 +31,20 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **State Management**:
   - Use React hooks for component state
   - Implement proper data fetching and caching
+
+## AI Integration Guidelines
+- **AI Client**: 
+  - Use the unified client in `src/utils/ai-client.js`
+  - Supports both OpenAI and Google Vertex AI models
+- **Message Handling**:
+  - Process AI responses with card extraction
+  - Handle structured data in responses for UI rendering
+- **Response Formatting**:
+  - Follow established patterns for AI message structures
+  - Support both text and structured data responses
+
+## Gardening Agent
+- Interactive chat UI with message history
+- Dynamic card rendering from AI responses
+- GraphRAG knowledge base integration
+- Context-aware gardening advice

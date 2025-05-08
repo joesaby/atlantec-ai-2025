@@ -1,6 +1,9 @@
 import React, { useState, useRef, useEffect } from "react";
 import PlantCard from "../plants/PlantCard";
 import TaskCard from "./TaskCard";
+import { selectCardsForResponse } from "../../utils/cards";
+import { samplePlants } from "../../data/plants";
+import { sampleTasks } from "../../data/gardening-tasks";
 
 const GardenAgent = () => {
   const [messages, setMessages] = useState([
@@ -13,63 +16,11 @@ const GardenAgent = () => {
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [providerInfo, setProviderInfo] = useState({
+    provider: "vertex",
+    model: "gemini-2.0-flash-001",
+  });
   const messagesEndRef = useRef(null);
-
-  // Sample plant data for demonstration
-  const samplePlants = [
-    {
-      id: 1,
-      commonName: "Foxglove",
-      latinName: "Digitalis purpurea",
-      description:
-        "A beautiful woodland plant with distinctive tubular flowers, great for Irish gardens.",
-      matchPercentage: 95,
-      nativeToIreland: true,
-      isPerennial: true,
-      sunNeeds: "Partial Shade",
-      waterNeeds: "Moderate",
-      sustainabilityRating: 4.5,
-      waterConservationRating: 4,
-      biodiversityValue: 5,
-      imageUrl: "/images/plants/foxglove.jpg",
-    },
-    {
-      id: 2,
-      commonName: "Wild Strawberry",
-      latinName: "Fragaria vesca",
-      description:
-        "Delicious ground cover plant that produces small, flavorful berries.",
-      matchPercentage: 88,
-      nativeToIreland: true,
-      isPerennial: true,
-      sunNeeds: "Partial Sun",
-      waterNeeds: "Moderate",
-      sustainabilityRating: 5,
-      waterConservationRating: 4,
-      biodiversityValue: 3.5,
-      imageUrl: "/images/plants/wild-strawberry.jpg",
-    },
-  ];
-
-  // Sample gardening tasks
-  const sampleTasks = [
-    {
-      id: 1,
-      title: "Prepare garden beds for spring planting",
-      description:
-        "Clear weeds, add compost, and loosen soil to prepare your garden beds for spring vegetables and flowers.",
-      category: "Planting",
-      priority: "High",
-    },
-    {
-      id: 2,
-      title: "Prune roses and shrubs",
-      description:
-        "Remove dead or damaged branches and shape your roses and shrubs to encourage healthy growth.",
-      category: "Pruning",
-      priority: "Medium",
-    },
-  ];
 
   // Auto-scroll to the bottom when messages change
   useEffect(() => {
@@ -80,7 +31,7 @@ const GardenAgent = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (input.trim() === "") return;
 
@@ -90,7 +41,8 @@ const GardenAgent = () => {
       content: input,
       timestamp: new Date(),
     };
-    setMessages([...messages, userMessage]);
+
+    setMessages((prevMessages) => [...prevMessages, userMessage]);
     setInput("");
     setIsTyping(true);
 
@@ -99,50 +51,79 @@ const GardenAgent = () => {
       setDrawerOpen(true);
     }
 
-    // Simulate assistant response after a delay
-    setTimeout(() => {
-      let response;
-      const lowercaseInput = input.toLowerCase();
+    try {
+      // Get previous messages for context (excluding UI-specific fields)
+      const conversationHistory = messages.map((msg) => ({
+        role: msg.role,
+        content: msg.content,
+      }));
 
-      // Check for plant-related queries
-      if (
-        lowercaseInput.includes("plant") &&
-        (lowercaseInput.includes("recommendation") ||
-          lowercaseInput.includes("suggest"))
-      ) {
-        response = {
-          role: "assistant",
-          content: "Here are some plant recommendations for your Irish garden:",
-          timestamp: new Date(),
-          cards: samplePlants.map((plant) => ({ type: "plant", data: plant })),
-        };
-      }
-      // Check for task-related queries
-      else if (
-        lowercaseInput.includes("task") ||
-        lowercaseInput.includes("to do") ||
-        lowercaseInput.includes("garden job")
-      ) {
-        response = {
-          role: "assistant",
-          content: "Here are some gardening tasks you might want to consider:",
-          timestamp: new Date(),
-          cards: sampleTasks.map((task) => ({ type: "task", data: task })),
-        };
-      }
-      // Default response
-      else {
-        response = {
-          role: "assistant",
-          content:
-            "I can help you with plant recommendations, gardening tasks, and advice for your Irish garden. What would you like to know about?",
-          timestamp: new Date(),
-        };
+      // Call the API endpoint instead of using Vertex AI directly
+      const requestBody = JSON.stringify({
+        query: input,
+        conversationHistory,
+      });
+      
+      console.log("Sending request to garden API:", requestBody);
+      
+      const response = await fetch("/api/garden", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: requestBody,
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("API response error:", response.status, errorText);
+        throw new Error(`Failed to get response from garden assistant: ${response.status}`);
       }
 
-      setMessages((prevMessages) => [...prevMessages, response]);
+      const responseText = await response.text();
+      console.log("API response text:", responseText);
+      
+      let aiResponse;
+      try {
+        aiResponse = JSON.parse(responseText);
+        // Log the LLM response to the console
+        console.log("LLM Response:", aiResponse);
+      } catch (error) {
+        console.error("Error parsing API response:", error);
+        throw new Error("Invalid response format from garden assistant");
+      }
+
+      // Select appropriate cards to display based on the response
+      const cards = selectCardsForResponse(input, aiResponse);
+      console.log("Selected cards:", cards);
+      console.log("Card count:", cards.length);
+
+      // Build the response object
+      let responseObj = {
+        role: "assistant",
+        content: aiResponse.content,
+        timestamp: new Date(),
+      };
+
+      // Add cards if they were selected
+      if (cards && cards.length > 0) {
+        responseObj.cards = cards;
+      }
+
+      setMessages((prevMessages) => [...prevMessages, responseObj]);
+    } catch (error) {
+      console.error("Error processing query:", error);
+      // Add fallback response in case of error
+      const errorResponse = {
+        role: "assistant",
+        content:
+          "I'm sorry, I'm having trouble accessing my gardening knowledge at the moment. Please try again in a moment.",
+        timestamp: new Date(),
+      };
+      setMessages((prevMessages) => [...prevMessages, errorResponse]);
+    } finally {
       setIsTyping(false);
-    }, 1500);
+    }
   };
 
   // Clear chat history
@@ -160,10 +141,10 @@ const GardenAgent = () => {
 
   // Format timestamp
   const formatTime = (date) => {
-    return new Date(date).toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+    const d = new Date(date);
+    const hours = d.getHours().toString().padStart(2, "0");
+    const minutes = d.getMinutes().toString().padStart(2, "0");
+    return `${hours}:${minutes}`;
   };
 
   // Render different card types
@@ -208,6 +189,9 @@ const GardenAgent = () => {
                 />
               </svg>
               Garden Assistant Chat
+              <span className="text-xs font-normal opacity-70 ml-2">
+                Powered by Google Vertex AI ({providerInfo.model})
+              </span>
             </h2>
           </div>
 
@@ -221,13 +205,19 @@ const GardenAgent = () => {
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSubmit(e);
+                  }
+                }}
                 placeholder="Ask about plants, gardening tips, or seasonal tasks..."
                 className="input input-bordered flex-1"
               />
               <button
                 type="submit"
                 className="btn btn-primary"
-                disabled={input.trim() === "" || isTyping}
+                disabled={isTyping}
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -300,9 +290,19 @@ const GardenAgent = () => {
                     {formatTime(messages[messages.length - 1].timestamp)}
                   </time>
                 </div>
-                <div className="chat-bubble chat-bubble-primary">
-                  {messages[messages.length - 1].content}
-                </div>
+                {/* Only show text response if there are no cards */}
+                {(!messages[messages.length - 1].cards || messages[messages.length - 1].cards.length === 0) ? (
+                  <div className="chat-bubble chat-bubble-primary">
+                    {messages[messages.length - 1].content}
+                  </div>
+                ) : (
+                  <div className="card bg-primary text-primary-content shadow-xl mb-4">
+                    <div className="card-body">
+                      <h2 className="card-title">Here are some suggestions for you:</h2>
+                    </div>
+                  </div>
+                )}
+                
                 {/* Display cards if present in the most recent message */}
                 {messages[messages.length - 1].cards &&
                   messages[messages.length - 1].cards.length > 0 && (
@@ -339,7 +339,7 @@ const GardenAgent = () => {
                 </div>
                 <div className="chat-bubble chat-bubble-primary flex gap-1 items-center">
                   <span className="loading loading-dots loading-sm"></span>
-                  <span>Garden Assistant is typing</span>
+                  <span>Garden Assistant is thinking...</span>
                 </div>
               </div>
             </div>
@@ -439,7 +439,9 @@ const GardenAgent = () => {
                       : "chat-bubble-secondary"
                   }`}
                 >
-                  {message.content}
+                  {message.role === "assistant" 
+                    ? "AI response" 
+                    : message.content}
                 </div>
               </div>
             ))}
