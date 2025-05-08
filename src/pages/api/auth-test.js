@@ -43,13 +43,20 @@ export async function GET() {
         console.log("[AUTH-TEST] Using JSON credentials from environment variable");
         credentials = JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON);
         
-        // Write credentials to a special environment variable that Google Auth Library checks
-        process.env.GOOGLE_APPLICATION_CREDENTIALS = JSON.stringify(credentials);
+        // IMPORTANT: For Netlify, do NOT set process.env.GOOGLE_APPLICATION_CREDENTIALS
+        // Instead, use the credentials object directly with the VertexAI constructor
         
-        // Set credentials directly in the client options
-        vertexOptions.credentials = credentials;
+        // IMPORTANT: Use the fully qualified credentials object format
+        // Google Auth library in Vertex AI specifically expects this exact format
+        vertexOptions.credentials = {
+          client_email: credentials.client_email,
+          private_key: credentials.private_key,
+          project_id: credentials.project_id,
+          // Make auth context clear to Google Auth library
+          type: 'service_account'
+        };
         
-        authMethod = 'json_env';
+        authMethod = 'json_env_direct';
         console.log(`[AUTH-TEST] Parsed credentials for project: ${credentials.project_id}`);
       } catch (error) {
         console.error("[AUTH-TEST] Failed to parse credentials:", error.message);

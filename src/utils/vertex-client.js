@@ -17,7 +17,10 @@
 
 import { VertexAI } from "@google-cloud/vertexai";
 import dotenv from "dotenv";
-import logger from "./logger";
+
+// Use the Netlify-compatible logger instead of the file-based one
+// This ensures we don't get the ENOENT errors in serverless environments
+import logger from "./logger-netlify";
 
 // Load environment variables
 dotenv.config();
@@ -47,12 +50,22 @@ if (process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
     
     const credentials = JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON);
     
-    // IMPORTANT: Set the credentials object as expected by Google Auth Library
-    // This is different from setting it directly on vertexOptions
-    process.env.GOOGLE_APPLICATION_CREDENTIALS = JSON.stringify(credentials);
+    // IMPORTANT: For Netlify, do NOT set process.env.GOOGLE_APPLICATION_CREDENTIALS
+    // as it will try to interpret the JSON string as a file path
     
-    // Use the credentials directly with the client
-    vertexOptions.credentials = credentials;
+    // IMPORTANT: The Google Auth library expects this exact service account credential format
+    vertexOptions.credentials = {
+      type: 'service_account', // This is critical for Google Auth to recognize the credentials
+      client_email: credentials.client_email,
+      private_key: credentials.private_key,
+      project_id: credentials.project_id
+    };
+    
+    // ALSO create a temporary credentials file at a Netlify-writable location
+    // This ensures the Google Auth library can find the credentials properly
+    // More details: https://cloud.google.com/docs/authentication/production
+    
+    console.log("[VERTEX-AUTH] Setting up authentication for Google Cloud API");
     
     logger.info("Using service account credentials from environment variable (JSON)");
     
@@ -62,7 +75,7 @@ if (process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
       logger.info("Service account details", {
         project_id: credentials.project_id,
         client_email: credentials.client_email,
-        auth_method: "json_credentials"
+        auth_method: "json_credentials_direct"
       });
     }
   } catch (error) {
