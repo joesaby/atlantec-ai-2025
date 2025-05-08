@@ -86,6 +86,8 @@ const GardenAgent = () => {
       let aiResponse;
       try {
         aiResponse = JSON.parse(responseText);
+        // Log the LLM response to the console
+        console.log("LLM Response:", aiResponse);
       } catch (error) {
         console.error("Error parsing API response:", error);
         throw new Error("Invalid response format from garden assistant");
@@ -425,14 +427,10 @@ const GardenAgent = () => {
                       : "chat-bubble-secondary"
                   }`}
                 >
-                  {message.content}
+                  {message.role === "assistant" 
+                    ? "AI response" 
+                    : message.content}
                 </div>
-                {/* Display cards if present */}
-                {message.cards && message.cards.length > 0 && (
-                  <div className="grid grid-cols-1 gap-4 mt-2 mb-4">
-                    {message.cards.map((card) => renderCard(card))}
-                  </div>
-                )}
               </div>
             ))}
             <div ref={messagesEndRef} />

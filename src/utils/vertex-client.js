@@ -90,7 +90,10 @@ export async function generateVertexResponse(messages, options = {}) {
 
     // Generate content
     const response = await generativeModel.generateContent(request);
+    console.log("Raw Vertex AI response:", JSON.stringify(response, null, 2));
+    
     const responseText = response.response.candidates[0].content.parts[0].text;
+    console.log("Extracted response text:", responseText);
 
     return responseText;
   } catch (error) {

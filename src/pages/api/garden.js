@@ -55,12 +55,14 @@ export async function POST({ request }) {
     console.log("Processing query:", query);
     console.log("History length:", history.length);
     
+    console.log("Calling Vertex AI with query:", query);
+    
     const response = await processGardeningQueryWithVertex(
       query,
       history
     );
     
-    console.log("Response:", response);
+    console.log("Detailed Vertex AI response:", JSON.stringify(response, null, 2));
 
     return new Response(JSON.stringify(response), {
       status: 200,
