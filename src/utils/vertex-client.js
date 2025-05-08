@@ -17,6 +17,7 @@
 
 import { VertexAI } from "@google-cloud/vertexai";
 import dotenv from "dotenv";
+import logger from "./logger";
 
 // Load environment variables
 dotenv.config();
@@ -36,19 +37,32 @@ const vertexOptions = {
 };
 
 // Handle credentials based on environment
+logger.info("Initializing Vertex AI with authentication options");
+
 if (process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
   // Running on Netlify - use the environment variable with JSON content
   try {
     const credentials = JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON);
     vertexOptions.credentials = credentials;
-    console.log("Using service account credentials from environment variable");
+    logger.info("Using service account credentials from environment variable (JSON)");
+    
+    // Log partial info about the credentials to help with debugging
+    if (credentials.project_id && credentials.client_email) {
+      logger.info("Service account details", {
+        project_id: credentials.project_id,
+        client_email: credentials.client_email,
+        auth_method: "json_credentials"
+      });
+    }
   } catch (error) {
-    console.error("Error parsing credentials from environment variable:", error);
+    logger.error("Error parsing credentials from environment variable", error);
   }
 } else if (credentialsPath) {
   // Running locally - use the file path
   vertexOptions.googleAuthOptions = { keyFilename: credentialsPath };
-  console.log("Using service account credentials from file:", credentialsPath);
+  logger.info("Using service account credentials from file", { path: credentialsPath, auth_method: "key_file" });
+} else {
+  logger.warn("No explicit credentials provided, falling back to application default credentials");
 }
 
 const vertexAI = new VertexAI(vertexOptions);
@@ -100,42 +114,70 @@ export async function generateVertexResponse(messages, options = {}) {
     };
 
     // Generate content
+    logger.info("Sending request to Vertex AI", { 
+      model: modelName, 
+      messageCount: vertexMessages.length 
+    });
+    
     const response = await generativeModel.generateContent(request);
-    console.log("Raw Vertex AI response:", JSON.stringify(response, null, 2));
+    
+    // Log response summary without sensitive content
+    logger.info("Received response from Vertex AI", { 
+      statusCode: response.response?.candidates ? 200 : 500,
+      candidateCount: response.response?.candidates?.length || 0,
+      finishReason: response.response?.candidates?.[0]?.finishReason || 'unknown'
+    });
+    
+    // Only log full response in debug mode
+    logger.debug("Raw Vertex AI response", { 
+      response: JSON.stringify(response) 
+    });
     
     const responseText = response.response.candidates[0].content.parts[0].text;
-    console.log("Extracted response text:", responseText);
+    logger.debug("Extracted response text", { 
+      textLength: responseText.length,
+      preview: responseText.substring(0, 100) + '...'
+    });
 
     return responseText;
   } catch (error) {
-    console.error("Error calling Vertex AI API:", error);
+    logger.error("Error calling Vertex AI API", error);
 
-    // Enhanced error handling
+    // Enhanced error handling with logging
     if (
       error.message.includes("authentication") ||
       error.name === "GoogleAuthError"
     ) {
-      console.error(
-        "Authentication error. Please check your service account credentials."
-      );
+      logger.error("Authentication error with Vertex AI", { 
+        errorType: "authentication",
+        message: error.message
+      });
     } else if (
       error.message.includes("Permission denied") ||
       error.message.includes("permission")
     ) {
-      console.error(
-        "Permission error. Please check your service account permissions."
-      );
+      logger.error("Permission error with Vertex AI", { 
+        errorType: "permission",
+        message: error.message
+      });
     } else if (
       error.message.includes("API not enabled") ||
       error.message.includes("has not been used")
     ) {
-      console.error(
-        "Vertex AI API not enabled. Please enable it in your Google Cloud project."
-      );
+      logger.error("Vertex AI API not enabled", { 
+        errorType: "api_not_enabled",
+        message: error.message
+      });
     } else if (error.message.includes("billing")) {
-      console.error(
-        "Billing error. Please ensure billing is enabled for your project."
-      );
+      logger.error("Billing error with Vertex AI", { 
+        errorType: "billing",
+        message: error.message
+      });
+    } else {
+      logger.error("Unexpected error with Vertex AI", {
+        message: error.message,
+        stack: error.stack
+      });
     }
 
     // Return a graceful fallback message
@@ -169,20 +211,22 @@ export async function processGardeningQueryWithVertex(
   let content = responseText;
   let cardType = null;
 
-  console.log("Checking response for card indicators...");
-  console.log("Contains SHOWING_PLANT_CARDS:", responseText.includes("SHOWING_PLANT_CARDS"));
-  console.log("Contains SHOWING_TASK_CARDS:", responseText.includes("SHOWING_TASK_CARDS"));
+  logger.debug("Checking response for card indicators", {
+    hasPlantCards: responseText.includes("SHOWING_PLANT_CARDS"),
+    hasTaskCards: responseText.includes("SHOWING_TASK_CARDS"),
+    responseLength: responseText.length
+  });
 
   if (responseText.includes("SHOWING_PLANT_CARDS")) {
     content = responseText.replace("SHOWING_PLANT_CARDS", "").trim();
     cardType = "plant";
-    console.log("Set cardType to 'plant'");
+    logger.info("Plant cards detected in response");
   } else if (responseText.includes("SHOWING_TASK_CARDS")) {
     content = responseText.replace("SHOWING_TASK_CARDS", "").trim();
     cardType = "task";
-    console.log("Set cardType to 'task'");
+    logger.info("Task cards detected in response");
   } else {
-    console.log("No card indicators found in response");
+    logger.info("No card indicators found in response");
   }
 
   const result = {
@@ -190,7 +234,11 @@ export async function processGardeningQueryWithVertex(
     cardType,
   };
   
-  console.log("Final structured response:", result);
+  logger.debug("Final structured response", {
+    contentLength: content.length,
+    cardType: cardType,
+    contentPreview: content.substring(0, 100) + '...'
+  });
   
   return result;
 }
