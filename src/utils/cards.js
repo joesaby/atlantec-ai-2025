@@ -88,10 +88,10 @@ function getPlantCards(query, content) {
 function getTaskCards(query, content) {
   // Get the current month
   const currentMonth = new Date().getMonth() + 1; // JavaScript months are 0-indexed
-  
+
   // Extract relevant task information from the content
   const taskCategories = extractTasksFromContent(content);
-  
+
   // If we were able to extract tasks from the content, create cards for them
   if (taskCategories.length > 0) {
     return taskCategories.map((category, index) => ({
@@ -101,34 +101,38 @@ function getTaskCards(query, content) {
         title: category.title,
         description: category.description,
         category: determineTaskCategory(category.title),
-        priority: "Medium" // Default priority
-      }
+        priority: "Medium", // Default priority
+      },
     }));
   }
-  
+
   // If we couldn't extract tasks, use the gardeningTasks data
   // Find tasks for the current month from the original data structure
-  const monthData = gardeningTasks.find(month => month.month === currentMonth);
-  
+  const monthData = gardeningTasks.find(
+    (month) => month.month === currentMonth
+  );
+
   if (monthData && monthData.tasks && monthData.tasks.length > 0) {
-    return monthData.tasks.slice(0, 5).map(task => ({
+    return monthData.tasks.slice(0, 5).map((task) => ({
       type: CARD_TYPES.TASK,
-      data: task
+      data: task,
     }));
   }
-  
+
   // Fallback to spring tasks if no current month tasks
   const springMonth = 3; // March
-  const springData = gardeningTasks.find(month => month.month === springMonth);
-  
+  const springData = gardeningTasks.find(
+    (month) => month.month === springMonth
+  );
+
   if (springData && springData.tasks) {
     // Select max 5 tasks to avoid overwhelming the UI
-    return springData.tasks.slice(0, 5).map(task => ({
+    return springData.tasks.slice(0, 5).map((task) => ({
       type: CARD_TYPES.TASK,
-      data: task
+      data: task,
     }));
   }
-  
+
   // If all else fails, return default tasks
   return [
     {
@@ -138,8 +142,8 @@ function getTaskCards(query, content) {
         title: "Weeding",
         description: "Remove weeds regularly before they set seed.",
         category: "Maintenance",
-        priority: "High"
-      }
+        priority: "High",
+      },
     },
     {
       type: CARD_TYPES.TASK,
@@ -148,19 +152,20 @@ function getTaskCards(query, content) {
         title: "Deadheading",
         description: "Remove faded or dead flowers to encourage more blooms.",
         category: "Maintenance",
-        priority: "Medium"
-      }
+        priority: "Medium",
+      },
     },
     {
       type: CARD_TYPES.TASK,
       data: {
         id: "default_task_3",
         title: "Watering",
-        description: "Water deeply and less frequently, rather than shallowly and often.",
+        description:
+          "Water deeply and less frequently, rather than shallowly and often.",
         category: "Watering",
-        priority: "High"
-      }
-    }
+        priority: "High",
+      },
+    },
   ];
 }
 
@@ -171,37 +176,43 @@ function getTaskCards(query, content) {
  */
 function extractTasksFromContent(content) {
   const tasks = [];
-  
+
   // Look for headers (usually in bold with ** markdown)
   const headerMatches = content.match(/\*\*(.*?):\*\*/g);
-  
+
   if (headerMatches) {
-    headerMatches.forEach(match => {
-      const title = match.replace(/\*\*/g, '').replace(':', '');
-      
+    headerMatches.forEach((match) => {
+      const title = match.replace(/\*\*/g, "").replace(":", "");
+
       // Find text after this header until the next header or double newline
-      const pattern = new RegExp(`\\*\\*${title}:\\*\\*([\\s\\S]*?)(?=\\*\\*|\\n\\n|$)`, 'i');
+      const pattern = new RegExp(
+        `\\*\\*${title}:\\*\\*([\\s\\S]*?)(?=\\*\\*|\\n\\n|$)`,
+        "i"
+      );
       const descMatch = content.match(pattern);
-      
+
       if (descMatch && descMatch[1]) {
         const description = descMatch[1].trim();
         tasks.push({ title, description });
       }
     });
   }
-  
+
   // If no headers with ** were found, look for headers in lists
   if (tasks.length === 0) {
     const listMatches = content.match(/\*\s+(.*?):/g);
-    
+
     if (listMatches) {
-      listMatches.forEach(match => {
-        const title = match.replace(/\*\s+/, '').replace(':', '');
-        
+      listMatches.forEach((match) => {
+        const title = match.replace(/\*\s+/, "").replace(":", "");
+
         // Find text after this header until the next list item
-        const pattern = new RegExp(`\\*\\s+${title}:([\\s\\S]*?)(?=\\*\\s+|\\n\\n|$)`, 'i');
+        const pattern = new RegExp(
+          `\\*\\s+${title}:([\\s\\S]*?)(?=\\*\\s+|\\n\\n|$)`,
+          "i"
+        );
         const descMatch = content.match(pattern);
-        
+
         if (descMatch && descMatch[1]) {
           const description = descMatch[1].trim();
           tasks.push({ title, description });
@@ -209,7 +220,7 @@ function extractTasksFromContent(content) {
       });
     }
   }
-  
+
   return tasks;
 }
 
@@ -220,27 +231,27 @@ function extractTasksFromContent(content) {
  */
 function determineTaskCategory(title) {
   const lowerTitle = title.toLowerCase();
-  
-  if (lowerTitle.includes('weed') || lowerTitle.includes('clean')) {
-    return 'Maintenance';
+
+  if (lowerTitle.includes("weed") || lowerTitle.includes("clean")) {
+    return "Maintenance";
   }
-  if (lowerTitle.includes('water')) {
-    return 'Watering';
+  if (lowerTitle.includes("water")) {
+    return "Watering";
   }
-  if (lowerTitle.includes('plant') || lowerTitle.includes('sow')) {
-    return 'Planting';
+  if (lowerTitle.includes("plant") || lowerTitle.includes("sow")) {
+    return "Planting";
   }
-  if (lowerTitle.includes('harvest')) {
-    return 'Harvesting';
+  if (lowerTitle.includes("harvest")) {
+    return "Harvesting";
   }
-  if (lowerTitle.includes('prune') || lowerTitle.includes('deadhead')) {
-    return 'Pruning';
+  if (lowerTitle.includes("prune") || lowerTitle.includes("deadhead")) {
+    return "Pruning";
   }
-  if (lowerTitle.includes('pest') || lowerTitle.includes('disease')) {
-    return 'Pest Control';
+  if (lowerTitle.includes("pest") || lowerTitle.includes("disease")) {
+    return "Pest Control";
   }
-  
-  return 'Maintenance';
+
+  return "Maintenance";
 }
 
 /**
