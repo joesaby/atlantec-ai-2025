@@ -1,0 +1,366 @@
+---
+import Layout from '../../layouts/Layout.astro';
+---
+
+<Layout title="Garden Assistant - Application Logs">
+  <div class="container mx-auto p-4">
+    <h1 class="text-2xl font-bold mb-4">Application Logs</h1>
+    
+    <div class="bg-base-200 rounded-box p-4 mb-4">
+      <div class="form-control">
+        <label class="label">
+          <span class="label-text">Enter API Key:</span>
+        </label>
+        <input 
+          type="password" 
+          id="api-key" 
+          placeholder="API Key for authentication" 
+          class="input input-bordered w-full max-w-md"
+        />
+        <div class="mt-2 flex gap-2">
+          <button id="fetch-logs" class="btn btn-primary">View Logs</button>
+          <button id="check-env" class="btn btn-outline">Check Environment</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="logs-container" class="hidden mt-4">
+      <div class="flex justify-between mb-2">
+        <div class="tabs">
+          <button id="tab-raw" class="tab tab-bordered tab-active">Raw Logs</button>
+          <button id="tab-parsed" class="tab tab-bordered">Parsed JSON</button>
+        </div>
+        <div>
+          <button id="refresh-logs" class="btn btn-sm btn-outline">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 mr-1">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+            </svg>
+            Refresh
+          </button>
+          <button id="download-logs" class="btn btn-sm btn-outline ml-2">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 mr-1">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+            </svg>
+            Download
+          </button>
+        </div>
+      </div>
+
+      <div class="mb-4">
+        <div class="text-xs text-gray-500 mb-1">Files:</div>
+        <div id="log-files" class="flex flex-wrap gap-2"></div>
+      </div>
+
+      <div id="raw-logs-view">
+        <pre id="logs-content" class="bg-base-300 rounded-box p-4 text-xs h-[70vh] overflow-auto"></pre>
+      </div>
+
+      <div id="parsed-logs-view" class="hidden">
+        <div id="parsed-logs-table" class="overflow-x-auto h-[70vh]">
+          <table class="table table-xs">
+            <thead>
+              <tr>
+                <th>Timestamp</th>
+                <th>Level</th>
+                <th>Message</th>
+                <th>Metadata</th>
+              </tr>
+            </thead>
+            <tbody id="parsed-logs-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div id="error-container" class="hidden mt-4">
+      <div class="alert alert-error">
+        <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+        <span id="error-message">Error fetching logs.</span>
+      </div>
+    </div>
+  </div>
+</Layout>
+
+<script>
+  let apiKey = '';
+  let currentLogContent = '';
+  const fallbackKey = 'password'; // Fallback key for testing
+
+  document.addEventListener('DOMContentLoaded', () => {
+    // Check for API key in URL or localStorage
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlApiKey = urlParams.get('key');
+    const storedApiKey = localStorage.getItem('logs_api_key');
+
+    if (urlApiKey) {
+      document.getElementById('api-key').value = urlApiKey;
+      apiKey = urlApiKey;
+      fetchLogs();
+    } else if (storedApiKey) {
+      document.getElementById('api-key').value = storedApiKey;
+      apiKey = storedApiKey;
+      fetchLogs();
+    }
+
+    // Event listeners
+    document.getElementById('fetch-logs').addEventListener('click', () => {
+      apiKey = document.getElementById('api-key').value;
+      if (apiKey) {
+        localStorage.setItem('logs_api_key', apiKey);
+        fetchLogs();
+      }
+    });
+
+    document.getElementById('refresh-logs').addEventListener('click', fetchLogs);
+    document.getElementById('download-logs').addEventListener('click', downloadLogs);
+    document.getElementById('tab-raw').addEventListener('click', showRawLogs);
+    document.getElementById('tab-parsed').addEventListener('click', showParsedLogs);
+    document.getElementById('check-env').addEventListener('click', checkEnvironment);
+  });
+
+  function fetchLogs() {
+    // Show loading state
+    document.getElementById('logs-content').innerHTML = 'Loading logs...';
+    document.getElementById('logs-container').classList.remove('hidden');
+    document.getElementById('error-container').classList.add('hidden');
+    
+    // Try Netlify-compatible endpoint first, fallback to regular one if that fails
+    fetch(`/api/netlify-logs?key=${apiKey}`)
+      .then(response => {
+        if (!response.ok) {
+          // If netlify-logs fails, try the regular logs endpoint
+          return fetch(`/api/logs?key=${apiKey}`);
+        }
+        return response;
+      })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`Error ${response.status}: ${response.statusText}`);
+        }
+        return response.json();
+      })
+      .then(data => {
+        currentLogContent = data.content;
+        displayLogs(data);
+        displayLogFiles(data.files);
+      })
+      .catch(error => {
+        document.getElementById('logs-container').classList.add('hidden');
+        document.getElementById('error-container').classList.remove('hidden');
+        document.getElementById('error-message').textContent = error.message;
+      });
+  }
+
+  function displayLogs(data) {
+    // Display raw logs
+    document.getElementById('logs-content').textContent = data.content;
+    
+    // Parse and display structured logs
+    const parsedLogs = parseLogLines(data.content);
+    displayParsedLogs(parsedLogs);
+  }
+
+  function parseLogLines(content) {
+    const lines = content.split('\n').filter(line => line.trim() !== '');
+    
+    return lines.map(line => {
+      try {
+        // Extract timestamp, level, and message
+        const timestampMatch = line.match(/\[(.*?)\]/);
+        let timestamp = timestampMatch ? timestampMatch[1] : '';
+        
+        const levelMatch = line.match(/\[.*?\]\s+\[(.*?)\]/);
+        let level = levelMatch ? levelMatch[1] : '';
+        
+        // Get everything after the level
+        let message = '';
+        let metadata = {};
+        
+        if (level) {
+          const restOfLine = line.split(`[${level}]`)[1].trim();
+          
+          // Try to extract JSON metadata if present
+          const jsonStartIndex = restOfLine.indexOf('{');
+          
+          if (jsonStartIndex > 0) {
+            message = restOfLine.substring(0, jsonStartIndex).trim();
+            try {
+              const jsonStr = restOfLine.substring(jsonStartIndex);
+              metadata = JSON.parse(jsonStr);
+            } catch (e) {
+              // Not valid JSON, treat the whole rest as message
+              message = restOfLine;
+            }
+          } else {
+            message = restOfLine;
+          }
+        } else {
+          message = line;
+        }
+        
+        return { timestamp, level, message, metadata };
+      } catch (e) {
+        return { timestamp: '', level: 'ERROR', message: 'Error parsing log line', metadata: { line } };
+      }
+    });
+  }
+
+  function displayParsedLogs(parsedLogs) {
+    const tbody = document.getElementById('parsed-logs-body');
+    tbody.innerHTML = '';
+    
+    parsedLogs.forEach(log => {
+      const row = document.createElement('tr');
+      
+      // Add level-based styling
+      if (log.level === 'ERROR') {
+        row.classList.add('bg-error', 'bg-opacity-10');
+      } else if (log.level === 'WARN') {
+        row.classList.add('bg-warning', 'bg-opacity-10');
+      }
+      
+      const timestamp = document.createElement('td');
+      timestamp.textContent = log.timestamp;
+      row.appendChild(timestamp);
+      
+      const level = document.createElement('td');
+      level.textContent = log.level;
+      // Add badge styling based on log level
+      if (log.level) {
+        const badge = document.createElement('span');
+        badge.textContent = log.level;
+        badge.classList.add('badge');
+        
+        if (log.level === 'ERROR') {
+          badge.classList.add('badge-error');
+        } else if (log.level === 'WARN') {
+          badge.classList.add('badge-warning');
+        } else if (log.level === 'INFO') {
+          badge.classList.add('badge-info');
+        } else if (log.level === 'DEBUG') {
+          badge.classList.add('badge-ghost');
+        }
+        
+        level.innerHTML = '';
+        level.appendChild(badge);
+      }
+      row.appendChild(level);
+      
+      const message = document.createElement('td');
+      message.textContent = log.message;
+      row.appendChild(message);
+      
+      const metadata = document.createElement('td');
+      if (Object.keys(log.metadata).length > 0) {
+        const pre = document.createElement('pre');
+        pre.classList.add('text-xs', 'whitespace-pre-wrap');
+        pre.textContent = JSON.stringify(log.metadata, null, 2);
+        metadata.appendChild(pre);
+      } else {
+        metadata.textContent = '-';
+      }
+      row.appendChild(metadata);
+      
+      tbody.appendChild(row);
+    });
+  }
+
+  function displayLogFiles(files) {
+    const container = document.getElementById('log-files');
+    container.innerHTML = '';
+    
+    files.forEach(file => {
+      const fileBtn = document.createElement('button');
+      fileBtn.classList.add('btn', 'btn-xs', 'btn-outline');
+      
+      // Format file size
+      const sizeInKB = Math.round(file.size / 1024);
+      
+      // Format modification date
+      const modDate = new Date(file.modified);
+      const dateStr = `${modDate.toLocaleDateString()} ${modDate.toLocaleTimeString()}`;
+      
+      fileBtn.innerHTML = `${file.name} <span class="text-xs opacity-70">(${sizeInKB}KB)</span>`;
+      fileBtn.title = `Last modified: ${dateStr}`;
+      
+      // Add click event to fetch this log file
+      container.appendChild(fileBtn);
+    });
+  }
+
+  function downloadLogs() {
+    if (!currentLogContent) return;
+    
+    const blob = new Blob([currentLogContent], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `garden-assistant-logs-${new Date().toISOString().slice(0,10)}.log`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  function showRawLogs() {
+    document.getElementById('tab-raw').classList.add('tab-active');
+    document.getElementById('tab-parsed').classList.remove('tab-active');
+    document.getElementById('raw-logs-view').classList.remove('hidden');
+    document.getElementById('parsed-logs-view').classList.add('hidden');
+  }
+
+  function showParsedLogs() {
+    document.getElementById('tab-parsed').classList.add('tab-active');
+    document.getElementById('tab-raw').classList.remove('tab-active');
+    document.getElementById('parsed-logs-view').classList.remove('hidden');
+    document.getElementById('raw-logs-view').classList.add('hidden');
+  }
+  
+  function checkEnvironment() {
+    document.getElementById('logs-content').innerHTML = 'Checking environment variables...';
+    document.getElementById('logs-container').classList.remove('hidden');
+    document.getElementById('error-container').classList.add('hidden');
+    
+    // Make sure we're showing the raw view
+    showRawLogs();
+    
+    fetch('/api/env-debug')
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`Error ${response.status}: ${response.statusText}`);
+        }
+        return response.json();
+      })
+      .then(data => {
+        const output = [
+          '# Environment Information',
+          '------------------------',
+          `Runtime: ${data.runtime}`,
+          `Environment: ${data.environment}`,
+          `Platform: ${data.platformName}`,
+          '',
+          '# Environment Variable Checks',
+          '----------------------------',
+          `LOGS_API_KEY: ${data.specificChecks.LOGS_API_KEY ? '✅ Set' : '❌ Not set'}`,
+          `VERTEX_PROJECT_ID: ${data.specificChecks.VERTEX_PROJECT_ID ? '✅ Set' : '❌ Not set'}`,
+          `VERTEX_SERVICE_ACCOUNT_KEY: ${data.specificChecks.VERTEX_SERVICE_ACCOUNT_KEY ? '✅ Set' : '❌ Not set'}`,
+          `GOOGLE_APPLICATION_CREDENTIALS_JSON: ${data.specificChecks.GOOGLE_APPLICATION_CREDENTIALS_JSON ? '✅ Set' : '❌ Not set'}`,
+          `NODE_ENV: ${data.specificChecks.NODE_ENV}`,
+          '',
+          '# Available Environment Variables',
+          '--------------------------------',
+          `Total variables: ${data.totalVarsCount}`,
+          `Sensitive variables (not shown): ${data.sensitiveVarsCount}`,
+          `Non-sensitive variables (${data.availableVars.length}):`,
+          ...data.availableVars.map(v => `- ${v}`)
+        ].join('\n');
+        
+        document.getElementById('logs-content').textContent = output;
+      })
+      .catch(error => {
+        document.getElementById('logs-container').classList.add('hidden');
+        document.getElementById('error-container').classList.remove('hidden');
+        document.getElementById('error-message').textContent = error.message;
+      });
+  }
+</script>

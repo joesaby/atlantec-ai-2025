@@ -1,0 +1,174 @@
+---
+import Layout from '../../layouts/Layout.astro';
+---
+
+<Layout title="Garden Assistant - Logs Debugger">
+  <div class="container mx-auto p-4">
+    <h1 class="text-2xl font-bold mb-4">Logs System Debugger</h1>
+    
+    <div class="bg-base-200 rounded-box p-4 mb-4">
+      <p class="mb-4">This is a debugging page for the logging system. Use it to check the environment and logs setup.</p>
+      
+      <div class="flex gap-2 mb-4">
+        <a href="/admin/logs?key=password" class="btn btn-primary">
+          Access Logs with Default Key
+        </a>
+        <button id="check-env" class="btn btn-outline">
+          Check Environment
+        </button>
+        <button id="init-logs" class="btn btn-outline">
+          Initialize Log System
+        </button>
+        <button id="generate-logs" class="btn btn-outline btn-accent">
+          Generate Test Logs
+        </button>
+        <button id="test-auth" class="btn btn-outline btn-error">
+          Test Vertex Auth
+        </button>
+      </div>
+    </div>
+
+    <div class="mb-4">
+      <h2 class="text-xl font-bold mb-2">Environment Check</h2>
+      <pre id="env-output" class="bg-base-300 rounded-box p-4 text-xs h-[30vh] overflow-auto">Click "Check Environment" to see details.</pre>
+    </div>
+
+    <div class="mb-4">
+      <h2 class="text-xl font-bold mb-2">Logs Directory Check</h2>
+      <pre id="logs-output" class="bg-base-300 rounded-box p-4 text-xs h-[30vh] overflow-auto">Click "Initialize Log System" to check logs setup.</pre>
+    </div>
+  </div>
+</Layout>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('check-env').addEventListener('click', checkEnvironment);
+    document.getElementById('init-logs').addEventListener('click', initLogSystem);
+    document.getElementById('generate-logs').addEventListener('click', generateTestLogs);
+    document.getElementById('test-auth').addEventListener('click', testVertexAuth);
+  });
+  
+  function checkEnvironment() {
+    document.getElementById('env-output').textContent = 'Loading environment information...';
+    
+    fetch('/api/env-debug')
+      .then(response => response.json())
+      .then(data => {
+        const output = [
+          '# Environment Information',
+          '------------------------',
+          `Runtime: ${data.runtime}`,
+          `Environment: ${data.environment}`,
+          `Platform: ${data.platformName}`,
+          '',
+          '# Environment Variable Checks',
+          '----------------------------',
+          `LOGS_API_KEY: ${data.specificChecks.LOGS_API_KEY ? '✅ Set' : '❌ Not set'}`,
+          `VERTEX_PROJECT_ID: ${data.specificChecks.VERTEX_PROJECT_ID ? '✅ Set' : '❌ Not set'}`,
+          `VERTEX_SERVICE_ACCOUNT_KEY: ${data.specificChecks.VERTEX_SERVICE_ACCOUNT_KEY ? '✅ Set' : '❌ Not set'}`,
+          `GOOGLE_APPLICATION_CREDENTIALS_JSON: ${data.specificChecks.GOOGLE_APPLICATION_CREDENTIALS_JSON ? '✅ Set' : '❌ Not set'}`,
+          `NODE_ENV: ${data.specificChecks.NODE_ENV}`,
+          '',
+          '# Available Environment Variables',
+          '--------------------------------',
+          `Total variables: ${data.totalVarsCount}`,
+          `Sensitive variables (not shown): ${data.sensitiveVarsCount}`,
+          `Non-sensitive variables (${data.availableVars.length}):`,
+          ...data.availableVars.map(v => `- ${v}`)
+        ].join('\n');
+        
+        document.getElementById('env-output').textContent = output;
+      })
+      .catch(error => {
+        document.getElementById('env-output').textContent = `Error: ${error.message}`;
+      });
+  }
+  
+  function initLogSystem() {
+    document.getElementById('logs-output').textContent = 'Initializing log system...';
+    
+    // Try Netlify-compatible endpoint first, fallback to regular one if that fails
+    fetch('/api/netlify-logs?key=password')
+      .then(response => {
+        if (!response.ok) {
+          // If netlify-logs fails, try the regular logs endpoint
+          return fetch('/api/logs?key=password');
+        }
+        return response;
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.error) {
+          document.getElementById('logs-output').textContent = 
+            `Error: ${data.error}\n` +
+            `Message: ${data.message || 'No additional information'}\n\n` +
+            `Authentication: ${data.key_provided ? 'Key provided' : 'No key provided'}, ` +
+            `Environment variable exists: ${data.env_key_exists ? 'Yes' : 'No'}\n` +
+            `Development mode: ${data.is_dev ? 'Yes' : 'No'}`;
+        } else {
+          const files = data.files || [];
+          const filesInfo = files.map(f => `- ${f.name} (${Math.round(f.size/1024)}KB)`).join('\n');
+          
+          document.getElementById('logs-output').textContent = 
+            `✅ Log system initialized successfully!\n\n` +
+            `Found ${files.length} log files:\n${filesInfo || 'No log files found'}\n\n` +
+            `Log content preview:\n${data.content ? data.content.substring(0, 500) + '...' : 'No content'}\n\n` +
+            `✅ You can now use the logs viewer at /admin/logs?key=password`;
+        }
+      })
+      .catch(error => {
+        document.getElementById('logs-output').textContent = `Error: ${error.message}`;
+      });
+  }
+  
+  function generateTestLogs() {
+    document.getElementById('logs-output').textContent = 'Generating test log entries...';
+    
+    fetch('/api/log-test')
+      .then(response => response.json())
+      .then(data => {
+        if (data.error) {
+          document.getElementById('logs-output').textContent = 
+            `Error: ${data.error}\n` +
+            `Message: ${data.message || 'No additional information'}`;
+        } else {
+          document.getElementById('logs-output').textContent = 
+            `✅ Generated ${data.logCount} test log entries successfully!\n` +
+            `Timestamp: ${data.timestamp}\n\n` +
+            `Now you can view these logs in the log viewer.\n` + 
+            `Click "Access Logs with Default Key" to view them.`;
+        }
+      })
+      .catch(error => {
+        document.getElementById('logs-output').textContent = `Error: ${error.message}`;
+      });
+  }
+  
+  function testVertexAuth() {
+    document.getElementById('logs-output').textContent = 'Testing Vertex AI authentication...';
+    
+    fetch('/api/auth-test')
+      .then(response => response.json())
+      .then(data => {
+        if (!data.success) {
+          document.getElementById('logs-output').textContent = 
+            `❌ Authentication failed!\n\n` +
+            `Error: ${data.error}\n` +
+            `Error type: ${data.errorName}\n` +
+            `Cause: ${data.cause || 'Unknown'}\n\n` +
+            `Stack trace:\n${data.stack}`;
+        } else {
+          document.getElementById('logs-output').textContent = 
+            `✅ Vertex AI authentication successful!\n\n` +
+            `Authentication method: ${data.authMethod}\n` +
+            `Project ID: ${data.projectId}\n` +
+            `Location: ${data.location}\n` +
+            `Model: ${data.modelName}\n\n` +
+            `Sample response: "${data.modelResponse}"`;
+        }
+      })
+      .catch(error => {
+        document.getElementById('logs-output').textContent = `Error making auth test request: ${error.message}`;
+      });
+  }
+</script>
