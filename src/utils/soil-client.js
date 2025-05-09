@@ -1,4 +1,7 @@
 // src/utils/soil-client.js
+// Soil data client for Irish counties
+
+import logger from './unified-logger.js';
 
 // Cache for soil data
 const soilCache = new Map();
@@ -107,7 +110,11 @@ export async function getSoilDataByLocation(county) {
 
     return soilData;
   } catch (error) {
-    console.error("Soil data error:", error);
+    logger.error("Soil data error", {
+      component: "SoilClient",
+      county: county,
+      error: error.message
+    });
     // Return a default soil type
     return {
       county: county,

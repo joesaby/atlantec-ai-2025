@@ -18,9 +18,8 @@
 import { VertexAI } from "@google-cloud/vertexai";
 import dotenv from "dotenv";
 
-// Use the Netlify-compatible logger instead of the file-based one
-// This ensures we don't get the ENOENT errors in serverless environments
-import logger from "./logger-netlify";
+// Use the unified logger which works in both dev and Netlify environments
+import logger from "./unified-logger.js";
 
 // Load environment variables
 dotenv.config();
@@ -45,8 +44,8 @@ logger.info("Initializing Vertex AI with authentication options");
 if (process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
   // Running on Netlify - use the environment variable with JSON content
   try {
-    // Log authentication attempt (useful for Netlify logs)
-    console.log("[VERTEX-AUTH] Using credentials from GOOGLE_APPLICATION_CREDENTIALS_JSON env var");
+    // Log authentication attempt
+    logger.info("Using credentials from GOOGLE_APPLICATION_CREDENTIALS_JSON env var", { component: "VERTEX-AUTH" });
     
     const credentials = JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON);
     
@@ -61,13 +60,13 @@ if (process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
     // This ensures the Google Auth library can find the credentials properly
     // More details: https://cloud.google.com/docs/authentication/production
     
-    console.log("[VERTEX-AUTH] Setting up authentication for Google Cloud API");
+    logger.info("Setting up authentication for Google Cloud API", { component: "VERTEX-AUTH" });
     
     logger.info("Using service account credentials from environment variable (JSON)");
     
     // Log partial info about the credentials to help with debugging
     if (credentials.project_id && credentials.client_email) {
-      console.log(`[VERTEX-AUTH] Project ID: ${credentials.project_id}, Client email: ${credentials.client_email}`);
+      logger.info(`Project ID: ${credentials.project_id}, Client email: ${credentials.client_email}`, { component: "VERTEX-AUTH" });
       logger.info("Service account details", {
         project_id: credentials.project_id,
         client_email: credentials.client_email,
@@ -75,18 +74,20 @@ if (process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
       });
     }
   } catch (error) {
-    console.error("[VERTEX-AUTH] Error parsing credentials from environment variable:", error.message);
-    console.error("[VERTEX-AUTH] Credential content length:", process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON?.length || 0);
+    logger.error("Error parsing credentials from environment variable", {
+      component: "VERTEX-AUTH",
+      message: error.message,
+      credentialLength: process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON?.length || 0
+    });
     logger.error("Error parsing credentials from environment variable", error);
   }
 } else if (credentialsPath) {
   // Running locally - use the file path
-  console.log(`[VERTEX-AUTH] Using service account key file: ${credentialsPath}`);
+  logger.info(`Using service account key file: ${credentialsPath}`, { component: "VERTEX-AUTH" });
   vertexOptions.googleAuthOptions = { keyFilename: credentialsPath };
   logger.info("Using service account credentials from file", { path: credentialsPath, auth_method: "key_file" });
 } else {
-  console.log("[VERTEX-AUTH] No explicit credentials provided, falling back to application default credentials");
-  logger.warn("No explicit credentials provided, falling back to application default credentials");
+  logger.warn("No explicit credentials provided, falling back to application default credentials", { component: "VERTEX-AUTH" });
 }
 
 const vertexAI = new VertexAI(vertexOptions);
@@ -143,13 +144,13 @@ export async function generateVertexResponse(messages, options = {}) {
       messageCount: vertexMessages.length 
     });
     
-    // Log to console for Netlify's function logs
-    console.log(`[VERTEX-REQUEST] Sending request to model: ${modelName} with ${vertexMessages.length} messages`);
-    
+    // Log the request
+    logger.debug(`Sending request to model: ${modelName} with ${vertexMessages.length} messages`, { component: "VERTEX-REQUEST" });
+
     const response = await generativeModel.generateContent(request);
-    
-    // Log to console for Netlify's function logs
-    console.log(`[VERTEX-RESPONSE] Received response from Vertex AI: ${response.response?.candidates ? 'Success' : 'Error'}`);
+
+    // Log the response
+    logger.debug(`Received response from Vertex AI: ${response.response?.candidates ? 'Success' : 'Error'}`, { component: "VERTEX-RESPONSE" });
     
     // Log response summary without sensitive content
     logger.info("Received response from Vertex AI", { 
@@ -300,7 +301,7 @@ export async function countTokens(messages) {
     const response = await generativeModel.countTokens(request);
     return response.totalTokens;
   } catch (error) {
-    console.error("Error counting tokens:", error);
+    logger.error("Error counting tokens", error);
     return 0;
   }
 }
