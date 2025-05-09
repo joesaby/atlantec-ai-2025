@@ -54,8 +54,13 @@ if (process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
 const vertexAI = new VertexAI(vertexOptions);
 
 // System prompt for gardening assistance
-const GARDENING_SYSTEM_INSTRUCTION = `You are an expert Irish gardening assistant that specializes in providing advice for gardeners in Ireland.
-Your responses should be helpful, informative, and tailored to Irish growing conditions, weather patterns, and native plants.
+const GARDENING_SYSTEM_INSTRUCTION = `You are an expert Irish gardening assistant with a friendly, warm personality. Your name is Bloom, and you specialize in providing advice for gardeners in Ireland. 
+
+Your responses should be:
+- Helpful and informative
+- Conversational and personal (use "I", "you", and occasionally the user's name if provided)
+- Tailored to Irish growing conditions, weather patterns, and native plants
+- Brief and to the point (especially for task-related queries)
 
 When responding, consider:
 - Irish climate zones and seasonal patterns
@@ -63,6 +68,14 @@ When responding, consider:
 - Sustainable gardening practices suitable for Ireland
 - Irish soil types and improvement techniques
 - Local pest management strategies
+
+Add personal touches to your responses like:
+- "I'd recommend..." instead of "It is recommended..."
+- "Your garden will love..." instead of "Gardens benefit from..."
+- Occasional gardening metaphors or Irish gardening wisdom
+- Brief stories or experiences about gardening in Ireland
+
+When users ask about gardening tasks, provide very short and concise responses (1-2 sentences) and explicitly suggest clicking the View Calendar button. For example: "I've prepared those November tasks for you! Click the View Calendar button below to see what you should be doing in your garden." or "Here are your spring gardening tasks ready for you. Click View Calendar to start planning your season!"
 
 When users ask about plants or gardening tasks, indicate in your response if you recommend SHOWING_PLANT_CARDS or SHOWING_TASK_CARDS.
 Format your response as plain text with one of these indicators at the very end if appropriate.`;
@@ -176,13 +189,45 @@ export async function processGardeningQueryWithVertex(
   if (responseText.includes("SHOWING_PLANT_CARDS")) {
     content = responseText.replace("SHOWING_PLANT_CARDS", "").trim();
     cardType = "plant";
-    console.log("Set cardType to 'plant'");
+    console.log("Set cardType to 'plant' from explicit marker");
   } else if (responseText.includes("SHOWING_TASK_CARDS")) {
     content = responseText.replace("SHOWING_TASK_CARDS", "").trim();
     cardType = "task";
-    console.log("Set cardType to 'task'");
+    console.log("Set cardType to 'task' from explicit marker");
   } else {
-    console.log("No card indicators found in response");
+    // Smart detection of content type without explicit markers
+    const lowercaseContent = responseText.toLowerCase();
+    
+    // Check for plant-related content patterns
+    if (
+      (lowercaseContent.includes("plant") || 
+       lowercaseContent.includes("flower") || 
+       lowercaseContent.includes("shrub") || 
+       lowercaseContent.includes("tree")) && 
+      (lowercaseContent.includes("recommend") || 
+       lowercaseContent.includes("suggestion") || 
+       responseText.match(/\*\s+[A-Z][a-z]+\s+[a-z]+:/) || // Pattern like "* Plant name:" 
+       responseText.match(/\*\s+\*[A-Z][a-z]+\s+[a-z]+\*/)) // Pattern like "* *Plant name*"
+    ) {
+      cardType = "plant";
+      console.log("Set cardType to 'plant' based on content analysis");
+    }
+    // Check for task-related content patterns
+    else if (
+      (lowercaseContent.includes("task") || 
+       lowercaseContent.includes("jobs") || 
+       lowercaseContent.includes("chore") || 
+       lowercaseContent.includes("to do") || 
+       lowercaseContent.includes("todo")) && 
+      (lowercaseContent.includes("garden") || 
+       lowercaseContent.includes("planting") || 
+       lowercaseContent.includes("maintenance"))
+    ) {
+      cardType = "task";
+      console.log("Set cardType to 'task' based on content analysis");
+    } else {
+      console.log("No card indicators found in response");
+    }
   }
 
   const result = {
