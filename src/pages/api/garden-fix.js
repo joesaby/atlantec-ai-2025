@@ -1,5 +1,5 @@
 // src/pages/api/garden-fix.js
-// A fixed version of the garden API that focuses on credential handling
+// A fixed version of the garden API that handles both local and Netlify environments
 
 import { VertexAI } from "@google-cloud/vertexai";
 import fs from 'fs';
@@ -61,27 +61,30 @@ export async function POST({ request }) {
     
     // Set up VertexAI with explicit logging
     const projectId = process.env.VERTEX_PROJECT_ID;
-    const location = process.env.VERTEX_LOCATION || "us-central1"; // Try US region
+    const location = process.env.VERTEX_LOCATION || "us-central1";
     const modelName = process.env.VERTEX_MODEL || "gemini-2.0-flash-001";
     
     logger.info(`Setting up Vertex AI with project: ${projectId}, location: ${location}, model: ${modelName}`);
     
-    // Check for credentials JSON
-    let credentials = null;
+    // Initialize VertexAI options with required configuration
     let vertexOptions = {
       project: projectId,
       location: location
     };
     
-    if (process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
+    // Detect environment and set up authentication accordingly
+    const isNetlify = process.env.NETLIFY === 'true';
+    let tempKeyPath = null;
+    
+    // Create a temporary file for credentials in Netlify environment
+    if (isNetlify && process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
       try {
-        // Special handling for Netlify - write credentials to a temp file
-        logger.info("Creating temporary file for credentials");
+        logger.info("Creating temporary file for credentials in Netlify environment");
         const tmpdir = os.tmpdir();
-        const tempKeyPath = path.join(tmpdir, `vertex-key-${Date.now()}.json`);
+        tempKeyPath = path.join(tmpdir, `vertex-key-${Date.now()}.json`);
         
         // Parse and validate credentials
-        credentials = JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON);
+        const credentials = JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON);
         fs.writeFileSync(tempKeyPath, JSON.stringify(credentials, null, 2));
         
         logger.info(`Wrote credentials to temporary file: ${tempKeyPath}`);
@@ -91,20 +94,6 @@ export async function POST({ request }) {
         
         // Log key info
         logger.info(`Using credentials for project: ${credentials.project_id}`);
-        
-        // Critical: Don't set the credentials object directly
-        // Let the Google Auth library find it through the environment variable
-        // vertexOptions.credentials = credentials;
-        
-        // Clean up the temp file when done
-        process.on('exit', () => {
-          try {
-            fs.unlinkSync(tempKeyPath);
-            logger.info(`Cleaned up temporary credentials file`);
-          } catch (e) {
-            logger.error(`Error cleaning up temp file: ${e.message}`);
-          }
-        });
       } catch (error) {
         logger.error("Error processing credentials", error);
         return new Response(
@@ -120,8 +109,12 @@ export async function POST({ request }) {
           }
         );
       }
+    } else if (process.env.VERTEX_SERVICE_ACCOUNT_KEY) {
+      // For local environment, use the key file
+      logger.info(`Using service account key file: ${process.env.VERTEX_SERVICE_ACCOUNT_KEY}`);
+      vertexOptions.googleAuthOptions = { keyFilename: process.env.VERTEX_SERVICE_ACCOUNT_KEY };
     } else {
-      logger.warn("No JSON credentials found in environment");
+      logger.warn("No credentials found in environment");
     }
     
     // Create VertexAI instance
@@ -129,7 +122,31 @@ export async function POST({ request }) {
     const vertexAI = new VertexAI(vertexOptions);
     
     // System prompt for gardening assistance
-    const GARDENING_SYSTEM_INSTRUCTION = `You are an expert Irish gardening assistant with a friendly, warm personality. Your name is Bloom, and you specialize in providing advice for gardeners in Ireland.`;
+    const GARDENING_SYSTEM_INSTRUCTION = `You are an expert Irish gardening assistant with a friendly, warm personality. Your name is Bloom, and you specialize in providing advice for gardeners in Ireland. 
+
+Your responses should be:
+- Helpful and informative
+- Conversational and personal (use "I", "you", and occasionally the user's name if provided)
+- Tailored to Irish growing conditions, weather patterns, and native plants
+- Brief and to the point (especially for task-related queries)
+
+When responding, consider:
+- Irish climate zones and seasonal patterns
+- Native and well-adapted plants for Irish gardens
+- Sustainable gardening practices suitable for Ireland
+- Irish soil types and improvement techniques
+- Local pest management strategies
+
+Add personal touches to your responses like:
+- "I'd recommend..." instead of "It is recommended..."
+- "Your garden will love..." instead of "Gardens benefit from..."
+- Occasional gardening metaphors or Irish gardening wisdom
+- Brief stories or experiences about gardening in Ireland
+
+When users ask about gardening tasks, provide very short and concise responses (1-2 sentences) and explicitly suggest clicking the View Calendar button. For example: "I've prepared those November tasks for you! Click the View Calendar button below to see what you should be doing in your garden." or "Here are your spring gardening tasks ready for you. Click View Calendar to start planning your season!"
+
+When users ask about plants or gardening tasks, indicate in your response if you recommend SHOWING_PLANT_CARDS or SHOWING_TASK_CARDS.
+Format your response as plain text with one of these indicators at the very end if appropriate.`;
     
     // Generate content
     logger.info("Initializing generative model");
@@ -155,6 +172,16 @@ export async function POST({ request }) {
     const response = await generativeModel.generateContent({
       contents: vertexMessages,
     });
+    
+    // Clean up temp file if it was created
+    if (tempKeyPath) {
+      try {
+        fs.unlinkSync(tempKeyPath);
+        logger.info(`Cleaned up temporary credentials file`);
+      } catch (e) {
+        logger.error(`Error cleaning up temp file: ${e.message}`);
+      }
+    }
     
     // Extract and return the response
     const responseText = response.response.candidates[0].content.parts[0].text;
