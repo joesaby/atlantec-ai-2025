@@ -150,7 +150,7 @@ Create a utility to provide soil information:
 // Cache for soil data
 const soilCache = new Map();
 
-// Mock Irish soil types for development
+// Irish soil types
 const IRISH_SOIL_TYPES = {
   "brown-earth": {
     name: "Brown Earth",
@@ -192,6 +192,19 @@ const IRISH_SOIL_TYPES = {
     nutrients: "Low",
     drainage: "Good",
   },
+};
+
+// Drainage classifications for soil types
+const DRAINAGE_CLASSIFICATIONS = {
+  Good: "Water drains at an ideal rate for most plants",
+  Poor: "Water tends to linger, may need raised beds",
+  Moderate: "Balanced drainage suitable for many plants",
+  Excessive: "Drains very quickly, may need frequent watering",
+  Variable: "Drainage patterns vary across the area",
+  "Poor to Very Poor":
+    "Prone to waterlogging, best for bog plants or needs significant drainage work",
+  "Good but shallow": "Drains well but may have limited depth for roots",
+  "Good to Excessive": "Tends to drain quickly, may dry out in summer",
 };
 
 // County to dominant soil type mapping (simplified)
@@ -476,12 +489,16 @@ const WeatherWidget = ({ county = "Dublin" }) => {
 export default WeatherWidget;
 ```
 
-### 4. Soil Information Component
+### 4. Soil Components
 
-Create a daisyUI card-based soil information component:
+We've organized all soil-related components in a dedicated `/components/soil/` directory for better maintainability:
+
+#### A. SoilInfo Component
+
+The primary component for displaying soil information with visual indicators:
 
 ```jsx
-// src/components/garden/SoilInfo.jsx
+// src/components/soil/SoilInfo.jsx
 import React, { useState, useEffect } from "react";
 import { getSoilDataByLocation } from "../../utils/soil-client";
 
@@ -730,7 +747,7 @@ Create a test page to display and test both components:
 // src/pages/weather-soil.astro
 import Layout from '../layouts/Layout.astro';
 import WeatherWidget from '../components/weather/WeatherWidget';
-import SoilInfo from '../components/garden/SoilInfo';
+import SoilInfo from '../components/soil/SoilInfo';
 import CountySelector from '../components/common/CountySelector';
 ---
 
@@ -758,7 +775,7 @@ import CountySelector from '../components/common/CountySelector';
   import ReactDOM from 'react-dom';
   import CountySelector from '../components/common/CountySelector';
   import WeatherWidget from '../components/weather/WeatherWidget';
-  import SoilInfo from '../components/garden/SoilInfo';
+  import SoilInfo from '../components/soil/SoilInfo';
 
   document.addEventListener('DOMContentLoaded', () => {
     const countySelectorContainer = document.getElementById('county-selector-container');
