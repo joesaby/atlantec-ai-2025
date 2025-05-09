@@ -9,7 +9,7 @@ const GardenAgent = () => {
   const [messages, setMessages] = useState([
     {
       role: "assistant",
-      content: "Hello! I'm your gardening assistant. How can I help you today?",
+      content: "Hello there! I'm Bloom, your Irish gardening assistant. How can I help with your garden today? Whether you need plant recommendations, seasonal tasks, or growing tips for our unique Irish climate, I'm here to help you create a thriving garden.",
       timestamp: new Date(),
     },
   ]);
@@ -34,6 +34,12 @@ const GardenAgent = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (input.trim() === "") return;
+
+    // Hide the calendar when starting a new query
+    const calendarContainer = document.querySelector('#calendar-container');
+    if (calendarContainer) {
+      calendarContainer.classList.add('hidden');
+    }
 
     // Add user message
     const userMessage = {
@@ -126,13 +132,84 @@ const GardenAgent = () => {
     }
   };
 
+  // Dispatch event when task cards are generated
+  useEffect(() => {
+    // When we have task cards, dispatch an event to notify the calendar component but don't show it yet
+    const latestMessage = messages[messages.length - 1];
+    if (latestMessage && 
+        latestMessage.role === "assistant" && 
+        latestMessage.cards && 
+        latestMessage.cards.length > 0 && 
+        latestMessage.cards[0].type === "task") {
+      
+      // Extract month information from the query if available
+      const lastUserMessage = messages.findLast(msg => msg.role === "user");
+      const monthInfo = extractMonthInfoFromQuery(lastUserMessage?.content || "");
+      
+      // Dispatch custom event with task cards data and indicate not to show calendar automatically
+      const taskCardsEvent = new CustomEvent('task-cards-available', {
+        detail: {
+          tasks: latestMessage.cards,
+          monthInfo: monthInfo,
+          showCalendar: false // Don't show calendar automatically
+        }
+      });
+      window.dispatchEvent(taskCardsEvent);
+      console.log('Dispatched task-cards-available event with', latestMessage.cards.length, 'tasks', monthInfo);
+    }
+  }, [messages]);
+
+  // Extract month information from user query
+  const extractMonthInfoFromQuery = (query) => {
+    const monthInfo = {};
+    const lowercaseQuery = query.toLowerCase();
+    
+    // Check for seasons mentioned
+    if (lowercaseQuery.includes('spring')) {
+      monthInfo.season = 'spring';
+    } else if (lowercaseQuery.includes('summer')) {
+      monthInfo.season = 'summer';
+    } else if (lowercaseQuery.includes('autumn') || lowercaseQuery.includes('fall')) {
+      monthInfo.season = 'autumn';
+    } else if (lowercaseQuery.includes('winter')) {
+      monthInfo.season = 'winter';
+    }
+    
+    // Check for specific months mentioned
+    const months = [
+      'january', 'february', 'march', 'april', 'may', 'june',
+      'july', 'august', 'september', 'october', 'november', 'december'
+    ];
+    
+    // Find any month mentioned in the query
+    const mentionedMonth = months.find(month => lowercaseQuery.includes(month));
+    if (mentionedMonth) {
+      // Convert month name to number (1-12)
+      monthInfo.month = months.indexOf(mentionedMonth) + 1;
+      
+      // If a specific month is mentioned (without season), we only want to show that month
+      if (!monthInfo.season) {
+        monthInfo.isSingleMonth = true;
+        monthInfo.months = 1;
+      }
+    }
+    
+    // Check for number of months specification
+    const monthsMatch = lowercaseQuery.match(/next\s+(\d+)\s+months/);
+    if (monthsMatch && monthsMatch[1]) {
+      monthInfo.months = parseInt(monthsMatch[1], 10);
+    }
+    
+    return monthInfo;
+  };
+
   // Clear chat history
   const clearChat = () => {
     setMessages([
       {
         role: "assistant",
         content:
-          "Hello! I'm your gardening assistant. How can I help you today?",
+          "Hello there! I'm Bloom, your Irish gardening assistant. How can I help with your garden today? Whether you need plant recommendations, seasonal tasks, or growing tips for our unique Irish climate, I'm here to help you create a thriving garden.",
         timestamp: new Date(),
       },
     ]);
@@ -290,28 +367,49 @@ const GardenAgent = () => {
                     {formatTime(messages[messages.length - 1].timestamp)}
                   </time>
                 </div>
-                {/* Only show text response if there are no cards */}
-                {(!messages[messages.length - 1].cards || messages[messages.length - 1].cards.length === 0) ? (
+                
+                {/* Show content based on message type */}
+                {messages[messages.length - 1].cards && 
+                 messages[messages.length - 1].cards.length > 0 && 
+                 messages[messages.length - 1].cards[0].type === "task" ? (
+                  // For task cards, show a notification with a button to view calendar
+                  <div className="chat-bubble chat-bubble-primary">
+                    {messages[messages.length - 1].content}
+                    <div className="mt-3 alert alert-info shadow-lg flex justify-between items-center">
+                      <div className="flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current flex-shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span>Your gardening tasks are ready! Check your task calendar.</span>
+                      </div>
+                      <button 
+                        className="btn btn-sm btn-primary" 
+                        onClick={() => {
+                          const calendarContainer = document.querySelector('#calendar-container');
+                          if (calendarContainer) {
+                            calendarContainer.classList.remove('hidden');
+                            calendarContainer.scrollIntoView({ behavior: 'smooth' });
+                          }
+                        }}
+                      >
+                        View Calendar
+                      </button>
+                    </div>
+                  </div>
+                ) : messages[messages.length - 1].cards && 
+                   messages[messages.length - 1].cards.length > 0 ? (
+                  // For other card types (like plant cards), show the cards normally
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2 mb-4 max-w-3xl">
+                    {messages[messages.length - 1].cards.map((card) =>
+                      renderCard(card)
+                    )}
+                  </div>
+                ) : (
+                  // For regular text messages with no cards
                   <div className="chat-bubble chat-bubble-primary">
                     {messages[messages.length - 1].content}
                   </div>
-                ) : (
-                  <div className="card bg-primary text-primary-content shadow-xl mb-4">
-                    <div className="card-body">
-                      <h2 className="card-title">Here are some suggestions for you:</h2>
-                    </div>
-                  </div>
                 )}
-                
-                {/* Display cards if present in the most recent message */}
-                {messages[messages.length - 1].cards &&
-                  messages[messages.length - 1].cards.length > 0 && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2 mb-4 max-w-3xl">
-                      {messages[messages.length - 1].cards.map((card) =>
-                        renderCard(card)
-                      )}
-                    </div>
-                  )}
               </div>
             </div>
           )}
@@ -439,10 +537,14 @@ const GardenAgent = () => {
                       : "chat-bubble-secondary"
                   }`}
                 >
-                  {message.role === "assistant" 
-                    ? "AI response" 
-                    : message.content}
+                  {message.content}
                 </div>
+                {/* Show card indicator in the drawer for assistant messages with cards */}
+                {message.role === "assistant" && message.cards && message.cards.length > 0 && (
+                  <div className="mt-2">
+                    <div className="badge badge-sm">Contains {message.cards.length} card(s)</div>
+                  </div>
+                )}
               </div>
             ))}
             <div ref={messagesEndRef} />

@@ -15,7 +15,7 @@ const MonthlyTasks = ({ monthData, expanded = false }) => {
           className="flex justify-between items-center cursor-pointer"
           onClick={() => setIsExpanded(!isExpanded)}
         >
-          <h2 className="card-title text-lg">{monthData.monthName}</h2>
+          <h2 className="card-title text-lg">{monthData.name || getMonthName(monthData.month)}</h2>
           <div className="badge badge-primary">
             {monthData.tasks.length} tasks
           </div>
@@ -50,5 +50,15 @@ const MonthlyTasks = ({ monthData, expanded = false }) => {
     </div>
   );
 };
+
+/**
+ * Helper function to get month name from month number
+ * @param {number} monthNum - Month number (1-12)
+ * @returns {string} - Month name
+ */
+function getMonthName(monthNum) {
+  const date = new Date(2025, monthNum - 1, 1);
+  return date.toLocaleString('default', { month: 'long' });
+}
 
 export default MonthlyTasks;

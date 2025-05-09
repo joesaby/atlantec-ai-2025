@@ -51,11 +51,11 @@ if (process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
     
     // IMPORTANT: For Netlify, do NOT set process.env.GOOGLE_APPLICATION_CREDENTIALS
     // as it will try to interpret the JSON string as a file path
-    
+
     // IMPORTANT: Use exactly the original credentials object from the environment
     // The Google Auth library needs ALL fields from the service account key
     vertexOptions.credentials = credentials;
-    
+
     // ALSO create a temporary credentials file at a Netlify-writable location
     // This ensures the Google Auth library can find the credentials properly
     // More details: https://cloud.google.com/docs/authentication/production
@@ -70,7 +70,7 @@ if (process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
       logger.info("Service account details", {
         project_id: credentials.project_id,
         client_email: credentials.client_email,
-        auth_method: "json_credentials_direct"
+        auth_method: "json_credentials_direct",
       });
     }
   } catch (error) {
@@ -85,7 +85,10 @@ if (process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
   // Running locally - use the file path
   logger.info(`Using service account key file: ${credentialsPath}`, { component: "VERTEX-AUTH" });
   vertexOptions.googleAuthOptions = { keyFilename: credentialsPath };
-  logger.info("Using service account credentials from file", { path: credentialsPath, auth_method: "key_file" });
+  logger.info("Using service account credentials from file", {
+    path: credentialsPath,
+    auth_method: "key_file",
+  });
 } else {
   logger.warn("No explicit credentials provided, falling back to application default credentials", { component: "VERTEX-AUTH" });
 }
@@ -93,8 +96,13 @@ if (process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
 const vertexAI = new VertexAI(vertexOptions);
 
 // System prompt for gardening assistance
-const GARDENING_SYSTEM_INSTRUCTION = `You are an expert Irish gardening assistant that specializes in providing advice for gardeners in Ireland.
-Your responses should be helpful, informative, and tailored to Irish growing conditions, weather patterns, and native plants.
+const GARDENING_SYSTEM_INSTRUCTION = `You are an expert Irish gardening assistant with a friendly, warm personality. Your name is Bloom, and you specialize in providing advice for gardeners in Ireland. 
+
+Your responses should be:
+- Helpful and informative
+- Conversational and personal (use "I", "you", and occasionally the user's name if provided)
+- Tailored to Irish growing conditions, weather patterns, and native plants
+- Brief and to the point (especially for task-related queries)
 
 When responding, consider:
 - Irish climate zones and seasonal patterns
@@ -102,6 +110,14 @@ When responding, consider:
 - Sustainable gardening practices suitable for Ireland
 - Irish soil types and improvement techniques
 - Local pest management strategies
+
+Add personal touches to your responses like:
+- "I'd recommend..." instead of "It is recommended..."
+- "Your garden will love..." instead of "Gardens benefit from..."
+- Occasional gardening metaphors or Irish gardening wisdom
+- Brief stories or experiences about gardening in Ireland
+
+When users ask about gardening tasks, provide very short and concise responses (1-2 sentences) and explicitly suggest clicking the View Calendar button. For example: "I've prepared those November tasks for you! Click the View Calendar button below to see what you should be doing in your garden." or "Here are your spring gardening tasks ready for you. Click View Calendar to start planning your season!"
 
 When users ask about plants or gardening tasks, indicate in your response if you recommend SHOWING_PLANT_CARDS or SHOWING_TASK_CARDS.
 Format your response as plain text with one of these indicators at the very end if appropriate.`;
@@ -139,9 +155,9 @@ export async function generateVertexResponse(messages, options = {}) {
     };
 
     // Generate content
-    logger.info("Sending request to Vertex AI", { 
-      model: modelName, 
-      messageCount: vertexMessages.length 
+    logger.info("Sending request to Vertex AI", {
+      model: modelName,
+      messageCount: vertexMessages.length,
     });
     
     // Log the request
@@ -153,21 +169,22 @@ export async function generateVertexResponse(messages, options = {}) {
     logger.debug(`Received response from Vertex AI: ${response.response?.candidates ? 'Success' : 'Error'}`, { component: "VERTEX-RESPONSE" });
     
     // Log response summary without sensitive content
-    logger.info("Received response from Vertex AI", { 
+    logger.info("Received response from Vertex AI", {
       statusCode: response.response?.candidates ? 200 : 500,
       candidateCount: response.response?.candidates?.length || 0,
-      finishReason: response.response?.candidates?.[0]?.finishReason || 'unknown'
+      finishReason:
+        response.response?.candidates?.[0]?.finishReason || "unknown",
     });
-    
+
     // Only log full response in debug mode
-    logger.debug("Raw Vertex AI response", { 
-      response: JSON.stringify(response) 
+    logger.debug("Raw Vertex AI response", {
+      response: JSON.stringify(response),
     });
-    
+
     const responseText = response.response.candidates[0].content.parts[0].text;
-    logger.debug("Extracted response text", { 
+    logger.debug("Extracted response text", {
       textLength: responseText.length,
-      preview: responseText.substring(0, 100) + '...'
+      preview: responseText.substring(0, 100) + "...",
     });
 
     return responseText;
@@ -179,35 +196,35 @@ export async function generateVertexResponse(messages, options = {}) {
       error.message.includes("authentication") ||
       error.name === "GoogleAuthError"
     ) {
-      logger.error("Authentication error with Vertex AI", { 
+      logger.error("Authentication error with Vertex AI", {
         errorType: "authentication",
-        message: error.message
+        message: error.message,
       });
     } else if (
       error.message.includes("Permission denied") ||
       error.message.includes("permission")
     ) {
-      logger.error("Permission error with Vertex AI", { 
+      logger.error("Permission error with Vertex AI", {
         errorType: "permission",
-        message: error.message
+        message: error.message,
       });
     } else if (
       error.message.includes("API not enabled") ||
       error.message.includes("has not been used")
     ) {
-      logger.error("Vertex AI API not enabled", { 
+      logger.error("Vertex AI API not enabled", {
         errorType: "api_not_enabled",
-        message: error.message
+        message: error.message,
       });
     } else if (error.message.includes("billing")) {
-      logger.error("Billing error with Vertex AI", { 
+      logger.error("Billing error with Vertex AI", {
         errorType: "billing",
-        message: error.message
+        message: error.message,
       });
     } else {
       logger.error("Unexpected error with Vertex AI", {
         message: error.message,
-        stack: error.stack
+        stack: error.stack,
       });
     }
 
@@ -245,32 +262,69 @@ export async function processGardeningQueryWithVertex(
   logger.debug("Checking response for card indicators", {
     hasPlantCards: responseText.includes("SHOWING_PLANT_CARDS"),
     hasTaskCards: responseText.includes("SHOWING_TASK_CARDS"),
-    responseLength: responseText.length
+    responseLength: responseText.length,
   });
 
   if (responseText.includes("SHOWING_PLANT_CARDS")) {
     content = responseText.replace("SHOWING_PLANT_CARDS", "").trim();
     cardType = "plant";
     logger.info("Plant cards detected in response");
+    console.log("Set cardType to 'plant' from explicit marker");
   } else if (responseText.includes("SHOWING_TASK_CARDS")) {
     content = responseText.replace("SHOWING_TASK_CARDS", "").trim();
     cardType = "task";
     logger.info("Task cards detected in response");
+    console.log("Set cardType to 'task' from explicit marker");
   } else {
-    logger.info("No card indicators found in response");
+    // Smart detection of content type without explicit markers
+    const lowercaseContent = responseText.toLowerCase();
+
+    // Check for plant-related content patterns
+    if (
+      (lowercaseContent.includes("plant") ||
+        lowercaseContent.includes("flower") ||
+        lowercaseContent.includes("shrub") ||
+        lowercaseContent.includes("tree")) &&
+      (lowercaseContent.includes("recommend") ||
+        lowercaseContent.includes("suggestion") ||
+        responseText.match(/\*\s+[A-Z][a-z]+\s+[a-z]+:/) || // Pattern like "* Plant name:"
+        responseText.match(/\*\s+\*[A-Z][a-z]+\s+[a-z]+\*/)) // Pattern like "* *Plant name*"
+    ) {
+      cardType = "plant";
+      logger.info("Plant cards inferred from content analysis");
+      console.log("Set cardType to 'plant' based on content analysis");
+    }
+    // Check for task-related content patterns
+    else if (
+      (lowercaseContent.includes("task") ||
+        lowercaseContent.includes("jobs") ||
+        lowercaseContent.includes("chore") ||
+        lowercaseContent.includes("to do") ||
+        lowercaseContent.includes("todo")) &&
+      (lowercaseContent.includes("garden") ||
+        lowercaseContent.includes("planting") ||
+        lowercaseContent.includes("maintenance"))
+    ) {
+      cardType = "task";
+      logger.info("Task cards inferred from content analysis");
+      console.log("Set cardType to 'task' based on content analysis");
+    } else {
+      logger.info("No card indicators found in response");
+      console.log("No card indicators found in response");
+    }
   }
 
   const result = {
     content,
     cardType,
   };
-  
+
   logger.debug("Final structured response", {
     contentLength: content.length,
     cardType: cardType,
-    contentPreview: content.substring(0, 100) + '...'
+    contentPreview: content.substring(0, 100) + "...",
   });
-  
+
   return result;
 }
 

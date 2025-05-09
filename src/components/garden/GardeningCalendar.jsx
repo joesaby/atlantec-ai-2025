@@ -2,10 +2,15 @@ import React, { useState, useEffect } from "react";
 import MonthlyTasks from "./MonthlyTasks";
 import { getTasksForUpcomingMonths } from "../../data/gardening-tasks";
 
-const GardeningCalendar = ({ months = 3 }) => {
+const GardeningCalendar = ({ months = 3, queryTasks: initialQueryTasks = [] }) => {
   const [upcomingTasks, setUpcomingTasks] = useState([]);
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [isLoading, setIsLoading] = useState(true);
+  const [queryTasks, setQueryTasks] = useState(initialQueryTasks);
+  const [showQueryTasks, setShowQueryTasks] = useState(initialQueryTasks.length > 0);
+  const [selectedMonth, setSelectedMonth] = useState(null);
+  const [displayMonths, setDisplayMonths] = useState(months);
+  const [currentDisplayMode, setCurrentDisplayMode] = useState('default');
 
   // Available categories for filtering
   const categories = [
@@ -24,24 +29,69 @@ const GardeningCalendar = ({ months = 3 }) => {
   ];
 
   useEffect(() => {
-    // Simulate loading from a database
+    // Setup the global update function to receive task cards
+    window.updateGardeningCalendar = (taskData) => {
+      if (Array.isArray(taskData) && taskData.length > 0) {
+        console.log('Received calendar data with', taskData.length, 'months');
+        
+        // Set the query tasks with the new data
+        setQueryTasks(taskData);
+        setShowQueryTasks(true);
+        
+        // Update the display mode based on the data
+        if (taskData.length === 1) {
+          setSelectedMonth(taskData[0].month);
+          setDisplayMonths(1);
+          setCurrentDisplayMode('single-month');
+        } else if (taskData.length > 1) {
+          // If we have multiple months, use the first one as the start month
+          setSelectedMonth(taskData[0].month);
+          setDisplayMonths(taskData.length);
+          setCurrentDisplayMode('multiple-months');
+        }
+        
+        console.log('Calendar updated with', taskData.length, 'month(s) of tasks', 
+          'starting with', taskData[0].name);
+      }
+    };
+
+    return () => {
+      // Clean up when component unmounts
+      delete window.updateGardeningCalendar;
+    };
+  }, []);
+
+  useEffect(() => {
+    // Load tasks based on selected month or current date
     setIsLoading(true);
 
     setTimeout(() => {
-      const currentMonth = new Date().getMonth() + 1;
-      const tasks = getTasksForUpcomingMonths(currentMonth, months);
-      setUpcomingTasks(tasks);
+      // Only load default tasks if we're not showing query tasks
+      if (!showQueryTasks || currentDisplayMode === 'default') {
+        const currentMonth = selectedMonth || new Date().getMonth() + 1;
+        const tasks = getTasksForUpcomingMonths(currentMonth, displayMonths);
+        setUpcomingTasks(tasks);
+      }
       setIsLoading(false);
     }, 500);
-  }, [months]);
+  }, [displayMonths, selectedMonth, showQueryTasks, currentDisplayMode]);
+
+  useEffect(() => {
+    // Update state when props change
+    if (queryTasks?.length > 0) {
+      setShowQueryTasks(true);
+    }
+  }, [queryTasks]);
 
   // Filter tasks by category
   const filteredTasks = React.useMemo(() => {
     if (categoryFilter === "all") {
-      return upcomingTasks;
+      return showQueryTasks ? queryTasks : upcomingTasks;
     }
 
-    return upcomingTasks
+    const tasksToFilter = showQueryTasks ? queryTasks : upcomingTasks;
+
+    return tasksToFilter
       .map((monthData) => ({
         ...monthData,
         tasks: monthData.tasks.filter(
@@ -49,7 +99,7 @@ const GardeningCalendar = ({ months = 3 }) => {
         ),
       }))
       .filter((monthData) => monthData.tasks.length > 0);
-  }, [upcomingTasks, categoryFilter]);
+  }, [upcomingTasks, queryTasks, categoryFilter, showQueryTasks]);
 
   if (isLoading) {
     return (
@@ -67,7 +117,9 @@ const GardeningCalendar = ({ months = 3 }) => {
       <div className="card-body">
         <h2 className="card-title text-primary mb-4">
           Gardening Calendar
-          <span className="badge badge-accent">{months} months</span>
+          <span className="badge badge-accent">
+            {showQueryTasks && queryTasks.length > 0 ? queryTasks.length : displayMonths} months
+          </span>
         </h2>
 
         <div className="flex flex-wrap gap-2 mb-6">
@@ -83,6 +135,17 @@ const GardeningCalendar = ({ months = 3 }) => {
               {category}
             </button>
           ))}
+        </div>
+
+        <div className="flex flex-wrap gap-2 mb-6">
+          <button
+            className={`btn btn-sm ${
+              showQueryTasks ? "btn-primary" : "btn-outline"
+            }`}
+            onClick={() => setShowQueryTasks(!showQueryTasks)}
+          >
+            {showQueryTasks ? "Show Upcoming Tasks" : "Show Query Tasks"}
+          </button>
         </div>
 
         {filteredTasks.length === 0 ? (
