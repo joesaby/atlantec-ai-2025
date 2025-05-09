@@ -1,4 +1,6 @@
 // Use localStorage to persist user data
+import logger from './unified-logger.js';
+
 const STORAGE_KEY = "irish-garden-sustainability";
 
 // Check if localStorage is available (client-side)
@@ -27,7 +29,7 @@ const defaultUserProgress = {
 // Helper to get user data from localStorage
 const getUserProgress = () => {
   if (!isClient) {
-    console.log("Running in SSR mode, returning default progress");
+    logger.debug("Running in SSR mode, returning default progress", { component: "SustainabilityStore" });
     return defaultUserProgress;
   }
 
@@ -46,7 +48,10 @@ const getUserProgress = () => {
 
     return parsedData;
   } catch (error) {
-    console.error("Error accessing localStorage:", error);
+    logger.error("Error accessing localStorage", {
+      component: "SustainabilityStore",
+      error: error.message
+    });
     return defaultUserProgress;
   }
 };
@@ -54,14 +59,17 @@ const getUserProgress = () => {
 // Helper to save user data to localStorage
 const saveUserProgress = (data) => {
   if (!isClient) {
-    console.log("Running in SSR mode, can't save progress");
+    logger.debug("Running in SSR mode, can't save progress", { component: "SustainabilityStore" });
     return;
   }
 
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
   } catch (error) {
-    console.error("Error saving to localStorage:", error);
+    logger.error("Error saving to localStorage", {
+      component: "SustainabilityStore",
+      error: error.message
+    });
   }
 };
 
@@ -94,7 +102,11 @@ export const addSustainablePractice = (
       }
     }
   } catch (error) {
-    console.error("Error finding practice:", error);
+    logger.error("Error finding practice", {
+      component: "SustainabilityStore",
+      practiceId,
+      error: error.message
+    });
   }
 
   // Check if practice is already active
@@ -129,7 +141,11 @@ export const addSustainablePractice = (
     }
 
     saveUserProgress(userProgress);
-    console.log("Updated user progress after adding practice:", userProgress);
+    logger.debug("Updated user progress after adding practice", {
+      component: "SustainabilityStore",
+      practiceId,
+      practicesCount: userProgress.activePractices.length
+    });
   }
 
   return userProgress;
@@ -161,7 +177,11 @@ export const removeSustainablePractice = (practiceId) => {
       }
     }
   } catch (error) {
-    console.error("Error finding practice:", error);
+    logger.error("Error finding practice", {
+      component: "SustainabilityStore",
+      practiceId,
+      error: error.message
+    });
   }
 
   userProgress.activePractices = userProgress.activePractices.filter(
@@ -195,7 +215,11 @@ export const removeSustainablePractice = (practiceId) => {
   }
 
   saveUserProgress(userProgress);
-  console.log("Updated user progress after removing practice:", userProgress);
+  logger.debug("Updated user progress after removing practice", {
+    component: "SustainabilityStore",
+    practiceId,
+    practicesCount: userProgress.activePractices.length
+  });
   return userProgress;
 };
 
@@ -269,7 +293,11 @@ export const getPracticeById = (id) => {
       }
     }
   } catch (error) {
-    console.error("Error finding practice by ID:", error);
+    logger.error("Error finding practice by ID", {
+      component: "SustainabilityStore",
+      id,
+      error: error.message
+    });
   }
 
   return foundPractice;
@@ -305,7 +333,11 @@ export const calculateSDGImpact = () => {
   const maxScore = maxPerSDG * totalSDGs;
 
   const impact = Math.min(100, Math.round((totalScore / maxScore) * 100));
-  console.log("Calculated SDG impact:", impact, "Total SDG score:", totalScore);
+  logger.debug("Calculated SDG impact", {
+    component: "SustainabilityStore",
+    impact,
+    totalScore
+  });
   return impact;
 };
 
@@ -351,11 +383,18 @@ export const recalculateSDGScores = () => {
       }
     });
 
-    console.log("Recalculated SDG scores:", userProgress.sdgScores);
+    logger.debug("Recalculated SDG scores", {
+      component: "SustainabilityStore",
+      sdgScores: userProgress.sdgScores,
+      practicesCount: userProgress.activePractices.length
+    });
     saveUserProgress(userProgress);
     return userProgress;
   } catch (error) {
-    console.error("Error recalculating SDG scores:", error);
+    logger.error("Error recalculating SDG scores", {
+      component: "SustainabilityStore",
+      error: error.message
+    });
     return userProgress;
   }
 };

@@ -1,4 +1,7 @@
 // src/utils/weather-client.js
+// Weather data client for Irish counties
+
+import logger from './unified-logger.js';
 
 // Simple cache for weather data - disabled for testing county selection
 // const weatherCache = new Map();
@@ -65,7 +68,10 @@ export async function getCurrentWeather(county) {
     // Get coordinates for the county (default to Dublin if not found)
     const coordinates = countyCoordinates[normalizedCounty] || { lat: 53.35, lon: -6.26 };
     
-    console.log(`Getting weather for county: ${county} using coordinates:`, coordinates);
+    logger.info(`Getting weather for county: ${county}`, {
+      component: "WeatherClient",
+      coordinates: coordinates
+    });
     
     // Use Irish Weather API service
     const response = await fetch(
@@ -104,7 +110,11 @@ export async function getCurrentWeather(county) {
 
     return weatherData;
   } catch (error) {
-    console.error("Weather API error:", error);
+    logger.error("Weather API error", {
+      component: "WeatherClient",
+      county: county,
+      error: error.message
+    });
 
     // Return mock data if API fails (for development)
     return getMockWeatherData(county);

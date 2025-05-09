@@ -1,5 +1,6 @@
 import { plants } from "../data/plants";
 import { getSoilDataByLocation } from "./soil-client";
+import logger from './unified-logger.js';
 
 /**
  * Recommends plants based on user's garden conditions
@@ -68,7 +69,11 @@ export async function getPlantRecommendations(conditions) {
 
     return scoredPlants.slice(0, 8);
   } catch (error) {
-    console.error("Error generating plant recommendations:", error);
+    logger.error("Error generating plant recommendations", {
+      component: "PlantRecommender",
+      county: conditions.county,
+      error: error.message
+    });
     throw new Error("Failed to generate plant recommendations");
   }
 }

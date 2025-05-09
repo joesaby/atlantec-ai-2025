@@ -1,118 +1,18 @@
-// src/utils/vertex-client.js
-// Client for Google Cloud Vertex AI Generative Models
-
-/**
- * This module provides a client for interacting with Google Cloud Vertex AI
- * generative models. It can be used as an alternative to the OpenAI client
- * for garden assistant queries.
- *
- * Prerequisites:
- * - Google Cloud project with Vertex AI API enabled
- * - Service account with appropriate permissions
- * - Google Cloud credentials configured properly
- *
- * Install dependencies:
- * npm install @google-cloud/vertexai dotenv
- */
+// src/utils/vertex-client-v2.js
+// Updated Vertex AI client that works in both local and Netlify environments
 
 import { VertexAI } from "@google-cloud/vertexai";
-import dotenv from "dotenv";
-
-// Use the Netlify-compatible logger instead of the file-based one
-// This ensures we don't get the ENOENT errors in serverless environments
-import logger from "./logger-netlify";
-
-// Load environment variables
-dotenv.config();
+import fs from "fs";
+import path from "path";
+import os from "os";
+import logger from "./unified-logger.js";
 
 // Configuration
 const projectId = process.env.VERTEX_PROJECT_ID;
-const location = process.env.VERTEX_LOCATION || "europe-west1";
+const location = process.env.VERTEX_LOCATION || "us-central1";
 const modelName = process.env.VERTEX_MODEL || "gemini-2.0-flash-001";
-const credentialsPath = process.env.VERTEX_SERVICE_ACCOUNT_KEY;
 const temperature = parseFloat(process.env.TEMPERATURE || "0.7");
 const maxTokens = parseInt(process.env.MAX_TOKENS || "1024");
-
-// Initialize Vertex with configuration
-const vertexOptions = {
-  project: projectId,
-  location: location,
-};
-
-// Handle credentials based on environment
-logger.info("Initializing Vertex AI with authentication options");
-
-if (process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
-  // Running on Netlify - use the environment variable with JSON content
-  try {
-    // Log authentication attempt (useful for Netlify logs)
-    console.log(
-      "[VERTEX-AUTH] Using credentials from GOOGLE_APPLICATION_CREDENTIALS_JSON env var"
-    );
-
-    const credentials = JSON.parse(
-      process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON
-    );
-
-    // IMPORTANT: For Netlify, do NOT set process.env.GOOGLE_APPLICATION_CREDENTIALS
-    // as it will try to interpret the JSON string as a file path
-
-    // IMPORTANT: Use exactly the original credentials object from the environment
-    // The Google Auth library needs ALL fields from the service account key
-    vertexOptions.credentials = credentials;
-
-    // ALSO create a temporary credentials file at a Netlify-writable location
-    // This ensures the Google Auth library can find the credentials properly
-    // More details: https://cloud.google.com/docs/authentication/production
-
-    console.log("[VERTEX-AUTH] Setting up authentication for Google Cloud API");
-
-    logger.info(
-      "Using service account credentials from environment variable (JSON)"
-    );
-
-    // Log partial info about the credentials to help with debugging
-    if (credentials.project_id && credentials.client_email) {
-      console.log(
-        `[VERTEX-AUTH] Project ID: ${credentials.project_id}, Client email: ${credentials.client_email}`
-      );
-      logger.info("Service account details", {
-        project_id: credentials.project_id,
-        client_email: credentials.client_email,
-        auth_method: "json_credentials_direct",
-      });
-    }
-  } catch (error) {
-    console.error(
-      "[VERTEX-AUTH] Error parsing credentials from environment variable:",
-      error.message
-    );
-    console.error(
-      "[VERTEX-AUTH] Credential content length:",
-      process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON?.length || 0
-    );
-    logger.error("Error parsing credentials from environment variable", error);
-  }
-} else if (credentialsPath) {
-  // Running locally - use the file path
-  console.log(
-    `[VERTEX-AUTH] Using service account key file: ${credentialsPath}`
-  );
-  vertexOptions.googleAuthOptions = { keyFilename: credentialsPath };
-  logger.info("Using service account credentials from file", {
-    path: credentialsPath,
-    auth_method: "key_file",
-  });
-} else {
-  console.log(
-    "[VERTEX-AUTH] No explicit credentials provided, falling back to application default credentials"
-  );
-  logger.warn(
-    "No explicit credentials provided, falling back to application default credentials"
-  );
-}
-
-const vertexAI = new VertexAI(vertexOptions);
 
 // System prompt for gardening assistance
 const GARDENING_SYSTEM_INSTRUCTION = `You are an expert Irish gardening assistant with a friendly, warm personality. Your name is Bloom, and you specialize in providing advice for gardeners in Ireland. 
@@ -136,20 +36,105 @@ Add personal touches to your responses like:
 - Occasional gardening metaphors or Irish gardening wisdom
 - Brief stories or experiences about gardening in Ireland
 
-SUSTAINABILITY GUIDANCE:
-When users ask about sustainability, carbon footprint, or eco-friendly gardening:
-- Provide specific information on carbon footprint savings from growing plants vs. buying them
-- Mention water conservation benefits, especially relevant during Irish dry periods
-- Highlight biodiversity benefits of certain plant types
-- Discuss UN Sustainable Development Goals (SDGs) that relate to gardening practices
-- Offer practical sustainable gardening tips specific to Irish conditions
-- Be encouraging and positive about the environmental benefits of home gardening
-- Indicate SHOWING_SUSTAINABILITY_CARDS in your response for sustainability queries
-
 When users ask about gardening tasks, provide very short and concise responses (1-2 sentences) and explicitly suggest clicking the View Calendar button. For example: "I've prepared those November tasks for you! Click the View Calendar button below to see what you should be doing in your garden." or "Here are your spring gardening tasks ready for you. Click View Calendar to start planning your season!"
 
 When users ask about plants or gardening tasks, indicate in your response if you recommend SHOWING_PLANT_CARDS or SHOWING_TASK_CARDS.
 Format your response as plain text with one of these indicators at the very end if appropriate.`;
+
+/**
+ * Initialize the Vertex AI client with proper authentication for current environment
+ * @returns {VertexAI} Configured Vertex AI client
+ */
+export function initializeVertexAI() {
+  logger.info(
+    `Setting up Vertex AI with project: ${projectId}, location: ${location}, model: ${modelName}`
+  );
+
+  // Check for available credentials to determine environment
+  const hasServiceAccountKeyFile = !!process.env.VERTEX_SERVICE_ACCOUNT_KEY;
+  const hasJsonCredentials = !!process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON;
+  
+  logger.info(`Available credentials - JSON: ${hasJsonCredentials}, Key file: ${hasServiceAccountKeyFile}`);
+  
+  // Initialize VertexAI options with required configuration
+  let vertexOptions = {};
+
+  // Explicitly check for project ID and add it if available
+  if (projectId) {
+    vertexOptions.project = projectId;
+  } else {
+    logger.warn("Project ID not found in environment variables. This will cause authentication failure.");
+  }
+
+  vertexOptions.location = location;
+
+  // Handle authentication based on available credentials
+  if (hasServiceAccountKeyFile) {
+    // Local development environment using file path
+    logger.info("Detected local environment with service account key file");
+    vertexOptions.googleAuthOptions = { 
+      keyFilename: process.env.VERTEX_SERVICE_ACCOUNT_KEY 
+    };
+    logger.info(`Using key file: ${process.env.VERTEX_SERVICE_ACCOUNT_KEY}`);
+  } else if (hasJsonCredentials) {
+    // Netlify environment using JSON in environment variable
+    logger.info("Detected Netlify environment with JSON credentials");
+    try {
+      // Create a temporary file for credentials
+      const tmpdir = os.tmpdir();
+      const tempKeyPath = path.join(tmpdir, `vertex-key-${Date.now()}.json`);
+
+      // Parse and write credentials to temp file
+      const credentials = JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON);
+      fs.writeFileSync(tempKeyPath, JSON.stringify(credentials, null, 2));
+
+      logger.info(`Wrote credentials to temporary file: ${tempKeyPath}`);
+      logger.info(`Using credentials for project: ${credentials.project_id}`);
+
+      // Set environment variable for Google Auth library
+      process.env.GOOGLE_APPLICATION_CREDENTIALS = tempKeyPath;
+
+      // Clean up temp file on exit
+      process.on("exit", () => {
+        try {
+          fs.unlinkSync(tempKeyPath);
+          logger.info(`Cleaned up temporary credentials file`);
+        } catch (e) {
+          logger.error(`Error cleaning up temp file: ${e.message}`);
+        }
+      });
+    } catch (error) {
+      logger.error("Error processing credentials", error);
+      throw new Error(`Invalid credentials: ${error.message}`);
+    }
+  } else {
+    logger.warn("No explicit credentials found in environment variables");
+  }
+
+  // Create and return VertexAI instance
+  logger.info("Creating VertexAI instance");
+
+  try {
+    // Verify project ID is set before creating the client
+    if (!vertexOptions.project) {
+      throw new Error("Missing project ID. Please set VERTEX_PROJECT_ID environment variable.");
+    }
+
+    // Create VertexAI instance
+    return new VertexAI(vertexOptions);
+  } catch (error) {
+    logger.error("Failed to initialize VertexAI client", error);
+
+    // Enhance error message for project ID issues
+    if (error.message.includes("Unable to infer your project") ||
+        error.message.includes("Missing project ID")) {
+      logger.error("Project ID Error: Make sure VERTEX_PROJECT_ID is correctly set in environment variables");
+    }
+
+    // Re-throw the error to be handled by the caller
+    throw error;
+  }
+}
 
 /**
  * Generate a chat response using Google Vertex AI
@@ -159,6 +144,9 @@ Format your response as plain text with one of these indicators at the very end 
  */
 export async function generateVertexResponse(messages, options = {}) {
   try {
+    // Initialize VertexAI with proper authentication
+    const vertexAI = initializeVertexAI();
+    
     // Convert messages format from OpenAI style to Vertex AI style
     const vertexMessages = messages.map((msg) => ({
       role: msg.role === "assistant" ? "model" : msg.role,
@@ -188,21 +176,15 @@ export async function generateVertexResponse(messages, options = {}) {
       model: modelName,
       messageCount: vertexMessages.length,
     });
-
-    // Log to console for Netlify's function logs
-    console.log(
-      `[VERTEX-REQUEST] Sending request to model: ${modelName} with ${vertexMessages.length} messages`
-    );
+    
+    // Log the request
+    logger.debug(`Sending request to model: ${modelName} with ${vertexMessages.length} messages`, { component: "VERTEX-REQUEST" });
 
     const response = await generativeModel.generateContent(request);
 
-    // Log to console for Netlify's function logs
-    console.log(
-      `[VERTEX-RESPONSE] Received response from Vertex AI: ${
-        response.response?.candidates ? "Success" : "Error"
-      }`
-    );
-
+    // Log the response
+    logger.debug(`Received response from Vertex AI: ${response.response?.candidates ? 'Success' : 'Error'}`, { component: "VERTEX-RESPONSE" });
+    
     // Log response summary without sensitive content
     logger.info("Received response from Vertex AI", {
       statusCode: response.response?.candidates ? 200 : 500,
@@ -297,9 +279,6 @@ export async function processGardeningQueryWithVertex(
   logger.debug("Checking response for card indicators", {
     hasPlantCards: responseText.includes("SHOWING_PLANT_CARDS"),
     hasTaskCards: responseText.includes("SHOWING_TASK_CARDS"),
-    hasSustainabilityCards: responseText.includes(
-      "SHOWING_SUSTAINABILITY_CARDS"
-    ),
     responseLength: responseText.length,
   });
 
@@ -307,43 +286,16 @@ export async function processGardeningQueryWithVertex(
     content = responseText.replace("SHOWING_PLANT_CARDS", "").trim();
     cardType = "plant";
     logger.info("Plant cards detected in response");
-    console.log("Set cardType to 'plant' from explicit marker");
   } else if (responseText.includes("SHOWING_TASK_CARDS")) {
     content = responseText.replace("SHOWING_TASK_CARDS", "").trim();
     cardType = "task";
     logger.info("Task cards detected in response");
-    console.log("Set cardType to 'task' from explicit marker");
-  } else if (responseText.includes("SHOWING_SUSTAINABILITY_CARDS")) {
-    content = responseText.replace("SHOWING_SUSTAINABILITY_CARDS", "").trim();
-    cardType = "sustainability";
-    logger.info("Sustainability cards detected in response");
-    console.log("Set cardType to 'sustainability' from explicit marker");
   } else {
     // Smart detection of content type without explicit markers
     const lowercaseContent = responseText.toLowerCase();
-    const lowercaseQuery = query.toLowerCase();
 
-    // Check for sustainability-related content patterns
-    if (
-      (lowercaseQuery.includes("carbon") ||
-        lowercaseQuery.includes("footprint") ||
-        lowercaseQuery.includes("sustainability") ||
-        lowercaseQuery.includes("sustainable") ||
-        lowercaseQuery.includes("eco-friendly") ||
-        lowercaseQuery.includes("environment") ||
-        lowercaseQuery.includes("sdg")) &&
-      (lowercaseContent.includes("carbon") ||
-        lowercaseContent.includes("footprint") ||
-        lowercaseContent.includes("emissions") ||
-        lowercaseContent.includes("sustainable") ||
-        lowercaseContent.includes("environmental impact"))
-    ) {
-      cardType = "sustainability";
-      logger.info("Sustainability cards inferred from content analysis");
-      console.log("Set cardType to 'sustainability' based on content analysis");
-    }
     // Check for plant-related content patterns
-    else if (
+    if (
       (lowercaseContent.includes("plant") ||
         lowercaseContent.includes("flower") ||
         lowercaseContent.includes("shrub") ||
@@ -355,7 +307,6 @@ export async function processGardeningQueryWithVertex(
     ) {
       cardType = "plant";
       logger.info("Plant cards inferred from content analysis");
-      console.log("Set cardType to 'plant' based on content analysis");
     }
     // Check for task-related content patterns
     else if (
@@ -370,10 +321,8 @@ export async function processGardeningQueryWithVertex(
     ) {
       cardType = "task";
       logger.info("Task cards inferred from content analysis");
-      console.log("Set cardType to 'task' based on content analysis");
     } else {
       logger.info("No card indicators found in response");
-      console.log("No card indicators found in response");
     }
   }
 
@@ -398,6 +347,9 @@ export async function processGardeningQueryWithVertex(
  */
 export async function countTokens(messages) {
   try {
+    // Initialize VertexAI with proper authentication
+    const vertexAI = initializeVertexAI();
+    
     // Convert messages format from OpenAI style to Vertex AI style
     const vertexMessages = messages.map((msg) => ({
       role: msg.role === "assistant" ? "model" : msg.role,
@@ -418,7 +370,7 @@ export async function countTokens(messages) {
     const response = await generativeModel.countTokens(request);
     return response.totalTokens;
   } catch (error) {
-    console.error("Error counting tokens:", error);
+    logger.error("Error counting tokens", error);
     return 0;
   }
 }
