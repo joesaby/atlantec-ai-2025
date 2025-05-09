@@ -136,6 +136,16 @@ Add personal touches to your responses like:
 - Occasional gardening metaphors or Irish gardening wisdom
 - Brief stories or experiences about gardening in Ireland
 
+SUSTAINABILITY GUIDANCE:
+When users ask about sustainability, carbon footprint, or eco-friendly gardening:
+- Provide specific information on carbon footprint savings from growing plants vs. buying them
+- Mention water conservation benefits, especially relevant during Irish dry periods
+- Highlight biodiversity benefits of certain plant types
+- Discuss UN Sustainable Development Goals (SDGs) that relate to gardening practices
+- Offer practical sustainable gardening tips specific to Irish conditions
+- Be encouraging and positive about the environmental benefits of home gardening
+- Indicate SHOWING_SUSTAINABILITY_CARDS in your response for sustainability queries
+
 When users ask about gardening tasks, provide very short and concise responses (1-2 sentences) and explicitly suggest clicking the View Calendar button. For example: "I've prepared those November tasks for you! Click the View Calendar button below to see what you should be doing in your garden." or "Here are your spring gardening tasks ready for you. Click View Calendar to start planning your season!"
 
 When users ask about plants or gardening tasks, indicate in your response if you recommend SHOWING_PLANT_CARDS or SHOWING_TASK_CARDS.
@@ -287,6 +297,9 @@ export async function processGardeningQueryWithVertex(
   logger.debug("Checking response for card indicators", {
     hasPlantCards: responseText.includes("SHOWING_PLANT_CARDS"),
     hasTaskCards: responseText.includes("SHOWING_TASK_CARDS"),
+    hasSustainabilityCards: responseText.includes(
+      "SHOWING_SUSTAINABILITY_CARDS"
+    ),
     responseLength: responseText.length,
   });
 
@@ -300,12 +313,37 @@ export async function processGardeningQueryWithVertex(
     cardType = "task";
     logger.info("Task cards detected in response");
     console.log("Set cardType to 'task' from explicit marker");
+  } else if (responseText.includes("SHOWING_SUSTAINABILITY_CARDS")) {
+    content = responseText.replace("SHOWING_SUSTAINABILITY_CARDS", "").trim();
+    cardType = "sustainability";
+    logger.info("Sustainability cards detected in response");
+    console.log("Set cardType to 'sustainability' from explicit marker");
   } else {
     // Smart detection of content type without explicit markers
     const lowercaseContent = responseText.toLowerCase();
+    const lowercaseQuery = query.toLowerCase();
 
-    // Check for plant-related content patterns
+    // Check for sustainability-related content patterns
     if (
+      (lowercaseQuery.includes("carbon") ||
+        lowercaseQuery.includes("footprint") ||
+        lowercaseQuery.includes("sustainability") ||
+        lowercaseQuery.includes("sustainable") ||
+        lowercaseQuery.includes("eco-friendly") ||
+        lowercaseQuery.includes("environment") ||
+        lowercaseQuery.includes("sdg")) &&
+      (lowercaseContent.includes("carbon") ||
+        lowercaseContent.includes("footprint") ||
+        lowercaseContent.includes("emissions") ||
+        lowercaseContent.includes("sustainable") ||
+        lowercaseContent.includes("environmental impact"))
+    ) {
+      cardType = "sustainability";
+      logger.info("Sustainability cards inferred from content analysis");
+      console.log("Set cardType to 'sustainability' based on content analysis");
+    }
+    // Check for plant-related content patterns
+    else if (
       (lowercaseContent.includes("plant") ||
         lowercaseContent.includes("flower") ||
         lowercaseContent.includes("shrub") ||

@@ -56,6 +56,49 @@ export const sdgGoals = {
   },
 };
 
+// Carbon footprint data for common foods (kg CO2e per kg of food)
+export const foodCarbonFootprint = {
+  // Store-bought foods
+  storeBought: {
+    potatoes: 0.5,
+    onions: 0.4,
+    carrots: 0.5,
+    kale: 0.4,
+    cabbage: 0.5,
+    apples: 0.6,
+    strawberries: 1.1,
+    tomatoes: 2.1, // Higher for store-bought as often grown in heated greenhouses in Ireland
+    herbs: 1.0,
+  },
+  // Home-grown foods (significantly lower due to no transportation, packaging, etc.)
+  homeGrown: {
+    potatoes: 0.08,
+    onions: 0.06,
+    carrots: 0.07,
+    kale: 0.05,
+    cabbage: 0.05,
+    apples: 0.1,
+    strawberries: 0.15,
+    tomatoes: 0.2, // Assumes some protection but no heating
+    herbs: 0.01, // Extremely low impact when grown at home
+  },
+  // Average food miles for store-bought produce in Ireland (km)
+  averageFoodMiles: {
+    localFarmers: 50,
+    domesticProduce: 200,
+    europeanImports: 1500,
+    globalImports: 10000,
+    homeGrown: 0,
+  },
+  // Plastic packaging savings (g per kg of produce)
+  packagingSaved: {
+    averageVegetable: 25,
+    leafyGreens: 40,
+    fruits: 30,
+    herbs: 15,
+  },
+};
+
 // Resource conservation categories with practices
 export const sustainablePractices = {
   water: {
@@ -205,6 +248,136 @@ export const sustainablePractices = {
       },
     ],
   },
+  foodGrowing: {
+    name: "Food Growing",
+    icon: "seedling",
+    description:
+      "Growing your own food has significant environmental and health benefits while contributing to food security and resilience.",
+    sdgs: ["sdg2", "sdg12", "sdg13", "sdg11"],
+    practices: [
+      {
+        id: "food-1",
+        name: "Vegetable Gardening",
+        description:
+          "Growing your own vegetables reduces food miles, eliminates packaging waste, and lets you use organic growing methods.",
+        impact: "high",
+        difficulty: "medium",
+        sdgs: ["sdg2", "sdg12", "sdg13"],
+        tips: "Start with easy crops like potatoes, kale, and onions that grow well in Irish conditions. Growing just 4m² of vegetables can save approximately 5kg of CO₂ emissions monthly.",
+        impactStats: {
+          carbonSaved: "1-2kg CO₂ per kg of produce compared to store-bought",
+          packagingSaved: "25-40g plastic per kg of produce",
+          waterSaved: "Up to 70% less water than commercial farming",
+          pesticidesAvoided: "100% if using organic methods",
+        },
+        visualImpact: {
+          carbonIcon: "🌍",
+          carbonLevel: 4,
+          waterIcon: "💧",
+          waterLevel: 3,
+          biodiversityIcon: "🦋",
+          biodiversityLevel: 3,
+        },
+      },
+      {
+        id: "food-2",
+        name: "Herb Growing",
+        description:
+          "Growing herbs provides fresh flavors with minimal space while having an extremely low environmental footprint.",
+        impact: "medium",
+        difficulty: "easy",
+        sdgs: ["sdg2", "sdg12"],
+        tips: "Herbs like parsley, chives, and mint thrive in the Irish climate and can be grown in pots on a windowsill. Store-bought herbs often have high food miles and excessive packaging.",
+        impactStats: {
+          carbonSaved: "Up to 99% less carbon compared to store-bought herbs",
+          packagingSaved:
+            "Eliminates approximately 15g plastic per typical herb package",
+          freshness: "Harvest as needed for maximum nutrition and flavor",
+        },
+        visualImpact: {
+          carbonIcon: "🌍",
+          carbonLevel: 5,
+          waterIcon: "💧",
+          waterLevel: 4,
+          biodiversityIcon: "🦋",
+          biodiversityLevel: 2,
+        },
+      },
+      {
+        id: "food-3",
+        name: "Fruit Growing",
+        description:
+          "Growing fruit trees and bushes provides years of harvests with minimal maintenance while enhancing garden biodiversity.",
+        impact: "high",
+        difficulty: "medium",
+        sdgs: ["sdg2", "sdg13", "sdg15"],
+        tips: "Apple trees, blackcurrants, and strawberries are particularly suited to Irish gardens. A single mature apple tree can provide up to 100kg of fruit annually while sequestering carbon.",
+        impactStats: {
+          carbonSequestered: "15-20kg CO₂ annually per mature fruit tree",
+          carbonSaved: "0.5-1kg CO₂ per kg of fruit compared to store-bought",
+          biodiversityGain: "Supports pollinators and 10+ wildlife species",
+          localResilience:
+            "Increases local food security and reduces dependency",
+        },
+        visualImpact: {
+          carbonIcon: "🌍",
+          carbonLevel: 5,
+          waterIcon: "💧",
+          waterLevel: 3,
+          biodiversityIcon: "🦋",
+          biodiversityLevel: 5,
+        },
+      },
+      {
+        id: "food-4",
+        name: "Seasonal Eating",
+        description:
+          "Aligning growing and eating patterns with natural seasons reduces energy needs for growing and storing food.",
+        impact: "medium",
+        difficulty: "easy",
+        sdgs: ["sdg12", "sdg13", "sdg2"],
+        tips: "Plan your Irish garden around succession planting for year-round harvests. Winter vegetables like kale and leeks can provide fresh food during colder months.",
+        impactStats: {
+          energySaved:
+            "Up to 90% less energy than importing out-of-season produce",
+          nutritionalGain:
+            "Freshly harvested seasonal produce contains up to 50% more nutrients",
+          resilienceGain: "Reduces dependency on global supply chains",
+        },
+        visualImpact: {
+          carbonIcon: "🌍",
+          carbonLevel: 4,
+          waterIcon: "💧",
+          waterLevel: 4,
+          biodiversityIcon: "🦋",
+          biodiversityLevel: 3,
+        },
+      },
+      {
+        id: "food-5",
+        name: "Seed-to-Table Tracking",
+        description:
+          "Recording the complete journey of your food from planting to harvest and consumption.",
+        impact: "medium",
+        difficulty: "easy",
+        sdgs: ["sdg12", "sdg2"],
+        tips: "Keep a simple garden journal tracking planting dates, harvests, and meals made. This creates awareness of the full food cycle and helps improve future growing.",
+        impactStats: {
+          awarenessGain: "Increases appreciation for food production by 78%",
+          wasteReduction: "Typically reduces food waste by 25-30%",
+          skillBuilding: "Develops self-reliance and food production knowledge",
+        },
+        visualImpact: {
+          carbonIcon: "🌍",
+          carbonLevel: 3,
+          waterIcon: "💧",
+          waterLevel: 3,
+          biodiversityIcon: "🦋",
+          biodiversityLevel: 2,
+        },
+      },
+    ],
+  },
   resources: {
     name: "Resource Conservation",
     icon: "recycle",
@@ -303,6 +476,43 @@ export const sustainablePractices = {
   },
 };
 
+// Calculate food growing impact based on user input
+export const calculateFoodGrowingImpact = (
+  crop,
+  amount,
+  method = "homeGrown"
+) => {
+  // Default values if crop not in database
+  const storeBoughtCarbon = foodCarbonFootprint.storeBought[crop] || 0.5;
+  const homeGrownCarbon = foodCarbonFootprint.homeGrown[crop] || 0.08;
+
+  // Calculate the difference in carbon footprint
+  const carbonSaved = (storeBoughtCarbon - homeGrownCarbon) * amount;
+
+  // Estimate packaging saved (in grams)
+  let packagingType = "averageVegetable";
+  if (["kale", "cabbage"].includes(crop)) packagingType = "leafyGreens";
+  if (["apples", "strawberries"].includes(crop)) packagingType = "fruits";
+  if (["basil", "parsley", "mint", "thyme"].includes(crop))
+    packagingType = "herbs";
+
+  const packagingSaved =
+    foodCarbonFootprint.packagingSaved[packagingType] * amount;
+
+  // Food miles saved
+  const foodMilesSaved = foodCarbonFootprint.averageFoodMiles.domesticProduce;
+
+  return {
+    crop,
+    amount,
+    carbonSaved,
+    packagingSaved,
+    foodMilesSaved,
+    waterSaved: amount * 20, // Rough estimate: 20L water saved per kg
+    transportEmissionsSaved: ((foodMilesSaved * 0.1) / 1000) * amount, // Rough estimate of transport emissions
+  };
+};
+
 // Get all practices as a flat array
 export const getAllPractices = () => {
   const allPractices = [];
@@ -351,4 +561,32 @@ export const getPracticeById = (id) => {
   });
 
   return foundPractice;
+};
+
+// New helper functions for food impact visualization
+
+// Get food carbon savings by crop type
+export const getFoodCarbonSavings = (cropType, quantity = 1) => {
+  const storeBought = foodCarbonFootprint.storeBought[cropType] || 0.5;
+  const homeGrown = foodCarbonFootprint.homeGrown[cropType] || 0.08;
+  return (storeBought - homeGrown) * quantity;
+};
+
+// Calculate annual impact based on garden size
+export const calculateAnnualGardenImpact = (areaInSquareMeters = 10) => {
+  // Average Irish yield per square meter
+  const yieldPerSquareMeter = 4; // kg per square meter per year (conservative estimate)
+  const totalYield = areaInSquareMeters * yieldPerSquareMeter;
+
+  // Conservative estimates of impact
+  return {
+    totalYield: totalYield, // kg of produce
+    carbonSaved: totalYield * 0.4, // kg CO2 saved (conservative average)
+    packagingSaved: totalYield * 0.03, // kg of packaging saved
+    waterSaved: totalYield * 20, // liters of water saved
+    moneyValue: totalYield * 5, // Euro value (approximately €5 per kg average)
+    mealCount: Math.round(totalYield / 0.25), // Approx number of meal portions
+    foodMilesSaved:
+      totalYield * foodCarbonFootprint.averageFoodMiles.domesticProduce,
+  };
 };

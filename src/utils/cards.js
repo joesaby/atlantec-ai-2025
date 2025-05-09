@@ -5,6 +5,8 @@ import {
   getSoilDataByLocation,
   getSoilTypeInformation,
 } from "../utils/soil-client";
+import { calculateCarbonSavings } from "../utils/carbon-footprint";
+import { foodCarbonFootprint } from "../data/sustainability-metrics";
 
 /**
  * Card types supported by the system
@@ -44,6 +46,15 @@ export function selectCardsForResponse(query, llmResponse) {
   const { content, cardType } = llmResponse;
   let cards = [];
 
+  // First check if this is a sustainability-related query
+  if (isQueryAboutSustainability(query, content)) {
+    cards = getSustainabilityCards(query, content);
+    if (cards.length > 0) {
+      return cards;
+    }
+  }
+
+  // If not sustainability or no sustainability cards created, proceed with normal card selection
   switch (cardType) {
     case CARD_TYPES.PLANT:
       cards = getPlantCards(query, content);
@@ -54,12 +65,84 @@ export function selectCardsForResponse(query, llmResponse) {
     case CARD_TYPES.SOIL:
       cards = getSoilCards(query, content);
       break;
+    case CARD_TYPES.SUSTAINABILITY:
+      cards = getSustainabilityCards(query, content);
+      break;
     default:
       // No cards to display
       break;
   }
 
   return cards;
+}
+
+/**
+ * Check if a query is about sustainability or carbon footprint
+ * @param {string} query - The user's query
+ * @param {string} content - The LLM response content
+ * @returns {boolean} - Whether the query is sustainability-related
+ */
+function isQueryAboutSustainability(query, content) {
+  const combinedText = (query + " " + content).toLowerCase();
+
+  // Keywords related to sustainability
+  const sustainabilityKeywords = [
+    "sustainability",
+    "carbon footprint",
+    "eco-friendly",
+    "sustainable",
+    "climate change",
+    "carbon",
+    "emissions",
+    "sdg",
+    "sustainable development",
+    "environmental impact",
+    "green gardening",
+    "eco",
+    "ecological",
+    "water conservation",
+    "growing your own",
+    "food miles",
+    "growing food",
+    "grow vegetables",
+    "own crops",
+    "home grown",
+    "garden impact",
+  ];
+
+  // Check for presence of sustainability keywords
+  return sustainabilityKeywords.some((keyword) =>
+    combinedText.includes(keyword)
+  );
+}
+
+/**
+ * Check if the sustainability query is specifically about food growing
+ * @param {string} query - The user's query
+ * @param {string} content - The LLM response content
+ * @returns {boolean} - Whether the query is about food growing sustainability
+ */
+function isFoodGrowingSustainabilityQuery(query, content) {
+  const combinedText = (query + " " + content).toLowerCase();
+
+  // Check for food growing specific terms
+  const foodGrowingTerms = [
+    "grow your own",
+    "growing your own",
+    "home grown",
+    "homegrown",
+    "food miles",
+    "growing food",
+    "grow vegetables",
+    "growing vegetables",
+    "vegetable garden",
+    "food growing",
+    "own crops",
+    "garden crops",
+  ];
+
+  // Check if any food growing terms are present
+  return foodGrowingTerms.some((term) => combinedText.includes(term));
 }
 
 /**
@@ -77,6 +160,210 @@ function getPlantCards(query, content) {
     type: CARD_TYPES.PLANT,
     data: plant,
   }));
+}
+
+/**
+ * Returns sustainability cards based on the query and LLM response
+ * @param {string} query - The user's original query
+ * @param {string} content - The text content of the LLM response
+ * @returns {Array} - Array of sustainability card objects
+ */
+function getSustainabilityCards(query, content) {
+  // Check if this is specifically about food growing sustainability
+  if (isFoodGrowingSustainabilityQuery(query, content)) {
+    return getFoodSustainabilityCards(query, content);
+  }
+
+  // Extract plant names and quantities from the query and content
+  const extractedPlants = extractPlantsFromContent(query + " " + content);
+
+  if (extractedPlants.length === 0) {
+    // If no specific plants were mentioned, use some common Irish garden plants
+    const commonPlants = [
+      { name: "potato", quantity: 5, isOrganic: true },
+      { name: "apple", quantity: 1, isOrganic: true },
+      { name: "kale", quantity: 3, isOrganic: true },
+    ];
+
+    return commonPlants.map((plant, index) => ({
+      type: CARD_TYPES.SUSTAINABILITY,
+      data: {
+        id: `sustainability_${plant.name}_${index}`,
+        plantName: plant.name,
+        quantity: plant.quantity,
+        isOrganic: plant.isOrganic,
+        showDetailedBreakdown: index === 0, // Show detailed breakdown just for the first plant
+      },
+    }));
+  }
+
+  // Create sustainability cards for each extracted plant
+  return extractedPlants.map((plant, index) => ({
+    type: CARD_TYPES.SUSTAINABILITY,
+    data: {
+      id: `sustainability_${plant.name}_${index}`,
+      plantName: plant.name,
+      quantity: plant.quantity || 1,
+      isOrganic: plant.isOrganic !== false,
+      showDetailedBreakdown: index === 0, // Show detailed breakdown just for the first plant
+    },
+  }));
+}
+
+/**
+ * Returns food growing sustainability cards with enhanced metrics
+ * @param {string} query - The user's original query
+ * @param {string} content - The text content of the LLM response
+ * @returns {Array} - Array of food sustainability card objects
+ */
+function getFoodSustainabilityCards(query, content) {
+  const combinedText = (query + " " + content).toLowerCase();
+  const cards = [];
+
+  // Extract garden area if mentioned (in square meters)
+  let gardenArea = null;
+  const areaMatches = combinedText.match(
+    /(\d+)\s*(?:square\s*meters?|sq\.?\s*m\.?|m2|m²)/i
+  );
+  if (areaMatches && areaMatches[1]) {
+    gardenArea = parseInt(areaMatches[1], 10);
+  }
+
+  // Extract specific crops if mentioned
+  const specificCrops = [];
+
+  Object.keys(foodCarbonFootprint.storeBought).forEach((crop) => {
+    if (combinedText.includes(crop)) {
+      // Try to extract quantity
+      let quantity = 1;
+      const qtyMatches = combinedText.match(
+        new RegExp(`(\\d+)\\s+(?:kg of |kilos? of |pounds? of )?${crop}s?`, "i")
+      );
+
+      if (qtyMatches && qtyMatches[1]) {
+        quantity = parseInt(qtyMatches[1], 10);
+      }
+
+      specificCrops.push({
+        crop,
+        quantity,
+      });
+    }
+  });
+
+  // Create cards based on the extracted information
+  if (specificCrops.length > 0) {
+    // Create a card for each specific crop mentioned
+    specificCrops.forEach((cropInfo, index) => {
+      cards.push({
+        type: CARD_TYPES.SUSTAINABILITY,
+        data: {
+          id: `food_sustainability_${cropInfo.crop}_${index}`,
+          isFoodSustainability: true,
+          crop: cropInfo.crop,
+          quantity: cropInfo.quantity,
+        },
+      });
+    });
+  } else {
+    // If no specific crops were mentioned, create a general food growing sustainability card
+    cards.push({
+      type: CARD_TYPES.SUSTAINABILITY,
+      data: {
+        id: `food_sustainability_general_${Date.now()}`,
+        isFoodSustainability: true,
+        gardenArea: gardenArea || 10, // Default to 10m² if not specified
+      },
+    });
+  }
+
+  return cards;
+}
+
+/**
+ * Extract plant names and quantities from content
+ * @param {string} content - The content to analyze
+ * @returns {Array} - Array of plant objects with name and quantity
+ */
+function extractPlantsFromContent(content) {
+  const plants = [];
+  const lowerContent = content.toLowerCase();
+
+  // Common garden plants to look for in Irish gardens
+  const commonPlants = [
+    "potato",
+    "carrot",
+    "onion",
+    "leek",
+    "garlic",
+    "cabbage",
+    "lettuce",
+    "spinach",
+    "kale",
+    "tomato",
+    "pepper",
+    "courgette",
+    "cucumber",
+    "pea",
+    "bean",
+    "strawberry",
+    "raspberry",
+    "blackberry",
+    "apple",
+    "pear",
+    "rhubarb",
+    "broccoli",
+    "cauliflower",
+    "parsnip",
+  ];
+
+  // Check for presence of each plant
+  for (const plant of commonPlants) {
+    if (lowerContent.includes(plant)) {
+      // Try to find quantity
+      let quantity = 1;
+
+      // Look for patterns like "5 potatoes" or "ten apple trees"
+      const numberWords = {
+        one: 1,
+        two: 2,
+        three: 3,
+        four: 4,
+        five: 5,
+        six: 6,
+        seven: 7,
+        eight: 8,
+        nine: 9,
+        ten: 10,
+      };
+
+      // Check for numeric quantities
+      const regexDigit = new RegExp(`(\\d+)\\s+${plant}s?`, "i");
+      const digitMatch = lowerContent.match(regexDigit);
+
+      if (digitMatch && digitMatch[1]) {
+        quantity = parseInt(digitMatch[1], 10);
+      } else {
+        // Check for word quantities
+        for (const [word, value] of Object.entries(numberWords)) {
+          const regexWord = new RegExp(`${word}\\s+${plant}s?`, "i");
+          if (lowerContent.match(regexWord)) {
+            quantity = value;
+            break;
+          }
+        }
+      }
+
+      // Check if organic is mentioned
+      const isOrganic =
+        !lowerContent.includes(`non-organic ${plant}`) &&
+        !lowerContent.includes(`conventional ${plant}`);
+
+      plants.push({ name: plant, quantity, isOrganic });
+    }
+  }
+
+  return plants;
 }
 
 /**

@@ -1,7 +1,9 @@
 import React, { useState, useRef, useEffect } from "react";
 import PlantCard from "../plants/PlantCard";
 import TaskCard from "./TaskCard";
-import { selectCardsForResponse } from "../../utils/cards";
+import PlantSustainabilityInfo from "../sustainability/PlantSustainabilityInfo";
+import FoodSustainabilityInfo from "../sustainability/FoodSustainabilityInfo";
+import { selectCardsForResponse, CARD_TYPES } from "../../utils/cards";
 import { samplePlants } from "../../data/plants";
 import { sampleTasks } from "../../data/gardening-tasks";
 
@@ -9,7 +11,8 @@ const GardenAgent = () => {
   const [messages, setMessages] = useState([
     {
       role: "assistant",
-      content: "Hello there! I'm Bloom, your Irish gardening assistant. How can I help with your garden today? Whether you need plant recommendations, seasonal tasks, or growing tips for our unique Irish climate, I'm here to help you create a thriving garden.",
+      content:
+        "Hello there! I'm Bloom, your Irish gardening assistant. How can I help with your garden today? Whether you need plant recommendations, seasonal tasks, or growing tips for our unique Irish climate, I'm here to help you create a thriving garden.",
       timestamp: new Date(),
     },
   ]);
@@ -36,9 +39,9 @@ const GardenAgent = () => {
     if (input.trim() === "") return;
 
     // Hide the calendar when starting a new query
-    const calendarContainer = document.querySelector('#calendar-container');
+    const calendarContainer = document.querySelector("#calendar-container");
     if (calendarContainer) {
-      calendarContainer.classList.add('hidden');
+      calendarContainer.classList.add("hidden");
     }
 
     // Add user message
@@ -69,9 +72,9 @@ const GardenAgent = () => {
         query: input,
         conversationHistory,
       });
-      
+
       console.log("Sending request to garden API:", requestBody);
-      
+
       const response = await fetch("/api/garden", {
         method: "POST",
         headers: {
@@ -83,12 +86,14 @@ const GardenAgent = () => {
       if (!response.ok) {
         const errorText = await response.text();
         console.error("API response error:", response.status, errorText);
-        throw new Error(`Failed to get response from garden assistant: ${response.status}`);
+        throw new Error(
+          `Failed to get response from garden assistant: ${response.status}`
+        );
       }
 
       const responseText = await response.text();
       console.log("API response text:", responseText);
-      
+
       let aiResponse;
       try {
         aiResponse = JSON.parse(responseText);
@@ -136,26 +141,34 @@ const GardenAgent = () => {
   useEffect(() => {
     // When we have task cards, dispatch an event to notify the calendar component but don't show it yet
     const latestMessage = messages[messages.length - 1];
-    if (latestMessage && 
-        latestMessage.role === "assistant" && 
-        latestMessage.cards && 
-        latestMessage.cards.length > 0 && 
-        latestMessage.cards[0].type === "task") {
-      
+    if (
+      latestMessage &&
+      latestMessage.role === "assistant" &&
+      latestMessage.cards &&
+      latestMessage.cards.length > 0 &&
+      latestMessage.cards[0].type === "task"
+    ) {
       // Extract month information from the query if available
-      const lastUserMessage = messages.findLast(msg => msg.role === "user");
-      const monthInfo = extractMonthInfoFromQuery(lastUserMessage?.content || "");
-      
+      const lastUserMessage = messages.findLast((msg) => msg.role === "user");
+      const monthInfo = extractMonthInfoFromQuery(
+        lastUserMessage?.content || ""
+      );
+
       // Dispatch custom event with task cards data and indicate not to show calendar automatically
-      const taskCardsEvent = new CustomEvent('task-cards-available', {
+      const taskCardsEvent = new CustomEvent("task-cards-available", {
         detail: {
           tasks: latestMessage.cards,
           monthInfo: monthInfo,
-          showCalendar: false // Don't show calendar automatically
-        }
+          showCalendar: false, // Don't show calendar automatically
+        },
       });
       window.dispatchEvent(taskCardsEvent);
-      console.log('Dispatched task-cards-available event with', latestMessage.cards.length, 'tasks', monthInfo);
+      console.log(
+        "Dispatched task-cards-available event with",
+        latestMessage.cards.length,
+        "tasks",
+        monthInfo
+      );
     }
   }, [messages]);
 
@@ -163,43 +176,58 @@ const GardenAgent = () => {
   const extractMonthInfoFromQuery = (query) => {
     const monthInfo = {};
     const lowercaseQuery = query.toLowerCase();
-    
+
     // Check for seasons mentioned
-    if (lowercaseQuery.includes('spring')) {
-      monthInfo.season = 'spring';
-    } else if (lowercaseQuery.includes('summer')) {
-      monthInfo.season = 'summer';
-    } else if (lowercaseQuery.includes('autumn') || lowercaseQuery.includes('fall')) {
-      monthInfo.season = 'autumn';
-    } else if (lowercaseQuery.includes('winter')) {
-      monthInfo.season = 'winter';
+    if (lowercaseQuery.includes("spring")) {
+      monthInfo.season = "spring";
+    } else if (lowercaseQuery.includes("summer")) {
+      monthInfo.season = "summer";
+    } else if (
+      lowercaseQuery.includes("autumn") ||
+      lowercaseQuery.includes("fall")
+    ) {
+      monthInfo.season = "autumn";
+    } else if (lowercaseQuery.includes("winter")) {
+      monthInfo.season = "winter";
     }
-    
+
     // Check for specific months mentioned
     const months = [
-      'january', 'february', 'march', 'april', 'may', 'june',
-      'july', 'august', 'september', 'october', 'november', 'december'
+      "january",
+      "february",
+      "march",
+      "april",
+      "may",
+      "june",
+      "july",
+      "august",
+      "september",
+      "october",
+      "november",
+      "december",
     ];
-    
+
     // Find any month mentioned in the query
-    const mentionedMonth = months.find(month => lowercaseQuery.includes(month));
+    const mentionedMonth = months.find((month) =>
+      lowercaseQuery.includes(month)
+    );
     if (mentionedMonth) {
       // Convert month name to number (1-12)
       monthInfo.month = months.indexOf(mentionedMonth) + 1;
-      
+
       // If a specific month is mentioned (without season), we only want to show that month
       if (!monthInfo.season) {
         monthInfo.isSingleMonth = true;
         monthInfo.months = 1;
       }
     }
-    
+
     // Check for number of months specification
     const monthsMatch = lowercaseQuery.match(/next\s+(\d+)\s+months/);
     if (monthsMatch && monthsMatch[1]) {
       monthInfo.months = parseInt(monthsMatch[1], 10);
     }
-    
+
     return monthInfo;
   };
 
@@ -227,10 +255,33 @@ const GardenAgent = () => {
   // Render different card types
   const renderCard = (card) => {
     switch (card.type) {
-      case "plant":
+      case CARD_TYPES.PLANT:
         return <PlantCard plant={card.data} key={card.data.id} />;
-      case "task":
+      case CARD_TYPES.TASK:
         return <TaskCard task={card.data} key={card.data.id} />;
+      case CARD_TYPES.SUSTAINABILITY:
+        // Check if this is a food sustainability card with crop data
+        if (card.data.isFoodSustainability) {
+          return (
+            <FoodSustainabilityInfo
+              crop={card.data.crop}
+              quantity={card.data.quantity}
+              gardenArea={card.data.gardenArea}
+              key={card.data.id}
+            />
+          );
+        } else {
+          // Regular plant sustainability
+          return (
+            <PlantSustainabilityInfo
+              plantName={card.data.plantName}
+              quantity={card.data.quantity}
+              isOrganic={card.data.isOrganic}
+              showDetailedBreakdown={card.data.showDetailedBreakdown}
+              key={card.data.id}
+            />
+          );
+        }
       default:
         return null;
     }
@@ -334,8 +385,8 @@ const GardenAgent = () => {
               )}
             </div>
             <div className="text-xs text-base-content/50 mt-2">
-              Try asking about "plant recommendations" or "gardening tasks for
-              spring"
+              Try asking about "plant recommendations", "sustainability of
+              potatoes", or "carbon footprint of growing vegetables"
             </div>
           </form>
 
@@ -367,28 +418,46 @@ const GardenAgent = () => {
                     {formatTime(messages[messages.length - 1].timestamp)}
                   </time>
                 </div>
-                
-                {/* Show content based on message type */}
-                {messages[messages.length - 1].cards && 
-                 messages[messages.length - 1].cards.length > 0 && 
-                 messages[messages.length - 1].cards[0].type === "task" ? (
+
+                {/* Show content based on message type and card types */}
+                {messages[messages.length - 1].cards &&
+                messages[messages.length - 1].cards.length > 0 &&
+                messages[messages.length - 1].cards[0].type ===
+                  CARD_TYPES.TASK ? (
                   // For task cards, show a notification with a button to view calendar
                   <div className="chat-bubble chat-bubble-primary">
                     {messages[messages.length - 1].content}
                     <div className="mt-3 alert alert-info shadow-lg flex justify-between items-center">
                       <div className="flex items-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current flex-shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="stroke-current flex-shrink-0 h-6 w-6"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                          />
                         </svg>
-                        <span>Your gardening tasks are ready! Check your task calendar.</span>
+                        <span>
+                          Your gardening tasks are ready! Check your task
+                          calendar.
+                        </span>
                       </div>
-                      <button 
-                        className="btn btn-sm btn-primary" 
+                      <button
+                        className="btn btn-sm btn-primary"
                         onClick={() => {
-                          const calendarContainer = document.querySelector('#calendar-container');
+                          const calendarContainer = document.querySelector(
+                            "#calendar-container"
+                          );
                           if (calendarContainer) {
-                            calendarContainer.classList.remove('hidden');
-                            calendarContainer.scrollIntoView({ behavior: 'smooth' });
+                            calendarContainer.classList.remove("hidden");
+                            calendarContainer.scrollIntoView({
+                              behavior: "smooth",
+                            });
                           }
                         }}
                       >
@@ -396,13 +465,33 @@ const GardenAgent = () => {
                       </button>
                     </div>
                   </div>
-                ) : messages[messages.length - 1].cards && 
-                   messages[messages.length - 1].cards.length > 0 ? (
+                ) : messages[messages.length - 1].cards &&
+                  messages[messages.length - 1].cards.length > 0 &&
+                  messages[messages.length - 1].cards[0].type ===
+                    CARD_TYPES.SUSTAINABILITY ? (
+                  // For sustainability cards
+                  <div>
+                    <div className="chat-bubble chat-bubble-primary mb-4">
+                      {messages[messages.length - 1].content}
+                    </div>
+                    <div className="grid grid-cols-1 gap-6 mt-2 mb-4 max-w-3xl">
+                      {messages[messages.length - 1].cards.map((card) =>
+                        renderCard(card)
+                      )}
+                    </div>
+                  </div>
+                ) : messages[messages.length - 1].cards &&
+                  messages[messages.length - 1].cards.length > 0 ? (
                   // For other card types (like plant cards), show the cards normally
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2 mb-4 max-w-3xl">
-                    {messages[messages.length - 1].cards.map((card) =>
-                      renderCard(card)
-                    )}
+                  <div>
+                    <div className="chat-bubble chat-bubble-primary mb-4">
+                      {messages[messages.length - 1].content}
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2 mb-4 max-w-3xl">
+                      {messages[messages.length - 1].cards.map((card) =>
+                        renderCard(card)
+                      )}
+                    </div>
                   </div>
                 ) : (
                   // For regular text messages with no cards
@@ -540,11 +629,15 @@ const GardenAgent = () => {
                   {message.content}
                 </div>
                 {/* Show card indicator in the drawer for assistant messages with cards */}
-                {message.role === "assistant" && message.cards && message.cards.length > 0 && (
-                  <div className="mt-2">
-                    <div className="badge badge-sm">Contains {message.cards.length} card(s)</div>
-                  </div>
-                )}
+                {message.role === "assistant" &&
+                  message.cards &&
+                  message.cards.length > 0 && (
+                    <div className="mt-2">
+                      <div className="badge badge-sm">
+                        Contains {message.cards.length} card(s)
+                      </div>
+                    </div>
+                  )}
               </div>
             ))}
             <div ref={messagesEndRef} />
