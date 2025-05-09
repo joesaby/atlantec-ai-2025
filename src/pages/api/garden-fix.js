@@ -1,5 +1,5 @@
 // src/pages/api/garden-fix.js
-// A fixed version of the garden API that focuses on credential handling
+// A fixed version of the garden API that works in both local and Netlify environments
 
 import { VertexAI } from "@google-cloud/vertexai";
 import fs from "fs";
@@ -62,46 +62,52 @@ export async function POST({ request }) {
 
     // Set up VertexAI with explicit logging
     const projectId = process.env.VERTEX_PROJECT_ID;
-    const location = process.env.VERTEX_LOCATION || "us-central1"; // Try US region
+    const location = process.env.VERTEX_LOCATION || "us-central1";
     const modelName = process.env.VERTEX_MODEL || "gemini-2.0-flash-001";
 
     logger.info(
       `Setting up Vertex AI with project: ${projectId}, location: ${location}, model: ${modelName}`
     );
 
-    // Check for credentials JSON
-    let credentials = null;
+    // Check for credentials and determine environment
+    const hasServiceAccountKeyFile = !!process.env.VERTEX_SERVICE_ACCOUNT_KEY;
+    const hasJsonCredentials = !!process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON;
+    
+    logger.info(`Available credentials - JSON: ${hasJsonCredentials}, Key file: ${hasServiceAccountKeyFile}`);
+    
+    // Initialize VertexAI options with required configuration
     let vertexOptions = {
       project: projectId,
-      location: location,
+      location: location
     };
 
-    if (process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
+    // Simple environment check based on available credentials
+    if (hasServiceAccountKeyFile) {
+      // Local development environment using file path
+      logger.info("Detected local environment with service account key file");
+      vertexOptions.googleAuthOptions = { 
+        keyFilename: process.env.VERTEX_SERVICE_ACCOUNT_KEY 
+      };
+      logger.info(`Using key file: ${process.env.VERTEX_SERVICE_ACCOUNT_KEY}`);
+    } else if (hasJsonCredentials) {
+      // Netlify environment using JSON in environment variable
+      logger.info("Detected Netlify environment with JSON credentials");
       try {
-        // Special handling for Netlify - write credentials to a temp file
-        logger.info("Creating temporary file for credentials");
+        // Create a temporary file for credentials
         const tmpdir = os.tmpdir();
         const tempKeyPath = path.join(tmpdir, `vertex-key-${Date.now()}.json`);
 
-        // Parse and validate credentials
-        credentials = JSON.parse(
-          process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON
-        );
+        // Parse and write credentials to temp file
+        const credentials = JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON);
         fs.writeFileSync(tempKeyPath, JSON.stringify(credentials, null, 2));
 
         logger.info(`Wrote credentials to temporary file: ${tempKeyPath}`);
+        logger.info(`Using credentials for project: ${credentials.project_id}`);
 
         // Set environment variable for Google Auth library
         process.env.GOOGLE_APPLICATION_CREDENTIALS = tempKeyPath;
 
-        // Log key info
-        logger.info(`Using credentials for project: ${credentials.project_id}`);
-
-        // Critical: Don't set the credentials object directly
-        // Let the Google Auth library find it through the environment variable
-        // vertexOptions.credentials = credentials;
-
-        // Clean up the temp file when done
+        // Clean up temp file on exit
         process.on("exit", () => {
           try {
             fs.unlinkSync(tempKeyPath);
@@ -115,8 +121,7 @@ export async function POST({ request }) {
         return new Response(
           JSON.stringify({
             error: "Invalid credentials",
-            content:
-              "There was a problem with the authentication. Please check your configuration.",
+            content: "There was a problem with the authentication. Please check your configuration.",
           }),
           {
             status: 500,
@@ -127,7 +132,7 @@ export async function POST({ request }) {
         );
       }
     } else {
-      logger.warn("No JSON credentials found in environment");
+      logger.warn("No credentials found in environment variables");
     }
 
     // Create VertexAI instance
@@ -135,7 +140,31 @@ export async function POST({ request }) {
     const vertexAI = new VertexAI(vertexOptions);
 
     // System prompt for gardening assistance
-    const GARDENING_SYSTEM_INSTRUCTION = `You are an expert Irish gardening assistant with a friendly, warm personality. Your name is Bloom, and you specialize in providing advice for gardeners in Ireland.`;
+    const GARDENING_SYSTEM_INSTRUCTION = `You are an expert Irish gardening assistant with a friendly, warm personality. Your name is Bloom, and you specialize in providing advice for gardeners in Ireland. 
+
+Your responses should be:
+- Helpful and informative
+- Conversational and personal (use "I", "you", and occasionally the user's name if provided)
+- Tailored to Irish growing conditions, weather patterns, and native plants
+- Brief and to the point (especially for task-related queries)
+
+When responding, consider:
+- Irish climate zones and seasonal patterns
+- Native and well-adapted plants for Irish gardens
+- Sustainable gardening practices suitable for Ireland
+- Irish soil types and improvement techniques
+- Local pest management strategies
+
+Add personal touches to your responses like:
+- "I'd recommend..." instead of "It is recommended..."
+- "Your garden will love..." instead of "Gardens benefit from..."
+- Occasional gardening metaphors or Irish gardening wisdom
+- Brief stories or experiences about gardening in Ireland
+
+When users ask about gardening tasks, provide very short and concise responses (1-2 sentences) and explicitly suggest clicking the View Calendar button. For example: "I've prepared those November tasks for you! Click the View Calendar button below to see what you should be doing in your garden." or "Here are your spring gardening tasks ready for you. Click View Calendar to start planning your season!"
+
+When users ask about plants or gardening tasks, indicate in your response if you recommend SHOWING_PLANT_CARDS or SHOWING_TASK_CARDS.
+Format your response as plain text with one of these indicators at the very end if appropriate.`;
 
     // Generate content
     logger.info("Initializing generative model");
