@@ -57,13 +57,9 @@ if (process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
     // IMPORTANT: For Netlify, do NOT set process.env.GOOGLE_APPLICATION_CREDENTIALS
     // as it will try to interpret the JSON string as a file path
 
-    // IMPORTANT: The Google Auth library expects this exact service account credential format
-    vertexOptions.credentials = {
-      type: "service_account", // This is critical for Google Auth to recognize the credentials
-      client_email: credentials.client_email,
-      private_key: credentials.private_key,
-      project_id: credentials.project_id,
-    };
+    // IMPORTANT: Use exactly the original credentials object from the environment
+    // The Google Auth library needs ALL fields from the service account key
+    vertexOptions.credentials = credentials;
 
     // ALSO create a temporary credentials file at a Netlify-writable location
     // This ensures the Google Auth library can find the credentials properly

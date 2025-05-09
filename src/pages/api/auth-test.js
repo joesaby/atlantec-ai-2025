@@ -46,15 +46,9 @@ export async function GET() {
         // IMPORTANT: For Netlify, do NOT set process.env.GOOGLE_APPLICATION_CREDENTIALS
         // Instead, use the credentials object directly with the VertexAI constructor
         
-        // IMPORTANT: Use the fully qualified credentials object format
-        // Google Auth library in Vertex AI specifically expects this exact format
-        vertexOptions.credentials = {
-          client_email: credentials.client_email,
-          private_key: credentials.private_key,
-          project_id: credentials.project_id,
-          // Make auth context clear to Google Auth library
-          type: 'service_account'
-        };
+        // IMPORTANT: Use the complete credentials object with all fields
+        // Don't create a subset - use the exact object from the JSON
+        vertexOptions.credentials = credentials;
         
         authMethod = 'json_env_direct';
         console.log(`[AUTH-TEST] Parsed credentials for project: ${credentials.project_id}`);
