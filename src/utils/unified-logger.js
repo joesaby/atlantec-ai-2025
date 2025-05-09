@@ -13,9 +13,10 @@
  * - Automatic error object handling
  */
 
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
+// Dynamic imports for Node.js environment only
+const fs = import.meta.env?.SSR ? await import('fs') : null;
+const path = import.meta.env?.SSR ? await import('path') : null;
+const url = import.meta.env?.SSR ? await import('url') : null;
 
 // Define log levels and their priorities
 const LOG_LEVELS = {
@@ -28,27 +29,37 @@ const LOG_LEVELS = {
 // Helper function to get root directory for logs (works in both development and production)
 function getLogRootDir() {
   try {
-    // Try using the ES modules approach with import.meta.url
-    const __filename = fileURLToPath(import.meta.url);
-    const __dirname = path.dirname(__filename);
-    return path.resolve(__dirname, '../../logs');
+    // Only run in Node.js environment
+    if (import.meta.env?.SSR && url) {
+      // Try using the ES modules approach with import.meta.url
+      const __filename = url.fileURLToPath(import.meta.url);
+      const __dirname = path.dirname(__filename);
+      return path.resolve(__dirname, '../../logs');
+    } else {
+      // Browser environment or fallback
+      return 'logs';
+    }
   } catch (error) {
-    console.error('Error resolving log directory with ES modules approach:', error.message);
-    
+    console.error('Error resolving log directory:', error.message);
+
     // Fallback to cwd-based approach for serverless environments
-    return path.resolve(process.cwd(), 'logs');
+    return import.meta.env?.SSR ? path.resolve(process.cwd(), 'logs') : 'logs';
   }
 }
 
 // Detect if running in Netlify environment
 function isNetlifyEnvironment() {
-  return !!process.env.NETLIFY || process.env.NODE_ENV === 'production';
+  // Check for Netlify or production environment using both process.env and import.meta.env
+  return !!(typeof process !== 'undefined' && process.env && (process.env.NETLIFY || process.env.NODE_ENV === 'production')) ||
+         !!(import.meta.env && (import.meta.env.NETLIFY || import.meta.env.PROD));
 }
 
 // Default configuration
 const DEFAULT_CONFIG = {
   // Default log level based on environment
-  logLevel: process.env.NODE_ENV === 'production' ? LOG_LEVELS.INFO : LOG_LEVELS.DEBUG,
+  logLevel: (import.meta.env?.PROD || (typeof process !== 'undefined' && process.env?.NODE_ENV === 'production'))
+    ? LOG_LEVELS.INFO
+    : LOG_LEVELS.DEBUG,
   // Base directory for log files (only used in development)
   logDir: getLogRootDir(),
   // Main log file (only used in development)
@@ -65,25 +76,35 @@ class UnifiedLogger {
   constructor(config = {}) {
     this.config = { ...DEFAULT_CONFIG, ...config };
     this.isNetlify = isNetlifyEnvironment();
-    
-    // Only setup file logging if not in Netlify environment
-    if (!this.isNetlify) {
+
+    // Only setup file logging if not in Netlify environment and we have file system access
+    if (!this.isNetlify && import.meta.env?.SSR && fs && path) {
       this.logFilePath = path.join(this.config.logDir, this.config.logFile);
       // Ensure log directory exists
       this.ensureLogDirectory();
     }
-    
+
+    // Determine current environment for startup message
+    let environment = 'unknown';
+    if (this.isNetlify) {
+      environment = 'Netlify';
+    } else if (import.meta.env?.SSR) {
+      environment = 'server';
+    } else {
+      environment = 'browser';
+    }
+
     // Initialize with an info message
-    this.info(`Logger initialized in ${this.isNetlify ? 'Netlify' : 'development'} mode`);
+    this.info(`Logger initialized in ${environment} mode`);
   }
 
   /**
    * Ensure the log directory exists (only for development mode)
    */
   ensureLogDirectory() {
-    // Skip in Netlify environment
-    if (this.isNetlify) return;
-    
+    // Skip in Netlify environment or browser
+    if (this.isNetlify || !import.meta.env?.SSR || !fs) return;
+
     const logDir = this.config.logDir;
     if (!fs.existsSync(logDir)) {
       try {
@@ -125,9 +146,9 @@ class UnifiedLogger {
    * Write a log entry to file (development mode only)
    */
   writeToFile(formattedMessage) {
-    // Skip in Netlify environment
-    if (this.isNetlify) return;
-    
+    // Skip in Netlify environment, browser, or if fs is not available
+    if (this.isNetlify || !import.meta.env?.SSR || !fs) return;
+
     try {
       // Check if file exists and if rotation is needed
       if (fs.existsSync(this.logFilePath)) {
@@ -136,7 +157,7 @@ class UnifiedLogger {
           this.rotateLogFile();
         }
       }
-      
+
       // Append to log file with newline
       fs.appendFileSync(this.logFilePath, formattedMessage + '\n');
     } catch (error) {
@@ -148,9 +169,9 @@ class UnifiedLogger {
    * Rotate log file by renaming it with timestamp
    */
   rotateLogFile() {
-    // Skip in Netlify environment
-    if (this.isNetlify) return;
-    
+    // Skip in Netlify environment, browser, or if fs is not available
+    if (this.isNetlify || !import.meta.env?.SSR || !fs) return;
+
     try {
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
       const newPath = this.logFilePath.replace('.log', `-${timestamp}.log`);
@@ -171,17 +192,16 @@ class UnifiedLogger {
 
     // Format the log message
     const formattedMessage = this.formatMessage(level, message, meta);
-    
-    // Write to file in development mode
-    if (!this.isNetlify) {
+
+    // Write to file in development mode (with file system access)
+    if (!this.isNetlify && import.meta.env?.SSR && fs) {
       this.writeToFile(formattedMessage);
     }
-    
-    // Always log to console in Netlify mode or if console is enabled
-    if (this.isNetlify || this.config.console) {
-      const consoleMethod = level === 'ERROR' ? 'error' : level === 'WARN' ? 'warn' : 'log';
-      console[consoleMethod](formattedMessage);
-    }
+
+    // ALWAYS log to console regardless of environment
+    // This ensures logs always appear in Netlify function logs
+    const consoleMethod = level === 'ERROR' ? 'error' : level === 'WARN' ? 'warn' : 'log';
+    console[consoleMethod](formattedMessage);
   }
 
   /**
@@ -231,22 +251,22 @@ class UnifiedLogger {
    * Returns the most recent log content
    */
   getLogContent(maxSize = 100 * 1024) {
-    // In Netlify environment, we can't read files
-    if (this.isNetlify) {
-      return "Logs are not available in file form when running in Netlify environment.";
+    // In Netlify environment, browser, or if fs is not available
+    if (this.isNetlify || !import.meta.env?.SSR || !fs) {
+      return "Logs are not available in file form when running in Netlify environment or browser.";
     }
-    
+
     try {
       if (!fs.existsSync(this.logFilePath)) {
         return "No logs available yet.";
       }
-      
+
       const fileSize = fs.statSync(this.logFilePath).size;
       const readSize = Math.min(fileSize, maxSize);
       const position = Math.max(0, fileSize - readSize);
-      
+
       return fs.readFileSync(
-        this.logFilePath, 
+        this.logFilePath,
         { encoding: 'utf8', start: position, end: fileSize }
       );
     } catch (error) {
@@ -259,16 +279,16 @@ class UnifiedLogger {
    * Get a list of all log files (development mode only)
    */
   getLogFiles() {
-    // In Netlify environment, we can't list files
-    if (this.isNetlify) {
+    // In Netlify environment, browser, or if fs is not available
+    if (this.isNetlify || !import.meta.env?.SSR || !fs || !path) {
       return [];
     }
-    
+
     try {
       if (!fs.existsSync(this.config.logDir)) {
         return [];
       }
-      
+
       return fs.readdirSync(this.config.logDir)
         .filter(file => file.endsWith('.log'))
         .map(file => ({
