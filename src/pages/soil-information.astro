@@ -1,18 +1,16 @@
 ---
 // src/pages/soil-information.astro
 import Layout from '../layouts/Layout.astro';
-import SoilCard from '../components/soil/SoilCard';
-import DetailedSoilCard from '../components/soil/DetailedSoilCard';
 import CountySelector from '../components/common/CountySelector';
+import DetailedSoilInfo from '../components/soil/DetailedSoilInfo';
 import { getSoilDataByLocation } from '../utils/soil-client';
 
 // Get the requested county from URL params or default to Dublin
 const requestedCounty = Astro.url.searchParams.get('county') || 'Dublin';
 console.log("Requested county:", requestedCounty);
 
-// Get soil data for the primary selected county
-const selectedSoilData = await getSoilDataByLocation(requestedCounty);
-console.log("Selected soil data keys:", selectedSoilData ? Object.keys(selectedSoilData) : "No data");
+// Get soil data for the primary selected county (for initial SSR)
+const initialSoilData = await getSoilDataByLocation(requestedCounty);
 
 // Define a list of Irish counties for selection
 const counties = [
@@ -21,58 +19,24 @@ const counties = [
   'Mayo', 'Meath', 'Monaghan', 'Offaly', 'Roscommon', 'Sligo', 'Tipperary',
   'Waterford', 'Westmeath', 'Wexford', 'Wicklow'
 ];
-
-// Get data for a comparison county - just Cork as a standard comparison
-const comparisonData = await getSoilDataByLocation('Cork');
 ---
 
 <Layout title={`Irish Soil Information - ${requestedCounty}`}>
   <main class="container mx-auto px-4 py-6">
     <h1 class="text-3xl font-bold mb-6">Irish Soil Information</h1>
     
-    <div class="mb-12">
-      <div class="card bg-base-100 shadow-lg">
-        <div class="card-body">
-          <h2 class="card-title text-2xl mb-4">Detailed Soil Profile</h2>
-          
-          <div class="mb-6">
-            <CountySelector 
-              counties={counties}
-              defaultCounty={requestedCounty}
-              client:load
-            />
-          </div>
-          
-          <div id="detailedSoilCardContainer">
-            <DetailedSoilCard 
-              soilData={selectedSoilData}
-              client:load
-            />
-          </div>
-        </div>
-      </div>
+    <div class="mb-6">
+      <CountySelector 
+        counties={counties}
+        defaultCounty={requestedCounty}
+        client:load
+      />
     </div>
     
-    <div class="mb-12">
-      <div class="card bg-base-100 shadow-lg">
-        <div class="card-body">
-          <h2 class="card-title text-2xl mb-4">Soil Cards</h2>
-          <p class="mb-6 text-sm">
-            Standard soil cards showing soil information for different counties
-          </p>
-          
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <SoilCard
-              soilData={selectedSoilData}
-              client:load
-            />
-            <SoilCard
-              soilData={comparisonData}
-              client:load
-            />
-          </div>
-        </div>
-      </div>
-    </div>
+    <DetailedSoilInfo
+      initialCounty={requestedCounty}
+      initialSoilData={initialSoilData}
+      client:load
+    />
   </main>
 </Layout>
