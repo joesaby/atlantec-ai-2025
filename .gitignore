@@ -45,3 +45,6 @@ pnpm-debug.log*
 
 
 service-account-key.json
+
+# Local Netlify folder
+.netlify
