@@ -1,5 +1,5 @@
 // src/pages/api/garden-fix.js
-// A fixed version of the garden API that handles both local and Netlify environments
+// A fixed version of the garden API that works in both local and Netlify environments
 
 import { VertexAI } from "@google-cloud/vertexai";
 import fs from 'fs';
@@ -72,49 +72,68 @@ export async function POST({ request }) {
       location: location
     };
     
-    // Detect environment and set up authentication accordingly
-    const isNetlify = process.env.NETLIFY === 'true';
+    // Detect environment
+    // In Netlify, it's 'true' string, not boolean
+    const isNetlifyEnv = process.env.NETLIFY === 'true' || process.env.NETLIFY === true;
     let tempKeyPath = null;
     
-    // Create a temporary file for credentials in Netlify environment
-    if (isNetlify && process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
+    // Check for each type of credentials
+    const hasJsonCredentials = !!process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON;
+    const hasKeyFile = !!process.env.VERTEX_SERVICE_ACCOUNT_KEY;
+    
+    logger.info(`Authentication environment: ${isNetlifyEnv ? 'Netlify' : 'Local'}`);
+    logger.info(`Available credentials - JSON: ${hasJsonCredentials}, Key file: ${hasKeyFile}`);
+    
+    // Try to use JSON credentials directly for Netlify
+    if (hasJsonCredentials) {
       try {
-        logger.info("Creating temporary file for credentials in Netlify environment");
-        const tmpdir = os.tmpdir();
-        tempKeyPath = path.join(tmpdir, `vertex-key-${Date.now()}.json`);
-        
-        // Parse and validate credentials
+        logger.info("Parsing JSON credentials from environment variable");
         const credentials = JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON);
-        fs.writeFileSync(tempKeyPath, JSON.stringify(credentials, null, 2));
+        logger.info(`Parsed credentials for project: ${credentials.project_id}`);
         
-        logger.info(`Wrote credentials to temporary file: ${tempKeyPath}`);
-        
-        // Set environment variable for Google Auth library
-        process.env.GOOGLE_APPLICATION_CREDENTIALS = tempKeyPath;
-        
-        // Log key info
-        logger.info(`Using credentials for project: ${credentials.project_id}`);
-      } catch (error) {
-        logger.error("Error processing credentials", error);
-        return new Response(
-          JSON.stringify({
-            error: "Invalid credentials",
-            content: "There was a problem with the authentication. Please check your configuration.",
-          }),
-          {
-            status: 500,
-            headers: {
-              "Content-Type": "application/json",
-            },
+        // In Netlify, try creating a temp file
+        if (isNetlifyEnv) {
+          try {
+            logger.info("Creating temporary file for credentials in Netlify environment");
+            const tmpdir = os.tmpdir();
+            tempKeyPath = path.join(tmpdir, `vertex-key-${Date.now()}.json`);
+            
+            fs.writeFileSync(tempKeyPath, JSON.stringify(credentials, null, 2));
+            logger.info(`Wrote credentials to temporary file: ${tempKeyPath}`);
+            
+            // Set environment variable for Google Auth library
+            process.env.GOOGLE_APPLICATION_CREDENTIALS = tempKeyPath;
+          } catch (fileError) {
+            logger.error(`Failed to create temp file: ${fileError.message}`);
+            // Fall back to direct credential object
+            vertexOptions.credentials = credentials;
+            logger.info("Falling back to direct credential object");
           }
-        );
+        } else {
+          // In local environment, try direct credentials object first
+          vertexOptions.credentials = credentials;
+          logger.info("Using direct credential object in local environment");
+        }
+      } catch (error) {
+        logger.error("Error processing JSON credentials", error);
       }
-    } else if (process.env.VERTEX_SERVICE_ACCOUNT_KEY) {
-      // For local environment, use the key file
+    }
+    
+    // If we don't have credentials yet, try service account key file
+    if (hasKeyFile && !vertexOptions.credentials && !process.env.GOOGLE_APPLICATION_CREDENTIALS) {
       logger.info(`Using service account key file: ${process.env.VERTEX_SERVICE_ACCOUNT_KEY}`);
       vertexOptions.googleAuthOptions = { keyFilename: process.env.VERTEX_SERVICE_ACCOUNT_KEY };
+    }
+    
+    // Log final authentication method
+    if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+      logger.info(`Using GOOGLE_APPLICATION_CREDENTIALS: ${process.env.GOOGLE_APPLICATION_CREDENTIALS}`);
+    } else if (vertexOptions.googleAuthOptions) {
+      logger.info(`Using googleAuthOptions.keyFilename: ${vertexOptions.googleAuthOptions.keyFilename}`);
+    } else if (vertexOptions.credentials) {
+      logger.info(`Using direct credentials object for project: ${vertexOptions.credentials.project_id}`);
     } else {
-      logger.warn("No credentials found in environment");
+      logger.warn("No explicit authentication method detected");
     }
     
     // Create VertexAI instance
