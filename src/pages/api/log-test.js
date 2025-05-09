@@ -2,13 +2,14 @@
 // Test endpoint to generate log entries
 
 import dotenv from 'dotenv';
-import logger from '../../utils/logger';
+import logger from '../../utils/unified-logger.js';
 
 // Load environment variables
 dotenv.config();
 
 /**
  * API endpoint to generate test log entries
+ * Uses the unified logger to create logs
  */
 export async function GET() {
   try {
@@ -21,7 +22,13 @@ export async function GET() {
       // Generate an error for testing
       throw new Error('Test error for logging system');
     } catch (error) {
-      logger.error('Error occurred during test', error);
+      // Pass the error object as metadata instead of as the second parameter
+      logger.error('Error occurred during test', {
+        component: 'log-test',
+        errorName: error.name,
+        errorMessage: error.message,
+        stack: error.stack
+      });
     }
     
     // Log information about Vertex AI configuration
