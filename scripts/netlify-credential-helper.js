@@ -2,8 +2,13 @@
 // netlify-credential-helper.js
 // A utility to format Google Cloud credentials properly for Netlify environment variables
 
-const fs = require('fs');
-const path = require('path');
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+// Get the directory name from the file URL
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // ANSI colors for terminal output
 const GREEN = "\x1b[32m";
@@ -92,7 +97,7 @@ async function main() {
     console.log("---------------------------------------");
     console.log(outputPath);
     
-    console.log("\n3. Using a command to set from the original file (requires jq):");
+    console.log("\n3. Using a command to set from the original file:");
     console.log("---------------------------------------");
     console.log("netlify env:set GOOGLE_APPLICATION_CREDENTIALS_JSON \"$(cat " + filepath + ")\"");
     

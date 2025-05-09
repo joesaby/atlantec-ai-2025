@@ -1,0 +1,40 @@
+---
+import Layout from '../layouts/Layout.astro';
+import GardenAgentSimplified from '../components/garden/GardenAgentSimplified';
+import GardeningCalendar from '../components/garden/GardeningCalendar.jsx';
+---
+
+<Layout title="Irish Gardening Assistant - Simplified">
+  <section class="hero min-h-screen bg-base-200">
+    <div class="hero-content text-center">
+      <div class="max-w-full w-full">
+        <h1 class="text-4xl font-bold mb-6">Irish Gardening Assistant</h1>
+        <p class="py-2 mb-8 max-w-2xl mx-auto">
+          Your AI-powered gardening companion for Irish gardens. Get personalized plant recommendations, 
+          seasonal task lists, and expert advice tailored to Ireland's unique climate.
+        </p>
+        
+        <!-- Gardening Agent -->
+        <div class="flex flex-col items-center justify-center w-full">
+          <GardenAgentSimplified client:load />
+
+          <!-- Hidden until triggered by the chat -->
+          <div id="calendar-container" class="w-full max-w-6xl mx-auto mt-12 hidden">
+            <div class="bg-base-200 p-4 rounded-box mb-4">
+              <h2 class="text-2xl font-bold mb-2">Your Gardening Calendar</h2>
+              <p class="mb-4">Showing your personalized gardening tasks by month</p>
+              <GardeningCalendar client:load />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</Layout>
+
+<script>
+  // Initialize on page load
+  document.addEventListener('DOMContentLoaded', () => {
+    console.log('Gardening Agent Simplified page loaded');
+  });
+</script>
