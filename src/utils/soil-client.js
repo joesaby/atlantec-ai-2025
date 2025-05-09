@@ -7,64 +7,12 @@ import {
   SOIL_RECOMMENDATIONS,
   TEAGASC_SOIL_ASSOCIATIONS,
   TEAGASC_SOIL_SERIES,
-  TEAGASC_DETAILED_ASSOCIATIONS,
   LOCATION_TO_TEAGASC_MAPPING,
+  COUNTY_SOIL_MAPPING,
 } from "../data/irish-soil-data.js";
 
 // Cache for soil data
 const soilCache = new Map();
-
-// Location-specific soil type mapping based on geological and soil science knowledge
-// This provides more accurate soil type assignment than just name-based detection
-const locationSpecificSoils = {
-  // Counties
-  dublin: "grey-brown-podzolic",
-  cork: "brown-earth",
-  galway: "peat",
-  kerry: "brown-podzolic",
-  mayo: "gley",
-  donegal: "podzol",
-  wexford: "brown-earth",
-  kildare: "grey-brown-podzolic",
-  wicklow: "acid-brown-earth",
-  limerick: "grey-brown-podzolic",
-  waterford: "brown-earth",
-  tipperary: "grey-brown-podzolic",
-  clare: "rendzina", 
-  kilkenny: "grey-brown-podzolic",
-  offaly: "gley",
-  laois: "grey-brown-podzolic",
-  louth: "grey-brown-podzolic",
-  meath: "grey-brown-podzolic",
-  westmeath: "grey-brown-podzolic",
-  carlow: "brown-earth",
-  cavan: "gley",
-  monaghan: "gley",
-  sligo: "peat",
-  leitrim: "gley",
-  roscommon: "rendzina",
-  longford: "gley",
-  
-  // Cities and large towns (with more localized soil types)
-  "limerick-city": "alluvial", // River Shannon floodplain
-  "galway-city": "gley", // Wet coastal conditions
-  "waterford-city": "alluvial", // River Suir influence
-  "drogheda": "grey-brown-podzolic", // Similar to Louth
-  "dundalk": "gley", // Low-lying areas near bay 
-  "swords": "grey-brown-podzolic", // North Dublin characteristics
-  "bray": "acid-brown-earth", // Influenced by Wicklow mountains
-  "navan": "grey-brown-podzolic", // Rich Meath soil
-  "killarney": "peat", // Kerry lowlands with bogland influence
-  "tralee": "gley", // Kerry coastal plain
-  "ennis": "rendzina", // Limestone influence from Clare
-  "mullingar": "gley", // Westmeath lowlands
-  "wexford-town": "brown-earth", // Similar to county
-  "letterkenny": "podzol", // Upland Donegal characteristics
-  "kilkenny-city": "grey-brown-podzolic", // Same as county
-  "athlone": "gley", // Shannon basin influence
-  "tullamore": "gley", // Bog-influenced lowlands
-  "clonmel": "brown-earth" // River valley soil
-};
 
 /**
  * Get soil data by Irish location
@@ -134,65 +82,59 @@ export async function getSoilDataByLocation(county) {
  */
 function getTeagascSoilData(county, normalizedCounty) {
   // Get the county mapping information
-  const countyMapping =
+  const countyDetails =
     LOCATION_TO_TEAGASC_MAPPING[normalizedCounty] ||
     LOCATION_TO_TEAGASC_MAPPING.default;
 
   // Get the base soil type information
-  const soilType = countyMapping.soilType;
+  const soilType =
+    COUNTY_SOIL_MAPPING[normalizedCounty] || COUNTY_SOIL_MAPPING.default;
   const soilInfo = IRISH_SOIL_TYPES[soilType];
 
   // Find detailed association information
-  const associationId = countyMapping.primaryAssociation;
+  const associationUnit = countyDetails.associationUnit;
+  const associationName = countyDetails.associationName;
+  const mainSeriesId = countyDetails.mainSeriesId;
+  const mainSeriesName = countyDetails.mainSeriesName;
+
+  // Find association in the imported data
   const association =
     TEAGASC_SOIL_ASSOCIATIONS.find(
-      (assoc) => assoc.Association_Unit === associationId
+      (assoc) => assoc.Association_Unit === associationUnit
     ) || TEAGASC_SOIL_ASSOCIATIONS[0];
 
-  // Find detailed series information if available
-  const seriesId = countyMapping.primarySeries;
-  const series = TEAGASC_SOIL_SERIES.find(
-    (s) => s.National_Series_Id === seriesId
-  );
+  // Find series in the imported data
+  const series =
+    TEAGASC_SOIL_SERIES.find((s) => s.National_Series_Id === mainSeriesId) ||
+    null;
 
-  // Find detailed information if available
-  const detailedAssociation = TEAGASC_DETAILED_ASSOCIATIONS.find(
-    (assoc) => assoc.Association_Unit === associationId
-  );
-
-  // Try to find the texture from detailed data or use the basic soil info
-  const texture =
-    detailedAssociation?.Texture_Substrate_Type || soilInfo.texture;
-
-  // Build the response with enhanced data if available
+  // Build the response with enhanced data
   return {
-    county: county,
+    county: countyDetails.displayName || county,
     soilType: soilType,
-    soilName:
-      series?.National_Series || association?.Association_Name || soilInfo.name,
+    soilName: soilInfo.name,
     description: soilInfo.description,
     properties: {
       ph: soilInfo.ph,
-      texture: texture,
+      texture: countyDetails.textureType || soilInfo.texture,
       nutrients: soilInfo.nutrients,
-      drainage: soilInfo.drainage,
+      drainage: countyDetails.drainageClass || soilInfo.drainage,
     },
-    recommendations: getSoilRecommendations(soilType),
-    source: "Irish Soil Database (Teagasc)",
+    recommendations:
+      SOIL_RECOMMENDATIONS[soilType] || SOIL_RECOMMENDATIONS.default,
+    gardeningNotes: soilInfo.gardeningNotes,
+    suitablePlants: soilInfo.suitablePlants,
+    challenges: soilInfo.challenges,
+    bestPractices: soilInfo.bestPractices,
+    source: "Irish Soil Information System (Teagasc)",
     // Additional Teagasc data
     teagasc: {
-      associationId: association?.Association_Unit,
-      associationName: association?.Association_Name,
-      seriesId: series?.National_Series_Id,
-      seriesName: series?.National_Series,
-      textureSubstrateType: detailedAssociation?.Texture_Substrate_Type,
-      color: association
-        ? {
-            r: parseInt(association.Red_Value, 10),
-            g: parseInt(association.Green_Value, 10),
-            b: parseInt(association.Blue_Value, 10),
-          }
-        : undefined,
+      associationUnit: associationUnit,
+      associationName: associationName,
+      seriesId: mainSeriesId,
+      seriesName: mainSeriesName,
+      textureSubstrateType: countyDetails.textureType,
+      drainageClass: countyDetails.drainageClass,
     },
   };
 }
@@ -211,7 +153,7 @@ export function getSoilTypeInformation(soilType) {
  * @param {string} soilType - Soil type code
  * @returns {Array} List of recommendations
  */
-function getSoilRecommendations(soilType) {
+export function getSoilRecommendations(soilType) {
   return SOIL_RECOMMENDATIONS[soilType] || SOIL_RECOMMENDATIONS.default;
 }
 
@@ -237,4 +179,41 @@ export function getTeagascSoilAssociations() {
  */
 export function getTeagascSoilSeries() {
   return TEAGASC_SOIL_SERIES;
+}
+
+/**
+ * Get suitable plants for a specific soil type
+ * @param {string} soilType - Soil type code
+ * @returns {Array} List of suitable plants
+ */
+export function getSuitablePlants(soilType) {
+  const soilInfo = IRISH_SOIL_TYPES[soilType];
+  return soilInfo?.suitablePlants || [];
+}
+
+/**
+ * Get gardening challenges for a specific soil type
+ * @param {string} soilType - Soil type code
+ * @returns {Array} List of challenges
+ */
+export function getSoilChallenges(soilType) {
+  const soilInfo = IRISH_SOIL_TYPES[soilType];
+  return soilInfo?.challenges || [];
+}
+
+/**
+ * Get best gardening practices for a specific soil type
+ * @param {string} soilType - Soil type code
+ * @returns {Array} List of best practices
+ */
+export function getBestPractices(soilType) {
+  const soilInfo = IRISH_SOIL_TYPES[soilType];
+  return soilInfo?.bestPractices || [];
+}
+
+/**
+ * Clear the soil data cache (useful for testing)
+ */
+export function clearSoilCache() {
+  soilCache.clear();
 }
