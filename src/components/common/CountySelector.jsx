@@ -1,87 +1,124 @@
+// src/components/common/CountySelector.jsx
+// A dropdown component for selecting Irish counties
+
 import React, { useState, useEffect } from "react";
 
-const CountySelector = () => {
-  const [selectedCounty, setSelectedCounty] = useState("Dublin");
+// Default list of Irish counties
+const IRISH_COUNTIES = [
+  "Antrim",
+  "Armagh",
+  "Carlow",
+  "Cavan",
+  "Clare",
+  "Cork",
+  "Derry",
+  "Donegal",
+  "Down",
+  "Dublin",
+  "Fermanagh",
+  "Galway",
+  "Kerry",
+  "Kildare",
+  "Kilkenny",
+  "Laois",
+  "Leitrim",
+  "Limerick",
+  "Longford",
+  "Louth",
+  "Mayo",
+  "Meath",
+  "Monaghan",
+  "Offaly",
+  "Roscommon",
+  "Sligo",
+  "Tipperary",
+  "Tyrone",
+  "Waterford",
+  "Westmeath",
+  "Wexford",
+  "Wicklow",
+];
 
-  // List of Irish counties
-  const irishCounties = [
-    "Antrim",
-    "Armagh",
-    "Carlow",
-    "Cavan",
-    "Clare",
-    "Cork",
-    "Derry",
-    "Donegal",
-    "Down",
-    "Dublin",
-    "Fermanagh",
-    "Galway",
-    "Kerry",
-    "Kildare",
-    "Kilkenny",
-    "Laois",
-    "Leitrim",
-    "Limerick",
-    "Longford",
-    "Louth",
-    "Mayo",
-    "Meath",
-    "Monaghan",
-    "Offaly",
-    "Roscommon",
-    "Sligo",
-    "Tipperary",
-    "Tyrone",
-    "Waterford",
-    "Westmeath",
-    "Wexford",
-    "Wicklow",
-  ];
+/**
+ * CountySelector component provides a dropdown to select Irish counties
+ *
+ * @param {Object} props
+ * @param {Array} props.counties - List of Irish counties
+ * @param {string} props.defaultCounty - Default selected county
+ * @param {Function} props.onChange - Function to call when county selection changes
+ * @param {string} props.className - Additional CSS classes to apply
+ */
+const CountySelector = ({
+  counties = IRISH_COUNTIES,
+  defaultCounty = "Dublin",
+  onChange = () => {},
+  className = "",
+}) => {
+  const [selectedCounty, setSelectedCounty] = useState(defaultCounty);
 
+  // Get county from URL parameter on initial load
   useEffect(() => {
-    // Dispatch a custom event when the county changes
-    const event = new CustomEvent("countyChange", { detail: selectedCounty });
-    window.dispatchEvent(event);
-    console.log("County changed to:", selectedCounty); // Debug output
-  }, [selectedCounty]);
+    const urlParams = new URLSearchParams(window.location.search);
+    const countyParam = urlParams.get("county");
+    if (countyParam && counties.includes(countyParam)) {
+      setSelectedCounty(countyParam);
+      // Dispatch the county change event
+      dispatchCountyChangeEvent(countyParam);
+    } else if (defaultCounty) {
+      setSelectedCounty(defaultCounty);
+      // Dispatch the county change event for default county
+      dispatchCountyChangeEvent(defaultCounty);
+    }
+  }, [counties, defaultCounty]);
 
   const handleCountyChange = (e) => {
-    const newCounty = e.target.value;
-    setSelectedCounty(newCounty);
-    
-    // Force immediate refresh by directly calling the functions
-    window.refreshWeatherData && window.refreshWeatherData(newCounty);
-    window.refreshSoilData && window.refreshSoilData(newCounty);
-    
-    // Also dispatch the event for components that might be listening
-    const event = new CustomEvent("countyChange", { detail: newCounty });
-    window.dispatchEvent(event);
-    
-    console.log("County manually changed to:", newCounty); // Debug output
+    const county = e.target.value;
+    setSelectedCounty(county);
+
+    // Call the onChange prop if provided
+    onChange(county);
+
+    // Dispatch a custom event for county change
+    dispatchCountyChangeEvent(county);
+
+    // Update URL without redirecting
+    const currentUrl = new URL(window.location.href);
+    currentUrl.searchParams.set("county", county);
+    window.history.pushState({}, "", currentUrl);
+  };
+
+  // Helper function to dispatch the county change event
+  const dispatchCountyChangeEvent = (county) => {
+    const event = new CustomEvent("countyChange", {
+      detail: county,
+      bubbles: true,
+    });
+    document.dispatchEvent(event);
+
+    // Also try to call the refresh function if it exists
+    if (window.refreshSoilData) {
+      window.refreshSoilData(county);
+    }
   };
 
   return (
-    <div className="form-control w-full max-w-xs">
-      <label className="label">
-        <span className="label-text">Select County</span>
+    <div className={`form-control w-full max-w-xs ${className}`}>
+      <label className="label" htmlFor="county-selector">
+        <span className="label-text">Select County:</span>
       </label>
       <select
-        className="select select-bordered"
+        id="county-selector"
+        className="select select-bordered w-full"
         value={selectedCounty}
         onChange={handleCountyChange}
+        aria-label="Select a county"
       >
-        {irishCounties.map((county) => (
+        {counties.map((county) => (
           <option key={county} value={county}>
             {county}
           </option>
         ))}
       </select>
-      <label className="label">
-        <span className="label-text-alt">
-          Soil and weather data will update based on county
-        </span>
-      </label>
     </div>
   );
 };

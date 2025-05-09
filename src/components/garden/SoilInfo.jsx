@@ -8,7 +8,7 @@ const SoilInfo = () => {
   const [county, setCounty] = useState("Dublin");
 
   useEffect(() => {
-    // Listen for county changes
+    // Listen for county changes - make sure we're listening on the document
     const handleCountyChange = (event) => {
       console.log("SoilInfo received county change:", event.detail);
       setCounty(event.detail);
@@ -21,13 +21,22 @@ const SoilInfo = () => {
       fetchSoilData(newCounty);
     };
 
-    window.addEventListener("countyChange", handleCountyChange);
-    
+    // Check URL for county param on initial load
+    const urlParams = new URLSearchParams(window.location.search);
+    const countyParam = urlParams.get("county");
+    if (countyParam) {
+      console.log("SoilInfo found county in URL:", countyParam);
+      setCounty(countyParam);
+    }
+
+    // Make sure we listen on document, not window
+    document.addEventListener("countyChange", handleCountyChange);
+
     // Fetch initial data
     fetchSoilData(county);
-    
+
     return () => {
-      window.removeEventListener("countyChange", handleCountyChange);
+      document.removeEventListener("countyChange", handleCountyChange);
       window.refreshSoilData = null;
     };
   }, []);
@@ -36,7 +45,7 @@ const SoilInfo = () => {
     console.log("SoilInfo county state changed to:", county);
     fetchSoilData(county);
   }, [county]);
-  
+
   async function fetchSoilData(countyName) {
     try {
       console.log("Fetching soil data for:", countyName);

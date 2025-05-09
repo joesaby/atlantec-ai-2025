@@ -1,0 +1,130 @@
+---
+// src/pages/soil-information.astro
+import Layout from '../layouts/Layout.astro';
+import SoilCard from '../components/common/SoilCard';
+import SoilCardGrid from '../components/common/SoilCardGrid';
+import DetailedSoilCard from '../components/common/DetailedSoilCard';
+import CountySelector from '../components/common/CountySelector';
+import { getSoilDataByLocation } from '../utils/soil-client';
+
+// Get the requested county from URL params or default to Dublin
+const requestedCounty = Astro.url.searchParams.get('county') || 'Dublin';
+console.log("Requested county:", requestedCounty);
+
+// Get soil data for the primary selected county
+const selectedSoilData = await getSoilDataByLocation(requestedCounty);
+console.log("Selected soil data keys:", selectedSoilData ? Object.keys(selectedSoilData) : "No data");
+
+// Define a list of Irish counties for selection
+const counties = [
+  'Carlow', 'Cavan', 'Clare', 'Cork', 'Donegal', 'Dublin', 'Galway', 'Kerry',
+  'Kildare', 'Kilkenny', 'Laois', 'Leitrim', 'Limerick', 'Longford', 'Louth',
+  'Mayo', 'Meath', 'Monaghan', 'Offaly', 'Roscommon', 'Sligo', 'Tipperary',
+  'Waterford', 'Westmeath', 'Wexford', 'Wicklow'
+];
+
+// Select diverse counties for comparison (choosing counties with varied soil types)
+// Always include the selected county, then add other representative counties
+const comparisonCounties = ['Dublin', 'Cork', 'Galway', 'Kerry', 'Donegal', 'Wexford', 'Tipperary', 'Mayo'];
+
+// Remove the selected county from the comparison list to avoid duplication
+const filteredComparisonCounties = comparisonCounties.filter(county => county !== requestedCounty);
+
+// Get data for the first 3 counties from the filtered list (plus the selected county = 4 total)
+const comparisonData = await Promise.all(
+  filteredComparisonCounties.slice(0, 3).map(county => getSoilDataByLocation(county))
+);
+
+// Create an array of valid soil data for the grid (selected county + 3 comparison counties)
+const soilDataArray = [selectedSoilData, ...comparisonData].filter(Boolean);
+---
+
+<Layout title={`Irish Soil Information - ${requestedCounty}`}>
+  <main class="container mx-auto px-4 py-6">
+    <h1 class="text-3xl font-bold mb-6">Irish Soil Information</h1>
+    
+    <div class="mb-12">
+      <div class="card bg-base-100 shadow-lg">
+        <div class="card-body">
+          <h2 class="card-title text-2xl mb-4">Detailed Soil Profile</h2>
+          
+          <div class="mb-6">
+            <CountySelector 
+              counties={counties}
+              defaultCounty={requestedCounty}
+              client:load
+            />
+          </div>
+          
+          <div id="detailedSoilCardContainer">
+            <DetailedSoilCard 
+              soilData={selectedSoilData}
+              client:load
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="mb-12">
+      <div class="card bg-base-100 shadow-lg">
+        <div class="card-body">
+          <h2 class="card-title text-2xl mb-4">Soil Cards</h2>
+          <p class="mb-6 text-sm">
+            Standard soil cards showing soil information for different counties
+          </p>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <SoilCard
+              soilData={selectedSoilData}
+              client:load
+            />
+            <SoilCard
+              soilData={comparisonData[0]}
+              client:load
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="mb-12">
+      <div class="card bg-base-100 shadow-lg">
+        <div class="card-body">
+          <h2 class="card-title text-2xl mb-4">Compact Soil Cards</h2>
+          <p class="mb-6 text-sm">
+            Compact soil cards are useful for displaying multiple soil types in a limited space
+          </p>
+          
+          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+            {soilDataArray.map((data, index) => (
+              <SoilCard
+                key={data?.county || index}
+                soilData={data}
+                compact={true}
+                client:load
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="mb-12">
+      <div class="card bg-base-100 shadow-lg">
+        <div class="card-body">
+          <h2 class="card-title text-2xl mb-4">Compare Soil Types</h2>
+          <p class="mb-6 text-sm">
+            A grid layout for comparing soil characteristics across counties
+          </p>
+          
+          <SoilCardGrid
+            soilDataArray={soilDataArray}
+            compact={true}
+            client:load
+          />
+        </div>
+      </div>
+    </div>
+  </main>
+</Layout>
