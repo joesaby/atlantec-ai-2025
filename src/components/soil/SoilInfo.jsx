@@ -1,3 +1,4 @@
+// src/components/soil/SoilInfo.jsx
 import React, { useState, useEffect } from "react";
 import { getSoilDataByLocation } from "../../utils/soil-client";
 

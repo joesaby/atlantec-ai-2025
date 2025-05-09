@@ -366,6 +366,167 @@ export const SOIL_RECOMMENDATIONS = {
   ],
 };
 
+// Detailed drainage classifications for management recommendations
+export const DRAINAGE_CLASSIFICATIONS = {
+  "Very Poor": {
+    description:
+      "Water stands at or near the surface for much of the year. Typically found in low-lying areas or where heavy clay prevents drainage.",
+    characteristics: [
+      "Grey/blue coloration",
+      "Mottled appearance",
+      "Often waterlogged",
+    ],
+    suitability:
+      "Very limited for most garden plants without significant intervention.",
+    management: [
+      "Build raised beds at least 30cm high",
+      "Install drainage systems like French drains or drainage pipes",
+      "Choose plants that tolerate wet conditions",
+      "Avoid planting early in the season",
+      "Incorporate grit and sand into planting holes",
+    ],
+  },
+  Poor: {
+    description:
+      "Poorly drained soils that remain wet for extended periods, especially after rainfall.",
+    characteristics: [
+      "Some mottling",
+      "Slow to dry out after rain",
+      "Clay-rich texture",
+    ],
+    suitability:
+      "Challenging for many plants but manageable with improvements.",
+    management: [
+      "Create raised beds or mounds for planting",
+      "Improve soil structure with organic matter",
+      "Add grit to improve drainage in planting holes",
+      "Choose plants that can handle occasional wet conditions",
+      "Avoid soil compaction by not walking on wet soil",
+    ],
+  },
+  Moderate: {
+    description:
+      "Soil drains reasonably well but may remain damp longer than ideal after heavy rainfall.",
+    characteristics: [
+      "Some water retention",
+      "Generally workable",
+      "Medium texture",
+    ],
+    suitability:
+      "Good for a wide range of garden plants with minimal intervention.",
+    management: [
+      "Add organic matter annually to maintain good structure",
+      "Consider light raised beds for sensitive plants",
+      "Mulch to regulate moisture levels",
+      "Standard garden practices generally sufficient",
+      "Most plants will grow well with normal care",
+    ],
+  },
+  Good: {
+    description:
+      "Well-draining soil that doesn't stay waterlogged but retains enough moisture for plant growth.",
+    characteristics: [
+      "Loamy texture",
+      "Good structure",
+      "Retains moisture without waterlogging",
+    ],
+    suitability: "Excellent for most garden plants and vegetables.",
+    management: [
+      "Maintain organic matter content with annual additions",
+      "Mulch to prevent excessive drying in summer",
+      "Standard watering practices sufficient",
+      "Focus on maintaining fertility",
+      "Ideal for most garden plants with minimal amendments",
+    ],
+  },
+  Excessive: {
+    description: "Very free-draining soil that may dry out quickly after rain.",
+    characteristics: [
+      "Sandy or gravelly texture",
+      "Dries quickly",
+      "Prone to nutrient leaching",
+    ],
+    suitability:
+      "Good for drought-tolerant plants but needs amendments for most garden plants.",
+    management: [
+      "Add plenty of organic matter to improve water retention",
+      "Mulch heavily to conserve moisture",
+      "Water more frequently during dry periods",
+      "Use water-retaining gels for sensitive plants",
+      "Choose drought-tolerant species where possible",
+    ],
+  },
+  "Good but shallow": {
+    description: "Well-draining but thin layer of soil over rock or hardpan.",
+    characteristics: [
+      "Limited depth",
+      "Well-draining",
+      "May dry out in summer",
+    ],
+    suitability:
+      "Good for shallow-rooted plants but limiting for deep-rooted species.",
+    management: [
+      "Build up soil depth with organic matter",
+      "Use raised beds for deep-rooted vegetables",
+      "Choose shallow-rooted plants",
+      "Mulch to conserve moisture",
+      "Water more frequently during dry weather",
+    ],
+  },
+  Variable: {
+    description:
+      "Drainage varies significantly across the area, often due to variable texture or topography.",
+    characteristics: [
+      "Unpredictable moisture levels",
+      "Mixed texture",
+      "Possible wet spots",
+    ],
+    suitability:
+      "Requires careful plant selection based on specific locations.",
+    management: [
+      "Assess local conditions before planting",
+      "Improve drainage in wet spots with organic matter and grit",
+      "Add water-retaining materials to dry areas",
+      "Match plants to specific microclimate conditions",
+      "Monitor moisture levels regularly",
+    ],
+  },
+  "Poor to Very Poor": {
+    description: "Consistently wet soil that rarely dries out completely.",
+    characteristics: [
+      "Often waterlogged",
+      "Dark peaty color",
+      "Squelchy underfoot",
+    ],
+    suitability:
+      "Limited to bog and wetland plants unless significantly improved.",
+    management: [
+      "Create substantial raised beds at least 40cm high",
+      "Install comprehensive drainage systems",
+      "Use moisture-loving plants in lower areas",
+      "Add mineral materials like grit and sand",
+      "Consider bog gardens in the wettest areas",
+    ],
+  },
+  "Good to Excessive": {
+    description:
+      "Free-draining soil that may become too dry during summer months.",
+    characteristics: [
+      "Light texture",
+      "Rapid drainage",
+      "Warms quickly in spring",
+    ],
+    suitability: "Good for drought-resistant plants and early crops.",
+    management: [
+      "Add organic matter to improve moisture retention",
+      "Mulch heavily during growing season",
+      "Water deeply but less frequently",
+      "Consider irrigation systems for dry periods",
+      "Choose plants adapted to drier conditions",
+    ],
+  },
+};
+
 // Teagasc API endpoints (for reference)
 export const TEAGASC_API_ENDPOINTS = {
   allAssociations:

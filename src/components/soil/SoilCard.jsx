@@ -1,4 +1,4 @@
-// src/components/common/SoilCard.jsx
+// src/components/soil/SoilCard.jsx
 // A reusable card component to display detailed soil information
 
 import React from "react";

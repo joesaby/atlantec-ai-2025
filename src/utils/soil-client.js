@@ -9,6 +9,7 @@ import {
   TEAGASC_SOIL_SERIES,
   LOCATION_TO_TEAGASC_MAPPING,
   COUNTY_SOIL_MAPPING,
+  DRAINAGE_CLASSIFICATIONS,
 } from "../data/irish-soil-data.js";
 
 // Cache for soil data
@@ -21,11 +22,9 @@ const soilCache = new Map();
  */
 export async function getSoilDataByLocation(county) {
   try {
-    console.log("getSoilDataByLocation called for county:", county);
-
     // Default to Dublin if no county provided
     if (!county || typeof county !== "string") {
-      console.warn("No valid county provided, defaulting to Dublin");
+      logger.warn("No valid county provided, defaulting to Dublin");
       county = "Dublin";
     }
 
@@ -35,26 +34,21 @@ export async function getSoilDataByLocation(county) {
     // Check cache first
     const cacheKey = `soil_${normalizedCounty}`;
     if (soilCache.has(cacheKey)) {
-      console.log("Returning cached soil data for:", county);
       return soilCache.get(cacheKey);
     }
 
     // Get Teagasc soil data for the county
     const soilData = getTeagascSoilData(county, normalizedCounty);
-    console.log("Generated soil data for:", county, soilData);
 
     // Cache the result
     soilCache.set(cacheKey, soilData);
     return soilData;
   } catch (error) {
-    console.error("Soil data error:", error);
-    if (typeof logger !== "undefined") {
-      logger.error("Soil data error", {
-        component: "SoilClient",
-        county: county,
-        error: error.message,
-      });
-    }
+    logger.error("Soil data error", {
+      component: "SoilClient",
+      county: county,
+      error: error.message,
+    });
 
     // Return a default soil type
     return {
@@ -97,17 +91,6 @@ function getTeagascSoilData(county, normalizedCounty) {
   const mainSeriesId = countyDetails.mainSeriesId;
   const mainSeriesName = countyDetails.mainSeriesName;
 
-  // Find association in the imported data
-  const association =
-    TEAGASC_SOIL_ASSOCIATIONS.find(
-      (assoc) => assoc.Association_Unit === associationUnit
-    ) || TEAGASC_SOIL_ASSOCIATIONS[0];
-
-  // Find series in the imported data
-  const series =
-    TEAGASC_SOIL_SERIES.find((s) => s.National_Series_Id === mainSeriesId) ||
-    null;
-
   // Build the response with enhanced data
   return {
     county: countyDetails.displayName || county,
@@ -140,6 +123,51 @@ function getTeagascSoilData(county, normalizedCounty) {
 }
 
 /**
+ * Get soil data for a specific Irish county (synchronous version)
+ * @param {string} county - County name (case insensitive)
+ * @returns {Object} Detailed soil information
+ */
+export function getSoilDataForCounty(county) {
+  try {
+    // Normalize county name for lookup
+    const normalizedCounty = county.toLowerCase().trim().replace(/\s+/g, "");
+
+    // Check cache first
+    const cacheKey = `county_${normalizedCounty}`;
+    if (soilCache.has(cacheKey)) {
+      return soilCache.get(cacheKey);
+    }
+
+    const soilData = getTeagascSoilData(county, normalizedCounty);
+
+    // Cache the result
+    soilCache.set(cacheKey, soilData);
+    return soilData;
+  } catch (error) {
+    logger.error("Error retrieving soil data:", {
+      county: county,
+      error: error.message,
+      component: "SoilClient",
+    });
+
+    // Return a default value on error
+    return {
+      county: county || "Unknown",
+      soilType: "unknown",
+      soilName: "Unknown Soil Type",
+      description: "Soil information could not be determined",
+      properties: {
+        ph: { min: 5.0, max: 7.0 },
+        texture: "Variable",
+        nutrients: "Unknown",
+        drainage: "Unknown",
+      },
+      recommendations: SOIL_RECOMMENDATIONS.default,
+    };
+  }
+}
+
+/**
  * Get detailed information for a specific soil type
  * @param {string} soilType - Soil type code
  * @returns {Object} Detailed soil information
@@ -163,22 +191,6 @@ export function getSoilRecommendations(soilType) {
  */
 export function getAllSoilTypes() {
   return IRISH_SOIL_TYPES;
-}
-
-/**
- * Get all available Teagasc soil associations
- * @returns {Array} All soil associations
- */
-export function getTeagascSoilAssociations() {
-  return TEAGASC_SOIL_ASSOCIATIONS;
-}
-
-/**
- * Get all available Teagasc soil series
- * @returns {Array} All soil series
- */
-export function getTeagascSoilSeries() {
-  return TEAGASC_SOIL_SERIES;
 }
 
 /**
@@ -212,8 +224,85 @@ export function getBestPractices(soilType) {
 }
 
 /**
+ * Get all Irish counties with soil information
+ * @returns {Array} Array of county names with display names
+ */
+export function getAllIrishCounties() {
+  return Object.entries(LOCATION_TO_TEAGASC_MAPPING)
+    .filter(([key]) => key !== "default")
+    .map(([key, data]) => ({
+      id: key,
+      name: data.displayName || key,
+      soilType: COUNTY_SOIL_MAPPING[key] || "unknown",
+      drainageClass: data.drainageClass || "Moderate",
+    }));
+}
+
+/**
+ * Get detailed drainage information for a county
+ * @param {string} county - County name (lowercase)
+ * @returns {Object} Detailed drainage information
+ */
+export function getDrainageInfoForCounty(county) {
+  // Normalize county name
+  const normalizedCounty = county
+    ? county.toLowerCase().replace(/\s+/g, "")
+    : "";
+
+  // Get the detailed county mapping which includes drainage information
+  const countyData =
+    LOCATION_TO_TEAGASC_MAPPING[normalizedCounty] ||
+    LOCATION_TO_TEAGASC_MAPPING.default;
+
+  return countyData.drainageInfo || DRAINAGE_CLASSIFICATIONS["Moderate"];
+}
+
+/**
+ * Get drainage management recommendations based on drainage class
+ * @param {string} drainageClass - Drainage class name (e.g. "Poor", "Well")
+ * @returns {Array} Array of drainage management recommendations
+ */
+export function getDrainageManagementTips(drainageClass) {
+  const drainageInfo =
+    DRAINAGE_CLASSIFICATIONS[drainageClass] ||
+    DRAINAGE_CLASSIFICATIONS["Moderate"];
+
+  return drainageInfo.management || [];
+}
+
+/**
+ * Find counties that have a specific soil type
+ * @param {string} soilType - Soil type code
+ * @returns {Array} List of county names with this soil type
+ */
+export function getCountiesWithSoilType(soilType) {
+  return Object.entries(COUNTY_SOIL_MAPPING)
+    .filter(([county, type]) => type === soilType && county !== "default")
+    .map(([county]) => {
+      const details = LOCATION_TO_TEAGASC_MAPPING[county];
+      return details ? details.displayName : county;
+    });
+}
+
+/**
  * Clear the soil data cache (useful for testing)
  */
 export function clearSoilCache() {
   soilCache.clear();
 }
+
+export default {
+  getSoilDataByLocation,
+  getSoilDataForCounty,
+  getSoilTypeInformation,
+  getSoilRecommendations,
+  getAllSoilTypes,
+  getSuitablePlants,
+  getSoilChallenges,
+  getBestPractices,
+  getAllIrishCounties,
+  getDrainageInfoForCounty,
+  getDrainageManagementTips,
+  getCountiesWithSoilType,
+  clearSoilCache,
+};

@@ -1,4 +1,4 @@
-// src/components/common/DetailedSoilCard.jsx
+// src/components/soil/DetailedSoilCard.jsx
 // A detailed soil information card with additional Teagasc data
 
 import React, { useState } from "react";

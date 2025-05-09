@@ -1,4 +1,4 @@
-// src/components/common/SoilCardGrid.jsx
+// src/components/soil/SoilCardGrid.jsx
 // A component to display multiple soil cards in a grid layout
 
 import React from "react";
