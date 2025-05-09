@@ -3,7 +3,7 @@ import PlantCard from "../plants/PlantCard";
 import TaskCard from "./TaskCard";
 import { selectCardsForResponse } from "../../utils/cards";
 
-const GardenAgentSimplified = () => {
+const GardenAgentFixed = () => {
   const [messages, setMessages] = useState([
     {
       role: "assistant",
@@ -62,15 +62,15 @@ const GardenAgentSimplified = () => {
         content: msg.content,
       }));
 
-      // Call the simplified API endpoint
+      // Call the fixed API endpoint
       const requestBody = JSON.stringify({
         query: input,
         conversationHistory,
       });
       
-      console.log("Sending request to simplified garden API:", requestBody);
+      console.log("Sending request to fixed garden API:", requestBody);
       
-      const response = await fetch("/api/garden-simplified", {
+      const response = await fetch("/api/garden-fix", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -262,7 +262,7 @@ const GardenAgentSimplified = () => {
                   d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
                 />
               </svg>
-              Garden Assistant Chat
+              Garden Assistant Chat (Fixed)
               <span className="text-xs font-normal opacity-70 ml-2">
                 Powered by Google Vertex AI ({providerInfo.model})
               </span>
@@ -552,4 +552,4 @@ const GardenAgentSimplified = () => {
   );
 };
 
-export default GardenAgentSimplified;
+export default GardenAgentFixed;
