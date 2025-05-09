@@ -57,10 +57,16 @@ export function initializeVertexAI() {
   logger.info(`Available credentials - JSON: ${hasJsonCredentials}, Key file: ${hasServiceAccountKeyFile}`);
   
   // Initialize VertexAI options with required configuration
-  let vertexOptions = {
-    project: projectId,
-    location: location
-  };
+  let vertexOptions = {};
+
+  // Explicitly check for project ID and add it if available
+  if (projectId) {
+    vertexOptions.project = projectId;
+  } else {
+    logger.warn("Project ID not found in environment variables. This will cause authentication failure.");
+  }
+
+  vertexOptions.location = location;
 
   // Handle authentication based on available credentials
   if (hasServiceAccountKeyFile) {
@@ -107,7 +113,27 @@ export function initializeVertexAI() {
 
   // Create and return VertexAI instance
   logger.info("Creating VertexAI instance");
-  return new VertexAI(vertexOptions);
+
+  try {
+    // Verify project ID is set before creating the client
+    if (!vertexOptions.project) {
+      throw new Error("Missing project ID. Please set VERTEX_PROJECT_ID environment variable.");
+    }
+
+    // Create VertexAI instance
+    return new VertexAI(vertexOptions);
+  } catch (error) {
+    logger.error("Failed to initialize VertexAI client", error);
+
+    // Enhance error message for project ID issues
+    if (error.message.includes("Unable to infer your project") ||
+        error.message.includes("Missing project ID")) {
+      logger.error("Project ID Error: Make sure VERTEX_PROJECT_ID is correctly set in environment variables");
+    }
+
+    // Re-throw the error to be handled by the caller
+    throw error;
+  }
 }
 
 /**

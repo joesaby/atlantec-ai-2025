@@ -57,17 +57,47 @@ export async function GET() {
   } catch (error) {
     // Log the error
     logger.error("Vertex AI authentication test failed", error);
-    
-    // Return detailed error response
+
+    // Build a more helpful error message with troubleshooting info
+    let troubleshooting = [];
+
+    if (error.message.includes("Unable to infer your project") ||
+        error.message.includes("project") ||
+        error.message.includes("project_id")) {
+      troubleshooting.push("- Set the VERTEX_PROJECT_ID environment variable with your Google Cloud project ID");
+      troubleshooting.push("- Verify that your credentials file contains the correct project_id");
+    } else if (error.message.includes("authentication") || error.name === "GoogleAuthError") {
+      troubleshooting.push("- Check that your credentials are valid and not expired");
+      troubleshooting.push("- Verify the format of your credentials JSON in GOOGLE_APPLICATION_CREDENTIALS_JSON");
+      troubleshooting.push("- For local dev, make sure VERTEX_SERVICE_ACCOUNT_KEY points to a valid file");
+    } else if (error.message.includes("Permission denied") || error.message.includes("permission")) {
+      troubleshooting.push("- Verify your service account has roles/aiplatform.user permission");
+      troubleshooting.push("- Verify your service account has roles/storage.objectViewer permission");
+    } else if (error.message.includes("API not enabled") || error.message.includes("has not been used")) {
+      troubleshooting.push("- Enable the Vertex AI API for your project using Google Cloud Console");
+      troubleshooting.push("- Run: gcloud services enable aiplatform.googleapis.com --project=YOUR_PROJECT_ID");
+    }
+
+    // Return detailed error response with troubleshooting steps
     return new Response(
       JSON.stringify({
         success: false,
         error: error.message,
         errorType: error.name,
+        troubleshooting: troubleshooting.length > 0 ? troubleshooting : [
+          "- Check the docs/vertex-ai-auth-troubleshooting.md file for more information",
+          "- Run node scripts/validate-vertex-ai.js locally to diagnose the issue"
+        ],
         details: {
           message: error.message,
           name: error.name,
-          stack: error.stack
+          stack: error.stack,
+          envCheck: {
+            hasProjectId: !!process.env.VERTEX_PROJECT_ID,
+            hasKeyFile: !!process.env.VERTEX_SERVICE_ACCOUNT_KEY,
+            hasJsonCreds: !!process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON,
+            location: process.env.VERTEX_LOCATION || "Not set"
+          }
         }
       }),
       {
