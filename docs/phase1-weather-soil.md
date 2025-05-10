@@ -502,103 +502,165 @@ The primary component for displaying soil information with visual indicators:
 import React, { useState, useEffect } from "react";
 import { getSoilDataByLocation } from "../../utils/soil-client";
 
-const SoilInfo = ({ county = "Dublin" }) => {
+const SoilInfo = () => {
   const [soilData, setSoilData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [county, setCounty] = useState("Dublin");
 
   useEffect(() => {
-    async function fetchSoilData() {
-      try {
-        setLoading(true);
-        const data = await getSoilDataByLocation(county);
-        setSoilData(data);
-        setError(null);
-      } catch (err) {
-        console.error("Failed to fetch soil data:", err);
-        setError("Could not load soil information");
-      } finally {
-        setLoading(false);
-      }
+    // Listen for county changes - make sure we're listening on the document
+    const handleCountyChange = (event) => {
+      console.log("SoilInfo received county change:", event.detail);
+      setCounty(event.detail);
+    };
+
+    // Register global refresh function for direct calls
+    window.refreshSoilData = (newCounty) => {
+      console.log("SoilInfo direct refresh for county:", newCounty);
+      setCounty(newCounty);
+      fetchSoilData(newCounty);
+    };
+
+    // Check URL for county param on initial load
+    const urlParams = new URLSearchParams(window.location.search);
+    const countyParam = urlParams.get("county");
+    if (countyParam) {
+      console.log("SoilInfo found county in URL:", countyParam);
+      setCounty(countyParam);
     }
 
-    fetchSoilData();
+    document.addEventListener("countyChange", handleCountyChange);
+    fetchSoilData(county);
+
+    return () => {
+      document.removeEventListener("countyChange", handleCountyChange);
+      window.refreshSoilData = null;
+    };
+  }, []);
+
+  useEffect(() => {
+    fetchSoilData(county);
   }, [county]);
 
+  async function fetchSoilData(countyName) {
+    // Data fetching implementation...
+  }
+
   if (loading) {
-    return (
-      <div className="card w-full bg-base-100 shadow-xl">
-        <div className="card-body items-center text-center">
-          <h2 className="card-title">Loading soil data...</h2>
-          <span className="loading loading-spinner loading-lg text-accent"></span>
-        </div>
-      </div>
-    );
+    // Loading state...
   }
 
   if (error) {
-    return (
-      <div className="card w-full bg-base-100 shadow-xl">
-        <div className="card-body items-center text-center">
-          <h2 className="card-title text-error">Error</h2>
-          <p>{error}</p>
-          <div className="card-actions">
-            <button
-              className="btn btn-primary"
-              onClick={() => window.location.reload()}
-            >
-              Try Again
-            </button>
-          </div>
-        </div>
-      </div>
-    );
+    // Error state...
   }
+
+  // Get pH range info
+  const phMin = soilData.properties.ph.min;
+  const phMax = soilData.properties.ph.max;
+  const phMid = (phMin + phMax) / 2;
 
   return (
     <div className="card w-full bg-base-100 shadow-xl">
       <div className="card-body">
-        <h2 className="card-title">Soil Information for {county}</h2>
+        <h2 className="card-title mb-4">Soil Information for {county}</h2>
 
-        <div className="bg-base-200 p-4 rounded-lg mb-4">
-          <h3 className="font-bold text-lg">{soilData.soilName}</h3>
-          <div className="badge badge-accent mb-2">{soilData.soilType}</div>
+        {/* Soil information header */}
+        <div className="bg-base-200 p-4 rounded-lg mb-6">
+          <div className="flex items-center flex-wrap gap-2 mb-2">
+            <h3 className="font-bold text-lg">{soilData.soilName}</h3>
+            <div className="badge badge-accent">
+              {soilData.soilType.replace("-", " ")}
+            </div>
+          </div>
           <p className="text-sm">{soilData.description}</p>
         </div>
 
-        <div className="stats stats-vertical lg:stats-horizontal shadow">
-          <div className="stat">
-            <div className="stat-title">pH Range</div>
-            <div className="stat-value text-lg">
-              {soilData.properties.ph.min} - {soilData.properties.ph.max}
+        {/* Soil properties in responsive grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          {/* pH Range with visual indicator */}
+          <div className="card bg-base-200 shadow-sm">
+            <div className="card-body p-4">
+              <div className="text-sm opacity-70">pH Range</div>
+              <div className="font-medium text-lg">
+                {phMin} - {phMax}
+              </div>
+
+              {/* Visual pH range indicator */}
+              <div className="mt-2 mb-3">
+                <div className="w-full h-3 rounded-md relative overflow-hidden">
+                  <div
+                    className="absolute inset-0 rounded-md"
+                    style={{
+                      background:
+                        "linear-gradient(to right, #dc2626 0%, #dc2626 20%, #facc15 35%, #22c55e 50%, #60a5fa 65%, #2563eb 100%)",
+                    }}
+                  ></div>
+
+                  <div
+                    className="absolute h-full"
+                    style={{
+                      left: `${((phMin - 2) / 12) * 100}%`,
+                      width: `${((phMax - phMin) / 12) * 100}%`,
+                      background: "rgba(255, 255, 255, 0.3)",
+                      border: "1px solid rgba(255, 255, 255, 0.5)",
+                      boxShadow: "0 0 3px rgba(255,255,255,0.5)",
+                    }}
+                  ></div>
+                </div>
+
+                <div className="flex justify-between mt-1 text-xs opacity-70">
+                  <span>2.0</span>
+                  <span>4.5</span>
+                  <span>7.0</span>
+                  <span>9.5</span>
+                  <span>14.0</span>
+                </div>
+              </div>
+
+              <div className="text-xs opacity-70">
+                <span className="inline-block w-full text-center">
+                  {phMid < 6.0
+                    ? "Acidic soil - good for acid-loving plants"
+                    : phMid > 7.0
+                    ? "Alkaline soil - for alkaline-tolerant plants"
+                    : "Neutral soil - ideal for most garden plants"}
+                </span>
+              </div>
             </div>
-            <div className="stat-desc">Optimal for most plants: 6.0-7.0</div>
           </div>
 
-          <div className="stat">
-            <div className="stat-title">Texture</div>
-            <div className="stat-value text-lg">
-              {soilData.properties.texture}
+          {/* Texture information */}
+          <div className="card bg-base-200 shadow-sm">
+            <div className="card-body p-4">
+              <div className="text-sm opacity-70">Texture</div>
+              <div className="font-medium text-lg">
+                {soilData.properties.texture}
+              </div>
+              <div className="text-xs opacity-70 mt-1">
+                {getSoilTextureDescription(soilData.properties.texture)}
+              </div>
             </div>
           </div>
 
-          <div className="stat">
-            <div className="stat-title">Nutrients</div>
-            <div className="stat-value text-lg">
-              {soilData.properties.nutrients}
-            </div>
-          </div>
-
-          <div className="stat">
-            <div className="stat-title">Drainage</div>
-            <div className="stat-value text-lg">
-              {soilData.properties.drainage}
+          {/* Drainage information */}
+          <div className="card bg-base-200 shadow-sm">
+            <div className="card-body p-4">
+              <div className="text-sm opacity-70">Drainage</div>
+              <div className="font-medium text-lg">
+                {soilData.properties.drainage}
+              </div>
+              <div className="text-xs opacity-70 mt-1">
+                {getDrainageDescription(soilData.properties.drainage)}
+              </div>
             </div>
           </div>
         </div>
 
-        <div className="mt-6">
-          <h3 className="font-medium text-lg mb-2">Recommendations</h3>
+        {/* Recommendations & Crops sections */}
+        <div className="divider"></div>
+        <div className="mb-6">
+          <h3 className="font-medium text-lg mb-3">Recommendations</h3>
           <ul className="list-disc list-inside space-y-2">
             {soilData.recommendations.map((tip, index) => (
               <li key={index} className="text-sm">
@@ -608,11 +670,11 @@ const SoilInfo = ({ county = "Dublin" }) => {
           </ul>
         </div>
 
-        <div className="mt-6">
-          <h3 className="font-medium text-lg mb-2">Suited Crops</h3>
+        <div>
+          <h3 className="font-medium text-lg mb-3">Suited Crops</h3>
           <div className="flex flex-wrap gap-2">
             {getSuitedCrops(soilData.soilType).map((crop, index) => (
-              <div key={index} className="badge badge-outline">
+              <div key={index} className="badge badge-outline p-3">
                 {crop}
               </div>
             ))}
@@ -623,46 +685,7 @@ const SoilInfo = ({ county = "Dublin" }) => {
   );
 };
 
-// Helper function to get crops suited to soil type
-function getSuitedCrops(soilType) {
-  const cropMap = {
-    "brown-earth": [
-      "Potatoes",
-      "Carrots",
-      "Onions",
-      "Cabbage",
-      "Beetroot",
-      "Most vegetables",
-    ],
-    "grey-brown-podzolic": [
-      "Potatoes",
-      "Cabbage",
-      "Kale",
-      "Peas",
-      "Beans",
-      "Most vegetables",
-    ],
-    gley: ["Cabbage", "Kale", "Onions", "Celery", "Berries (with drainage)"],
-    peat: [
-      "Potatoes",
-      "Blueberries",
-      "Raspberries",
-      "Rhubarb",
-      "Acid-loving plants",
-    ],
-    "acid-brown-earth": [
-      "Potatoes",
-      "Berries",
-      "Rhubarb",
-      "Acid-loving plants",
-    ],
-    default: ["Potatoes", "Cabbage", "Onions", "Root vegetables"],
-  };
-
-  return cropMap[soilType] || cropMap.default;
-}
-
-export default SoilInfo;
+// Helper functions for soil descriptions, suited crops, etc.
 ```
 
 ### 5. County Selector Component
