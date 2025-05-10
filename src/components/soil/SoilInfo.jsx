@@ -116,7 +116,7 @@ const SoilInfo = ({ county: countyProp }) => {
   const phMid = (phMin + phMax) / 2;
 
   return (
-    <div className="card w-full bg-base-100 shadow-xl">
+    <div className="card w-full bg-base-100 shadow-xl soil-info-component">
       <div className="card-body">
         <h2 className="card-title mb-4">Soil Information for {county}</h2>
 
