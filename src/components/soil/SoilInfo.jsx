@@ -2,11 +2,11 @@
 import React, { useState, useEffect } from "react";
 import { getSoilDataByLocation } from "../../utils/soil-client";
 
-const SoilInfo = () => {
+const SoilInfo = ({ county: countyProp }) => {
   const [soilData, setSoilData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [county, setCounty] = useState("Dublin");
+  const [county, setCounty] = useState(countyProp || "Dublin");
 
   useEffect(() => {
     // Listen for county changes - make sure we're listening on the document
@@ -30,6 +30,12 @@ const SoilInfo = () => {
       setCounty(countyParam);
     }
 
+    // Use county from props if provided (takes precedence over URL)
+    if (countyProp) {
+      console.log("SoilInfo using county from props:", countyProp);
+      setCounty(countyProp);
+    }
+
     // Make sure we listen on document, not window
     document.addEventListener("countyChange", handleCountyChange);
 
@@ -40,7 +46,7 @@ const SoilInfo = () => {
       document.removeEventListener("countyChange", handleCountyChange);
       window.refreshSoilData = null;
     };
-  }, []);
+  }, [countyProp]);
 
   useEffect(() => {
     console.log("SoilInfo county state changed to:", county);

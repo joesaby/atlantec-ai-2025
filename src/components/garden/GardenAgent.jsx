@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import PlantCard from "../plants/PlantCard";
 import TaskCard from "./TaskCard";
+import SoilInfo from "../soil/SoilInfo";
 import { selectCardsForResponse } from "../../utils/cards";
 import { samplePlants } from "../../data/plants";
 import { sampleTasks } from "../../data/gardening-tasks";
@@ -9,7 +10,8 @@ const GardenAgent = () => {
   const [messages, setMessages] = useState([
     {
       role: "assistant",
-      content: "Hello there! I'm Bloom, your Irish gardening assistant. How can I help with your garden today? Whether you need plant recommendations, seasonal tasks, or growing tips for our unique Irish climate, I'm here to help you create a thriving garden.",
+      content:
+        "Hello there! I'm Bloom, your Irish gardening assistant. How can I help with your garden today? Whether you need plant recommendations, seasonal tasks, or growing tips for our unique Irish climate, I'm here to help you create a thriving garden.",
       timestamp: new Date(),
     },
   ]);
@@ -20,6 +22,7 @@ const GardenAgent = () => {
     provider: "vertex",
     model: "gemini-2.0-flash-001",
   });
+  const [soilInfoExpanded, setSoilInfoExpanded] = useState(false);
   const messagesEndRef = useRef(null);
 
   // Auto-scroll to the bottom when messages change
@@ -36,9 +39,9 @@ const GardenAgent = () => {
     if (input.trim() === "") return;
 
     // Hide the calendar when starting a new query
-    const calendarContainer = document.querySelector('#calendar-container');
+    const calendarContainer = document.querySelector("#calendar-container");
     if (calendarContainer) {
-      calendarContainer.classList.add('hidden');
+      calendarContainer.classList.add("hidden");
     }
 
     // Add user message
@@ -69,9 +72,9 @@ const GardenAgent = () => {
         query: input,
         conversationHistory,
       });
-      
+
       console.log("Sending request to garden API:", requestBody);
-      
+
       const response = await fetch("/api/garden", {
         method: "POST",
         headers: {
@@ -83,12 +86,14 @@ const GardenAgent = () => {
       if (!response.ok) {
         const errorText = await response.text();
         console.error("API response error:", response.status, errorText);
-        throw new Error(`Failed to get response from garden assistant: ${response.status}`);
+        throw new Error(
+          `Failed to get response from garden assistant: ${response.status}`
+        );
       }
 
       const responseText = await response.text();
       console.log("API response text:", responseText);
-      
+
       let aiResponse;
       try {
         aiResponse = JSON.parse(responseText);
@@ -98,6 +103,14 @@ const GardenAgent = () => {
         console.error("Error parsing API response:", error);
         throw new Error("Invalid response format from garden assistant");
       }
+
+      // Check if this is a soil-related query
+      const isSoilRelated = isSoilQuery(input);
+
+      // Extract county if present in the query
+      const county = isSoilRelated ? extractCountyFromQuery(input) : null;
+
+      console.log("Soil related query:", isSoilRelated, "County:", county);
 
       // Select appropriate cards to display based on the response
       const cards = selectCardsForResponse(input, aiResponse);
@@ -114,6 +127,15 @@ const GardenAgent = () => {
       // Add cards if they were selected
       if (cards && cards.length > 0) {
         responseObj.cards = cards;
+      }
+
+      // Add soil info if it's a soil-related query
+      if (isSoilRelated) {
+        responseObj.soilInfo = {
+          showSoilInfo: true,
+          county: county || "Dublin", // Default to Dublin if no county specified
+        };
+        console.log("Adding soil info to response:", responseObj.soilInfo);
       }
 
       setMessages((prevMessages) => [...prevMessages, responseObj]);
@@ -136,26 +158,34 @@ const GardenAgent = () => {
   useEffect(() => {
     // When we have task cards, dispatch an event to notify the calendar component but don't show it yet
     const latestMessage = messages[messages.length - 1];
-    if (latestMessage && 
-        latestMessage.role === "assistant" && 
-        latestMessage.cards && 
-        latestMessage.cards.length > 0 && 
-        latestMessage.cards[0].type === "task") {
-      
+    if (
+      latestMessage &&
+      latestMessage.role === "assistant" &&
+      latestMessage.cards &&
+      latestMessage.cards.length > 0 &&
+      latestMessage.cards[0].type === "task"
+    ) {
       // Extract month information from the query if available
-      const lastUserMessage = messages.findLast(msg => msg.role === "user");
-      const monthInfo = extractMonthInfoFromQuery(lastUserMessage?.content || "");
-      
+      const lastUserMessage = messages.findLast((msg) => msg.role === "user");
+      const monthInfo = extractMonthInfoFromQuery(
+        lastUserMessage?.content || ""
+      );
+
       // Dispatch custom event with task cards data and indicate not to show calendar automatically
-      const taskCardsEvent = new CustomEvent('task-cards-available', {
+      const taskCardsEvent = new CustomEvent("task-cards-available", {
         detail: {
           tasks: latestMessage.cards,
           monthInfo: monthInfo,
-          showCalendar: false // Don't show calendar automatically
-        }
+          showCalendar: false, // Don't show calendar automatically
+        },
       });
       window.dispatchEvent(taskCardsEvent);
-      console.log('Dispatched task-cards-available event with', latestMessage.cards.length, 'tasks', monthInfo);
+      console.log(
+        "Dispatched task-cards-available event with",
+        latestMessage.cards.length,
+        "tasks",
+        monthInfo
+      );
     }
   }, [messages]);
 
@@ -163,44 +193,121 @@ const GardenAgent = () => {
   const extractMonthInfoFromQuery = (query) => {
     const monthInfo = {};
     const lowercaseQuery = query.toLowerCase();
-    
+
     // Check for seasons mentioned
-    if (lowercaseQuery.includes('spring')) {
-      monthInfo.season = 'spring';
-    } else if (lowercaseQuery.includes('summer')) {
-      monthInfo.season = 'summer';
-    } else if (lowercaseQuery.includes('autumn') || lowercaseQuery.includes('fall')) {
-      monthInfo.season = 'autumn';
-    } else if (lowercaseQuery.includes('winter')) {
-      monthInfo.season = 'winter';
+    if (lowercaseQuery.includes("spring")) {
+      monthInfo.season = "spring";
+    } else if (lowercaseQuery.includes("summer")) {
+      monthInfo.season = "summer";
+    } else if (
+      lowercaseQuery.includes("autumn") ||
+      lowercaseQuery.includes("fall")
+    ) {
+      monthInfo.season = "autumn";
+    } else if (lowercaseQuery.includes("winter")) {
+      monthInfo.season = "winter";
     }
-    
+
     // Check for specific months mentioned
     const months = [
-      'january', 'february', 'march', 'april', 'may', 'june',
-      'july', 'august', 'september', 'october', 'november', 'december'
+      "january",
+      "february",
+      "march",
+      "april",
+      "may",
+      "june",
+      "july",
+      "august",
+      "september",
+      "october",
+      "november",
+      "december",
     ];
-    
+
     // Find any month mentioned in the query
-    const mentionedMonth = months.find(month => lowercaseQuery.includes(month));
+    const mentionedMonth = months.find((month) =>
+      lowercaseQuery.includes(month)
+    );
     if (mentionedMonth) {
       // Convert month name to number (1-12)
       monthInfo.month = months.indexOf(mentionedMonth) + 1;
-      
+
       // If a specific month is mentioned (without season), we only want to show that month
       if (!monthInfo.season) {
         monthInfo.isSingleMonth = true;
         monthInfo.months = 1;
       }
     }
-    
+
     // Check for number of months specification
     const monthsMatch = lowercaseQuery.match(/next\s+(\d+)\s+months/);
     if (monthsMatch && monthsMatch[1]) {
       monthInfo.months = parseInt(monthsMatch[1], 10);
     }
-    
+
     return monthInfo;
+  };
+
+  // Check if a query is related to soil
+  const isSoilQuery = (query) => {
+    const soilKeywords = [
+      "soil",
+      "dirt",
+      "earth",
+      "ground",
+      "loam",
+      "clay",
+      "sandy",
+      "peat",
+      "ph level",
+      "acidic",
+      "alkaline",
+      "drainage",
+      "soil type",
+    ];
+
+    const lowercaseQuery = query.toLowerCase();
+    return soilKeywords.some((keyword) => lowercaseQuery.includes(keyword));
+  };
+
+  // Extract county name from a query if present
+  const extractCountyFromQuery = (query) => {
+    const irishCounties = [
+      "carlow",
+      "cavan",
+      "clare",
+      "cork",
+      "donegal",
+      "dublin",
+      "galway",
+      "kerry",
+      "kildare",
+      "kilkenny",
+      "laois",
+      "leitrim",
+      "limerick",
+      "longford",
+      "louth",
+      "mayo",
+      "meath",
+      "monaghan",
+      "offaly",
+      "roscommon",
+      "sligo",
+      "tipperary",
+      "waterford",
+      "westmeath",
+      "wexford",
+      "wicklow",
+    ];
+
+    const lowercaseQuery = query.toLowerCase();
+    const foundCounty = irishCounties.find((county) =>
+      lowercaseQuery.includes(county)
+    );
+    return foundCounty
+      ? foundCounty.charAt(0).toUpperCase() + foundCounty.slice(1)
+      : null;
   };
 
   // Clear chat history
@@ -356,39 +463,77 @@ const GardenAgent = () => {
                       strokeWidth="8"
                     >
                       {/* Background circle */}
-                      <circle cx="200" cy="200" r="180" fill="#ACE7F5" stroke="none" />
+                      <circle
+                        cx="200"
+                        cy="200"
+                        r="180"
+                        fill="#ACE7F5"
+                        stroke="none"
+                      />
 
                       {/* Petals (6 circles) */}
                       <g fill="#FDBA2C" stroke="#1B1F23">
-                        <circle cx="200" cy="115" r="55"/>   {/* top */}
-                        <circle cx="275" cy="145" r="55"/>   {/* top-right */}
-                        <circle cx="275" cy="215" r="55"/>   {/* bottom-right */}
-                        <circle cx="200" cy="245" r="55"/>   {/* bottom */}
-                        <circle cx="125" cy="215" r="55"/>   {/* bottom-left */}
-                        <circle cx="125" cy="145" r="55"/>   {/* top-left */}
+                        <circle cx="200" cy="115" r="55" /> {/* top */}
+                        <circle cx="275" cy="145" r="55" /> {/* top-right */}
+                        <circle cx="275" cy="215" r="55" /> {/* bottom-right */}
+                        <circle cx="200" cy="245" r="55" /> {/* bottom */}
+                        <circle cx="125" cy="215" r="55" /> {/* bottom-left */}
+                        <circle cx="125" cy="145" r="55" /> {/* top-left */}
                       </g>
 
                       {/* Flower face / centre */}
-                      <circle cx="200" cy="180" r="65" fill="#FFC73A" stroke="#1B1F23" />
+                      <circle
+                        cx="200"
+                        cy="180"
+                        r="65"
+                        fill="#FFC73A"
+                        stroke="#1B1F23"
+                      />
                       {/* eyes */}
-                      <circle cx="182" cy="172" r="7" fill="#1B1F23" stroke="none"/>
-                      <circle cx="218" cy="172" r="7" fill="#1B1F23" stroke="none"/>
+                      <circle
+                        cx="182"
+                        cy="172"
+                        r="7"
+                        fill="#1B1F23"
+                        stroke="none"
+                      />
+                      <circle
+                        cx="218"
+                        cy="172"
+                        r="7"
+                        fill="#1B1F23"
+                        stroke="none"
+                      />
                       {/* smile */}
-                      <path d="M180 198 Q200 215 220 198" stroke="#1B1F23" fill="none"/>
+                      <path
+                        d="M180 198 Q200 215 220 198"
+                        stroke="#1B1F23"
+                        fill="none"
+                      />
 
                       {/* Stem */}
-                      <line x1="200" y1="245" x2="200" y2="330" stroke="#1B1F23"/>
+                      <line
+                        x1="200"
+                        y1="245"
+                        x2="200"
+                        y2="330"
+                        stroke="#1B1F23"
+                      />
 
                       {/* Leaves */}
                       <g fill="#52B788" stroke="#1B1F23">
                         {/* left leaf */}
-                        <path d="M200 300
+                        <path
+                          d="M200 300
                                 Q160 280 130 315
-                                Q160 327 200 315 Z"/>
+                                Q160 327 200 315 Z"
+                        />
                         {/* right leaf */}
-                        <path d="M200 300
+                        <path
+                          d="M200 300
                                 Q240 280 270 315
-                                Q240 327 200 315 Z"/>
+                                Q240 327 200 315 Z"
+                        />
                       </g>
                     </svg>
                   </div>
@@ -399,28 +544,86 @@ const GardenAgent = () => {
                     {formatTime(messages[messages.length - 1].timestamp)}
                   </time>
                 </div>
-                
+
                 {/* Show content based on message type */}
-                {messages[messages.length - 1].cards && 
-                 messages[messages.length - 1].cards.length > 0 && 
-                 messages[messages.length - 1].cards[0].type === "task" ? (
+                {messages[messages.length - 1].soilInfo ? (
+                  // For soil-related queries, show the SoilInfo component
+                  <div>
+                    <div className="chat-bubble chat-bubble-primary mb-2">
+                      {messages[messages.length - 1].content}
+                    </div>
+                    <div className="mt-2 max-w-3xl">
+                      <div className="alert alert-success mb-4 flex justify-between items-center">
+                        <div className="flex items-center gap-2">
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="stroke-current shrink-0 h-6 w-6"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth="2"
+                              d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                            />
+                          </svg>
+                          <span>
+                            Here are some extra soil details for{" "}
+                            {messages[messages.length - 1].soilInfo.county}
+                          </span>
+                        </div>
+                        <button
+                          className="btn btn-sm"
+                          onClick={() => setSoilInfoExpanded(!soilInfoExpanded)}
+                        >
+                          {soilInfoExpanded ? "Collapse" : "Expand"}
+                        </button>
+                      </div>
+                      {soilInfoExpanded && (
+                        <SoilInfo
+                          county={messages[messages.length - 1].soilInfo.county}
+                        />
+                      )}
+                    </div>
+                  </div>
+                ) : messages[messages.length - 1].cards &&
+                  messages[messages.length - 1].cards.length > 0 &&
+                  messages[messages.length - 1].cards[0].type === "task" ? (
                   // For task cards, show a notification with a button to view calendar
                   <div className="chat-bubble chat-bubble-primary">
                     {messages[messages.length - 1].content}
                     <div className="mt-3 alert alert-info shadow-lg flex justify-between items-center">
                       <div className="flex items-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current flex-shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="stroke-current flex-shrink-0 h-6 w-6"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                          />
                         </svg>
-                        <span>Your gardening tasks are ready! Check your task calendar.</span>
+                        <span>
+                          Your gardening tasks are ready! Check your task
+                          calendar.
+                        </span>
                       </div>
-                      <button 
-                        className="btn btn-sm btn-primary" 
+                      <button
+                        className="btn btn-sm btn-primary"
                         onClick={() => {
-                          const calendarContainer = document.querySelector('#calendar-container');
+                          const calendarContainer = document.querySelector(
+                            "#calendar-container"
+                          );
                           if (calendarContainer) {
-                            calendarContainer.classList.remove('hidden');
-                            calendarContainer.scrollIntoView({ behavior: 'smooth' });
+                            calendarContainer.classList.remove("hidden");
+                            calendarContainer.scrollIntoView({
+                              behavior: "smooth",
+                            });
                           }
                         }}
                       >
@@ -428,8 +631,8 @@ const GardenAgent = () => {
                       </button>
                     </div>
                   </div>
-                ) : messages[messages.length - 1].cards && 
-                   messages[messages.length - 1].cards.length > 0 ? (
+                ) : messages[messages.length - 1].cards &&
+                  messages[messages.length - 1].cards.length > 0 ? (
                   // For other card types (like plant cards), show the cards normally
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2 mb-4 max-w-3xl">
                     {messages[messages.length - 1].cards.map((card) =>
@@ -534,39 +737,79 @@ const GardenAgent = () => {
                         strokeWidth="8"
                       >
                         {/* Background circle */}
-                        <circle cx="200" cy="200" r="180" fill="#ACE7F5" stroke="none" />
+                        <circle
+                          cx="200"
+                          cy="200"
+                          r="180"
+                          fill="#ACE7F5"
+                          stroke="none"
+                        />
 
                         {/* Petals (6 circles) */}
                         <g fill="#FDBA2C" stroke="#1B1F23">
-                          <circle cx="200" cy="115" r="55"/>   {/* top */}
-                          <circle cx="275" cy="145" r="55"/>   {/* top-right */}
-                          <circle cx="275" cy="215" r="55"/>   {/* bottom-right */}
-                          <circle cx="200" cy="245" r="55"/>   {/* bottom */}
-                          <circle cx="125" cy="215" r="55"/>   {/* bottom-left */}
-                          <circle cx="125" cy="145" r="55"/>   {/* top-left */}
+                          <circle cx="200" cy="115" r="55" /> {/* top */}
+                          <circle cx="275" cy="145" r="55" /> {/* top-right */}
+                          <circle cx="275" cy="215" r="55" />{" "}
+                          {/* bottom-right */}
+                          <circle cx="200" cy="245" r="55" /> {/* bottom */}
+                          <circle cx="125" cy="215" r="55" />{" "}
+                          {/* bottom-left */}
+                          <circle cx="125" cy="145" r="55" /> {/* top-left */}
                         </g>
 
                         {/* Flower face / centre */}
-                        <circle cx="200" cy="180" r="65" fill="#FFC73A" stroke="#1B1F23" />
+                        <circle
+                          cx="200"
+                          cy="180"
+                          r="65"
+                          fill="#FFC73A"
+                          stroke="#1B1F23"
+                        />
                         {/* eyes */}
-                        <circle cx="182" cy="172" r="7" fill="#1B1F23" stroke="none"/>
-                        <circle cx="218" cy="172" r="7" fill="#1B1F23" stroke="none"/>
+                        <circle
+                          cx="182"
+                          cy="172"
+                          r="7"
+                          fill="#1B1F23"
+                          stroke="none"
+                        />
+                        <circle
+                          cx="218"
+                          cy="172"
+                          r="7"
+                          fill="#1B1F23"
+                          stroke="none"
+                        />
                         {/* smile */}
-                        <path d="M180 198 Q200 215 220 198" stroke="#1B1F23" fill="none"/>
+                        <path
+                          d="M180 198 Q200 215 220 198"
+                          stroke="#1B1F23"
+                          fill="none"
+                        />
 
                         {/* Stem */}
-                        <line x1="200" y1="245" x2="200" y2="330" stroke="#1B1F23"/>
+                        <line
+                          x1="200"
+                          y1="245"
+                          x2="200"
+                          y2="330"
+                          stroke="#1B1F23"
+                        />
 
                         {/* Leaves */}
                         <g fill="#52B788" stroke="#1B1F23">
                           {/* left leaf */}
-                          <path d="M200 300
+                          <path
+                            d="M200 300
                                   Q160 280 130 315
-                                  Q160 327 200 315 Z"/>
+                                  Q160 327 200 315 Z"
+                          />
                           {/* right leaf */}
-                          <path d="M200 300
+                          <path
+                            d="M200 300
                                   Q240 280 270 315
-                                  Q240 327 200 315 Z"/>
+                                  Q240 327 200 315 Z"
+                          />
                         </g>
                       </svg>
                     ) : (
@@ -603,11 +846,15 @@ const GardenAgent = () => {
                   {message.content}
                 </div>
                 {/* Show card indicator in the drawer for assistant messages with cards */}
-                {message.role === "assistant" && message.cards && message.cards.length > 0 && (
-                  <div className="mt-2">
-                    <div className="badge badge-sm">Contains {message.cards.length} card(s)</div>
-                  </div>
-                )}
+                {message.role === "assistant" &&
+                  message.cards &&
+                  message.cards.length > 0 && (
+                    <div className="mt-2">
+                      <div className="badge badge-sm">
+                        Contains {message.cards.length} card(s)
+                      </div>
+                    </div>
+                  )}
               </div>
             ))}
             <div ref={messagesEndRef} />
