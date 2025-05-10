@@ -17,7 +17,7 @@ const MonthlyTasks = ({ monthData, expanded = false }) => {
         >
           <h2 className="card-title text-lg">{monthData.name || getMonthName(monthData.month)}</h2>
           <div className="badge badge-primary">
-            {monthData.tasks.length} tasks
+            {monthData.tasks && Array.isArray(monthData.tasks) ? monthData.tasks.length : 0} tasks
           </div>
           <button className="btn btn-sm btn-circle btn-ghost">
             <svg
@@ -41,9 +41,12 @@ const MonthlyTasks = ({ monthData, expanded = false }) => {
 
         {isExpanded && (
           <div className="mt-4 grid gap-4 md:grid-cols-2">
-            {monthData.tasks.map((task) => (
-              <TaskCard key={task.id} task={task} />
-            ))}
+            {monthData.tasks && Array.isArray(monthData.tasks) ? 
+              monthData.tasks.map((task) => (
+                <TaskCard key={task.id} task={task} />
+              )) : 
+              <p className="text-center col-span-2">No tasks available for this month.</p>
+            }
           </div>
         )}
       </div>
