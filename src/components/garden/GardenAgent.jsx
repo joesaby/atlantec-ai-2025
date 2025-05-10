@@ -23,6 +23,7 @@ const GardenAgent = () => {
     model: "gemini-2.0-flash-001",
   });
   const [soilInfoExpanded, setSoilInfoExpanded] = useState(false);
+  const [taskInfoExpanded, setTaskInfoExpanded] = useState(false);
   const messagesEndRef = useRef(null);
 
   // Auto-scroll to the bottom when messages change
@@ -590,45 +591,54 @@ const GardenAgent = () => {
                 ) : messages[messages.length - 1].cards &&
                   messages[messages.length - 1].cards.length > 0 &&
                   messages[messages.length - 1].cards[0].type === "task" ? (
-                  // For task cards, show a notification with a button to view calendar
-                  <div className="chat-bubble chat-bubble-primary">
-                    {messages[messages.length - 1].content}
-                    <div className="mt-3 alert alert-info shadow-lg flex justify-between items-center">
-                      <div className="flex items-center">
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="stroke-current flex-shrink-0 h-6 w-6"
-                          fill="none"
-                          viewBox="0 0 24 24"
+                  // For task cards, show a notification with an expand/collapse button
+                  <div>
+                    <div className="chat-bubble chat-bubble-primary mb-2">
+                      {messages[messages.length - 1].content}
+                    </div>
+                    <div className="mt-2 max-w-3xl">
+                      <div className="alert alert-success mb-4 flex justify-between items-center">
+                        <div className="flex items-center">
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="stroke-current flex-shrink-0 h-6 w-6 mr-2"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth="2"
+                              d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                            />
+                          </svg>
+                          <span>
+                            Check out the Calendar for seasonal gardening tasks
+                            you can do in your garden
+                          </span>
+                        </div>
+                        <button
+                          className="btn btn-sm"
+                          onClick={() => {
+                            setTaskInfoExpanded(!taskInfoExpanded);
+                            const calendarContainer = document.querySelector(
+                              "#calendar-container"
+                            );
+                            if (calendarContainer) {
+                              if (taskInfoExpanded) {
+                                calendarContainer.classList.add("hidden");
+                              } else {
+                                calendarContainer.classList.remove("hidden");
+                                calendarContainer.scrollIntoView({
+                                  behavior: "smooth",
+                                });
+                              }
+                            }
+                          }}
                         >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2"
-                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                          />
-                        </svg>
-                        <span>
-                          Your gardening tasks are ready! Check your task
-                          calendar.
-                        </span>
+                          {taskInfoExpanded ? "Collapse" : "Expand"}
+                        </button>
                       </div>
-                      <button
-                        className="btn btn-sm btn-primary"
-                        onClick={() => {
-                          const calendarContainer = document.querySelector(
-                            "#calendar-container"
-                          );
-                          if (calendarContainer) {
-                            calendarContainer.classList.remove("hidden");
-                            calendarContainer.scrollIntoView({
-                              behavior: "smooth",
-                            });
-                          }
-                        }}
-                      >
-                        View Calendar
-                      </button>
                     </div>
                   </div>
                 ) : messages[messages.length - 1].cards &&
