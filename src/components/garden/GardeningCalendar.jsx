@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import MonthlyTasks from "./MonthlyTasks";
 import { getTasksForUpcomingMonths } from "../../data/gardening-tasks";
+import { getCurrentMonth } from "../../utils/date-utils";
 
 const GardeningCalendar = ({
   months = 3,
@@ -78,7 +79,7 @@ const GardeningCalendar = ({
     setTimeout(() => {
       // Only load default tasks if we're not showing query tasks
       if (!showQueryTasks || currentDisplayMode === "default") {
-        const currentMonth = selectedMonth || new Date().getMonth() + 1;
+        const currentMonth = selectedMonth || getCurrentMonth();
         const tasks = getTasksForUpcomingMonths(currentMonth, displayMonths);
         setUpcomingTasks(tasks);
       }

@@ -289,6 +289,76 @@ export function clearSoilCache() {
   soilCache.clear();
 }
 
+/**
+ * Check if a query is related to soil
+ * @param {string} query - The user's query text
+ * @returns {boolean} True if the query is soil-related
+ */
+export function isSoilQuery(query) {
+  const soilKeywords = [
+    "soil",
+    "dirt",
+    "earth",
+    "ground",
+    "loam",
+    "clay",
+    "sandy",
+    "peat",
+    "ph level",
+    "acidic",
+    "alkaline",
+    "drainage",
+    "soil type",
+  ];
+
+  const lowercaseQuery = query.toLowerCase();
+  return soilKeywords.some((keyword) => lowercaseQuery.includes(keyword));
+}
+
+/**
+ * Extract county name from a query if present
+ * @param {string} query - The user's query text
+ * @returns {string|null} County name with first letter capitalized, or null if no county found
+ */
+export function extractCountyFromQuery(query) {
+  const irishCounties = [
+    "carlow",
+    "cavan",
+    "clare",
+    "cork",
+    "donegal",
+    "dublin",
+    "galway",
+    "kerry",
+    "kildare",
+    "kilkenny",
+    "laois",
+    "leitrim",
+    "limerick",
+    "longford",
+    "louth",
+    "mayo",
+    "meath",
+    "monaghan",
+    "offaly",
+    "roscommon",
+    "sligo",
+    "tipperary",
+    "waterford",
+    "westmeath",
+    "wexford",
+    "wicklow",
+  ];
+
+  const lowercaseQuery = query.toLowerCase();
+  const foundCounty = irishCounties.find((county) =>
+    lowercaseQuery.includes(county)
+  );
+  return foundCounty
+    ? foundCounty.charAt(0).toUpperCase() + foundCounty.slice(1)
+    : null;
+}
+
 export default {
   getSoilDataByLocation,
   getSoilDataForCounty,
@@ -303,4 +373,6 @@ export default {
   getDrainageManagementTips,
   getCountiesWithSoilType,
   clearSoilCache,
+  isSoilQuery,
+  extractCountyFromQuery,
 };

@@ -1,5 +1,5 @@
 // Use localStorage to persist user data
-import logger from './unified-logger.js';
+import logger from "./unified-logger.js";
 
 const STORAGE_KEY = "irish-garden-sustainability";
 
@@ -18,10 +18,16 @@ const defaultUserProgress = {
   score: 0,
   sdgScores: {
     sdg2: 0, // Zero Hunger
+    sdg3: 0, // Good Health and Well-being
+    sdg4: 0, // Quality Education
     sdg6: 0, // Clean Water
+    sdg7: 0, // Affordable and Clean Energy
+    sdg8: 0, // Decent Work and Economic Growth
+    sdg9: 0, // Industry, Innovation and Infrastructure
     sdg11: 0, // Sustainable Cities
     sdg12: 0, // Responsible Consumption
     sdg13: 0, // Climate Action
+    sdg14: 0, // Life Below Water
     sdg15: 0, // Life on Land
   },
 };
@@ -29,7 +35,9 @@ const defaultUserProgress = {
 // Helper to get user data from localStorage
 const getUserProgress = () => {
   if (!isClient) {
-    logger.debug("Running in SSR mode, returning default progress", { component: "SustainabilityStore" });
+    logger.debug("Running in SSR mode, returning default progress", {
+      component: "SustainabilityStore",
+    });
     return defaultUserProgress;
   }
 
@@ -50,7 +58,7 @@ const getUserProgress = () => {
   } catch (error) {
     logger.error("Error accessing localStorage", {
       component: "SustainabilityStore",
-      error: error.message
+      error: error.message,
     });
     return defaultUserProgress;
   }
@@ -59,7 +67,9 @@ const getUserProgress = () => {
 // Helper to save user data to localStorage
 const saveUserProgress = (data) => {
   if (!isClient) {
-    logger.debug("Running in SSR mode, can't save progress", { component: "SustainabilityStore" });
+    logger.debug("Running in SSR mode, can't save progress", {
+      component: "SustainabilityStore",
+    });
     return;
   }
 
@@ -68,7 +78,7 @@ const saveUserProgress = (data) => {
   } catch (error) {
     logger.error("Error saving to localStorage", {
       component: "SustainabilityStore",
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -105,7 +115,7 @@ export const addSustainablePractice = (
     logger.error("Error finding practice", {
       component: "SustainabilityStore",
       practiceId,
-      error: error.message
+      error: error.message,
     });
   }
 
@@ -144,7 +154,7 @@ export const addSustainablePractice = (
     logger.debug("Updated user progress after adding practice", {
       component: "SustainabilityStore",
       practiceId,
-      practicesCount: userProgress.activePractices.length
+      practicesCount: userProgress.activePractices.length,
     });
   }
 
@@ -180,7 +190,7 @@ export const removeSustainablePractice = (practiceId) => {
     logger.error("Error finding practice", {
       component: "SustainabilityStore",
       practiceId,
-      error: error.message
+      error: error.message,
     });
   }
 
@@ -218,7 +228,7 @@ export const removeSustainablePractice = (practiceId) => {
   logger.debug("Updated user progress after removing practice", {
     component: "SustainabilityStore",
     practiceId,
-    practicesCount: userProgress.activePractices.length
+    practicesCount: userProgress.activePractices.length,
   });
   return userProgress;
 };
@@ -296,7 +306,7 @@ export const getPracticeById = (id) => {
     logger.error("Error finding practice by ID", {
       component: "SustainabilityStore",
       id,
-      error: error.message
+      error: error.message,
     });
   }
 
@@ -336,7 +346,7 @@ export const calculateSDGImpact = () => {
   logger.debug("Calculated SDG impact", {
     component: "SustainabilityStore",
     impact,
-    totalScore
+    totalScore,
   });
   return impact;
 };
@@ -386,14 +396,14 @@ export const recalculateSDGScores = () => {
     logger.debug("Recalculated SDG scores", {
       component: "SustainabilityStore",
       sdgScores: userProgress.sdgScores,
-      practicesCount: userProgress.activePractices.length
+      practicesCount: userProgress.activePractices.length,
     });
     saveUserProgress(userProgress);
     return userProgress;
   } catch (error) {
     logger.error("Error recalculating SDG scores", {
       component: "SustainabilityStore",
-      error: error.message
+      error: error.message,
     });
     return userProgress;
   }
