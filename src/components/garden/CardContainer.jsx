@@ -25,6 +25,7 @@ const CardContainer = ({
   type,
   isExpanded,
   setExpanded,
+  calendarData = null,
 }) => {
   // State to track if user has clicked expand at least once
   const [hasExpandedOnce, setHasExpandedOnce] = useState(false);
@@ -179,7 +180,40 @@ const CardContainer = ({
           <span>{alertTitle}</span>
         </div>
         {showButton && (
-          <button className="btn btn-sm" onClick={handleToggleExpand}>
+          <button
+            className="btn btn-sm"
+            onClick={() => {
+              if (type === "task" && message.cards?.length > 0) {
+                try {
+                  // First, convert card data to the expected format for the calendar
+                  const currentMonth = new Date().getMonth() + 1; // 1-indexed month
+                  const formattedData = [{
+                    month: currentMonth,
+                    name: new Date(2025, currentMonth - 1, 1).toLocaleString("default", { month: "long" }),
+                    tasks: message.cards.map(card => card.data)
+                  }];
+
+                  console.log("Task cards formatted for calendar:", formattedData);
+
+                  // If we have calendar data from props, use it to show the calendar overlay
+                  if (calendarData) {
+                    calendarData.setCurrentCalendarTasks(message.cards);
+                    calendarData.setCalendarOverlayOpen(true);
+                    console.log("Opening calendar overlay with tasks:", message.cards.length);
+                    return; // Don't toggle the normal expansion
+                  }
+                  // Otherwise fall back to using the global update function if available
+                  else if (window.updateGardeningCalendar) {
+                    console.log("Calling updateGardeningCalendar with task cards");
+                    window.updateGardeningCalendar(formattedData);
+                  }
+                } catch (error) {
+                  console.error("Error handling calendar task data:", error);
+                }
+              }
+              handleToggleExpand();
+            }}
+          >
             {index === messagesLength - 1 && isExpanded
               ? "Collapse"
               : type === "task"
@@ -213,7 +247,7 @@ const CardContainer = ({
             e.nativeEvent.stopImmediatePropagation();
           }}
         >
-          <GardeningCalendar months={3} queryTasks={message.cards} />
+          <GardeningCalendar months={3} queryTasks={message.cards?.length > 0 ? message.cards : []} />
         </div>
       )}
 
