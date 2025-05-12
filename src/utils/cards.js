@@ -1,10 +1,6 @@
 // src/utils/cards.js
 import { plants } from "../data/plants";
 import { gardeningTasks } from "../data/gardening-tasks";
-import {
-  getSoilDataByLocation,
-  getSoilTypeInformation,
-} from "../utils/soil-client";
 import { calculateCarbonSavings } from "../utils/carbon-footprint";
 import { foodCarbonFootprint } from "../data/sustainability-metrics";
 
@@ -46,14 +42,6 @@ export function selectCardsForResponse(query, llmResponse) {
   const { content, cardType } = llmResponse;
   let cards = [];
 
-  // First check if this is a sustainability-related query
-  if (isQueryAboutSustainability(query, content)) {
-    cards = getSustainabilityCards(query, content);
-    if (cards.length > 0) {
-      return cards;
-    }
-  }
-
   // If not sustainability or no sustainability cards created, proceed with normal card selection
   switch (cardType) {
     case CARD_TYPES.PLANT:
@@ -74,46 +62,6 @@ export function selectCardsForResponse(query, llmResponse) {
   }
 
   return cards;
-}
-
-/**
- * Check if a query is about sustainability or carbon footprint
- * @param {string} query - The user's query
- * @param {string} content - The LLM response content
- * @returns {boolean} - Whether the query is sustainability-related
- */
-function isQueryAboutSustainability(query, content) {
-  const combinedText = (query + " " + content).toLowerCase();
-
-  // Keywords related to sustainability
-  const sustainabilityKeywords = [
-    "sustainability",
-    "carbon footprint",
-    "eco-friendly",
-    "sustainable",
-    "climate change",
-    "carbon",
-    "emissions",
-    "sdg",
-    "sustainable development",
-    "environmental impact",
-    "green gardening",
-    "eco",
-    "ecological",
-    "water conservation",
-    "growing your own",
-    "food miles",
-    "growing food",
-    "grow vegetables",
-    "own crops",
-    "home grown",
-    "garden impact",
-  ];
-
-  // Check for presence of sustainability keywords
-  return sustainabilityKeywords.some((keyword) =>
-    combinedText.includes(keyword)
-  );
 }
 
 /**

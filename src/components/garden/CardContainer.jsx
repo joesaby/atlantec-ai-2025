@@ -34,22 +34,22 @@ const CardContainer = ({
   let itemsPerRow, maxCollapsedItems, initialVisibleItems;
 
   switch (type) {
-    case "plant":
+    case CARD_TYPES.PLANT:
       itemsPerRow = 2; // 2 cards per row for plants
       maxCollapsedItems = 3;
       initialVisibleItems = 3; // Show 3 items initially
       break;
-    case "task":
+    case CARD_TYPES.TASK:
       itemsPerRow = 1; // Single column for tasks
       maxCollapsedItems = 2;
       initialVisibleItems = 0; // Don't show any task cards initially
       break;
-    case "sustainability":
+    case CARD_TYPES.SUSTAINABILITY:
       itemsPerRow = 1; // Single column for sustainability
       maxCollapsedItems = 1;
       initialVisibleItems = 0; // Changed to 0 - Don't show sustainability cards initially
       break;
-    case "soil":
+    case CARD_TYPES.SOIL:
       itemsPerRow = 1; // Single column for soil
       maxCollapsedItems = 0; // Special case - controlled differently
       initialVisibleItems = 0;
@@ -63,20 +63,20 @@ const CardContainer = ({
   // Format the alert title based on card type
   let alertTitle;
   switch (type) {
-    case "plant":
+    case CARD_TYPES.PLANT:
       alertTitle = isExpanded
         ? `${message.cards?.length} Plant recommendations for your garden`
         : `Plant recommendations for your garden`;
       break;
-    case "task":
+    case CARD_TYPES.TASK:
       alertTitle = `${message.cards?.length} Gardening tasks available`;
       break;
-    case "sustainability":
+    case CARD_TYPES.SUSTAINABILITY:
       alertTitle = `${message.cards?.length} Sustainability impact ${
         isExpanded ? "details" : "information available"
       }`;
       break;
-    case "soil":
+    case CARD_TYPES.SOIL:
       alertTitle = `Soil information for ${message.soilInfo.county}`;
       break;
     default:
@@ -84,7 +84,7 @@ const CardContainer = ({
   }
 
   // Always show the expand button for all card types
-  const showButton = type === "soil" || message.cards?.length > 0;
+  const showButton = type === CARD_TYPES.SOIL || message.cards?.length > 0;
 
   // Calculate how many items to show based on expansion state
   const itemsToShow = isExpanded
@@ -93,6 +93,11 @@ const CardContainer = ({
 
   // Render different card types
   const renderCard = (card) => {
+    // Skip rendering if card type is null or undefined
+    if (!card.type) {
+      return null;
+    }
+
     switch (card.type) {
       case CARD_TYPES.PLANT:
         return <PlantCard plant={card.data} key={card.data.id} />;
@@ -183,28 +188,41 @@ const CardContainer = ({
           <button
             className="btn btn-sm"
             onClick={() => {
-              if (type === "task" && message.cards?.length > 0) {
+              if (type === CARD_TYPES.TASK && message.cards?.length > 0) {
                 try {
                   // First, convert card data to the expected format for the calendar
                   const currentMonth = new Date().getMonth() + 1; // 1-indexed month
-                  const formattedData = [{
-                    month: currentMonth,
-                    name: new Date(2025, currentMonth - 1, 1).toLocaleString("default", { month: "long" }),
-                    tasks: message.cards.map(card => card.data)
-                  }];
+                  const formattedData = [
+                    {
+                      month: currentMonth,
+                      name: new Date(2025, currentMonth - 1, 1).toLocaleString(
+                        "default",
+                        { month: "long" }
+                      ),
+                      tasks: message.cards.map((card) => card.data),
+                    },
+                  ];
 
-                  console.log("Task cards formatted for calendar:", formattedData);
+                  console.log(
+                    "Task cards formatted for calendar:",
+                    formattedData
+                  );
 
                   // If we have calendar data from props, use it to show the calendar overlay
                   if (calendarData) {
                     calendarData.setCurrentCalendarTasks(message.cards);
                     calendarData.setCalendarOverlayOpen(true);
-                    console.log("Opening calendar overlay with tasks:", message.cards.length);
+                    console.log(
+                      "Opening calendar overlay with tasks:",
+                      message.cards.length
+                    );
                     return; // Don't toggle the normal expansion
                   }
                   // Otherwise fall back to using the global update function if available
                   else if (window.updateGardeningCalendar) {
-                    console.log("Calling updateGardeningCalendar with task cards");
+                    console.log(
+                      "Calling updateGardeningCalendar with task cards"
+                    );
                     window.updateGardeningCalendar(formattedData);
                   }
                 } catch (error) {
@@ -216,11 +234,11 @@ const CardContainer = ({
           >
             {index === messagesLength - 1 && isExpanded
               ? "Collapse"
-              : type === "task"
+              : type === CARD_TYPES.TASK
               ? "View Calendar"
-              : type === "sustainability"
+              : type === CARD_TYPES.SUSTAINABILITY
               ? "View Impact"
-              : type === "soil"
+              : type === CARD_TYPES.SOIL
               ? "View Soil Details"
               : "Expand"}
           </button>
@@ -228,33 +246,38 @@ const CardContainer = ({
       </div>
 
       {/* Special case for soil info */}
-      {type === "soil" && index === messagesLength - 1 && isExpanded && (
-        <SoilInfo county={message.soilInfo.county} />
-      )}
+      {type === CARD_TYPES.SOIL &&
+        index === messagesLength - 1 &&
+        isExpanded && <SoilInfo county={message.soilInfo.county} />}
 
       {/* Special case for tasks calendar */}
-      {type === "task" && index === messagesLength - 1 && isExpanded && (
-        <div
-          className="mt-4 calendar-wrapper"
-          style={{
-            position: "relative",
-            zIndex: 100,
-            overflow: "visible",
-          }}
-          onMouseDown={(e) => e.stopPropagation()}
-          onClick={(e) => {
-            e.stopPropagation();
-            e.nativeEvent.stopImmediatePropagation();
-          }}
-        >
-          <GardeningCalendar months={3} queryTasks={message.cards?.length > 0 ? message.cards : []} />
-        </div>
-      )}
+      {type === CARD_TYPES.TASK &&
+        index === messagesLength - 1 &&
+        isExpanded && (
+          <div
+            className="mt-4 calendar-wrapper"
+            style={{
+              position: "relative",
+              zIndex: 100,
+              overflow: "visible",
+            }}
+            onMouseDown={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.stopPropagation();
+              e.nativeEvent.stopImmediatePropagation();
+            }}
+          >
+            <GardeningCalendar
+              months={3}
+              queryTasks={message.cards?.length > 0 ? message.cards : []}
+            />
+          </div>
+        )}
 
       {/* Regular cards display - do NOT display task cards or sustainability cards when not expanded */}
-      {type !== "soil" &&
-        type !== "task" &&
-        !(type === "sustainability" && !isExpanded) &&
+      {type !== CARD_TYPES.SOIL &&
+        type !== CARD_TYPES.TASK &&
+        !(type === CARD_TYPES.SUSTAINABILITY && !isExpanded) &&
         message.cards && (
           <div
             className={`grid grid-cols-1 ${
@@ -272,8 +295,8 @@ const CardContainer = ({
         isExpanded &&
         hasExpandedOnce &&
         message.cards &&
-        type !== "task" &&
-        type !== "sustainability" &&
+        type !== CARD_TYPES.TASK &&
+        type !== CARD_TYPES.SUSTAINABILITY &&
         message.cards.length > initialVisibleItems && (
           <div className="mt-6 pb-2 text-center bg-base-200 rounded-lg py-3">
             <button
@@ -283,7 +306,7 @@ const CardContainer = ({
               }}
               className="btn btn-primary btn-sm"
             >
-              {`Show All ${type === "plant" ? "Plants" : "Items"}`}
+              {`Show All ${type === CARD_TYPES.PLANT ? "Plants" : "Items"}`}
             </button>
           </div>
         )}
