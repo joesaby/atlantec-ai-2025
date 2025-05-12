@@ -11,8 +11,11 @@
   },
   "dependencies": {
     "@astrojs/netlify": "^6.3.2",
-    "@astrojs/react": "^4.2.7",
     "@google-cloud/vertexai": "^1.10.0",
+    "@astrojs/node": "^9.2.1",
+    "@astrojs/react": "^4.2.7",
+    "@langchain/community": "^0.3.42",
+    "@langchain/openai": "^0.5.10",
     "@tailwindcss/vite": "^4.1.5",
     "astro": "^5.7.11",
     "axios": "^1.9.0",
@@ -25,7 +28,19 @@
     "prop-types": "^15.8.1",
     "react": "18.2.0",
     "react-dom": "18.2.0",
-    "tailwindcss": "^4.1.5"
+    "tailwindcss": "^4.1.5",
+    "dotenv": "^16.5.0",
+    "langchain": "^0.3.24",
+    "neo4j-driver": "^5.28.1",
+    "node-fetch": "^2.7.0",
+    "prop-types": "^15.8.1",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1",
+    "sparql-http-client": "^3.0.1",
+    "tailwindcss": "^4.1.5",
+    "zod": "^3.24.4"
   },
   "devDependencies": {
     "@types/react": "18.2.0",
