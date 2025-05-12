@@ -1,22 +1,11 @@
 // src/utils/vertex-client.js
 // Client for Google Cloud Vertex AI Generative Models
 
-/**
- * This module provides a client for interacting with Google Cloud Vertex AI
- * generative models. It can be used as an alternative to the OpenAI client
- * for garden assistant queries.
- *
- * Prerequisites:
- * - Google Cloud project with Vertex AI API enabled
- * - Service account with appropriate permissions
- * - Google Cloud credentials configured properly
- *
- * Install dependencies:
- * npm install @google-cloud/vertexai dotenv
- */
-
 import { VertexAI } from "@google-cloud/vertexai";
 import dotenv from "dotenv";
+import fs from "fs";
+import os from "os";
+import path from "path";
 
 // Use the unified logger which works in both dev and Netlify environments
 import logger from "./unified-logger.js";
@@ -33,16 +22,18 @@ const temperature = parseFloat(process.env.TEMPERATURE || "0.7");
 const maxTokens = parseInt(process.env.MAX_TOKENS || "1024");
 
 // Initialize Vertex with configuration
-const vertexOptions = {
+let vertexOptions = {
   project: projectId,
   location: location,
 };
+
+// Temporary file for credentials in Netlify environment
+let tempCredentialsFile = null;
 
 // Handle credentials based on environment
 logger.info("Initializing Vertex AI with authentication options");
 
 if (process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
-  // Running on Netlify - use the environment variable with JSON content
   try {
     // Log authentication attempt
     logger.info(
@@ -50,67 +41,69 @@ if (process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
       { component: "VERTEX-AUTH" }
     );
 
-    const credentials = JSON.parse(
+    // In Netlify, use their specific /tmp directory which is writable
+    // This is different from os.tmpdir() as it's guaranteed to be writable in serverless functions
+    const netlifyTmpDir = "/tmp";
+    tempCredentialsFile = path.join(
+      netlifyTmpDir,
+      `google-credentials-${Date.now()}.json`
+    );
+
+    // Write the credentials JSON to the temporary file
+    fs.writeFileSync(
+      tempCredentialsFile,
       process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON
     );
 
-    // IMPORTANT: For Netlify, do NOT set process.env.GOOGLE_APPLICATION_CREDENTIALS
-    // as it will try to interpret the JSON string as a file path
-
-    // IMPORTANT: Use exactly the original credentials object from the environment
-    // The Google Auth library needs ALL fields from the service account key
-    vertexOptions.credentials = credentials;
-
-    // ALSO create a temporary credentials file at a Netlify-writable location
-    // This ensures the Google Auth library can find the credentials properly
-    // More details: https://cloud.google.com/docs/authentication/production
-
-    logger.info("Setting up authentication for Google Cloud API", {
-      component: "VERTEX-AUTH",
-    });
+    // Set the GOOGLE_APPLICATION_CREDENTIALS environment variable
+    process.env.GOOGLE_APPLICATION_CREDENTIALS = tempCredentialsFile;
 
     logger.info(
-      "Using service account credentials from environment variable (JSON)"
+      `Created temporary credentials file at ${tempCredentialsFile}`,
+      { component: "VERTEX-AUTH" }
     );
 
-    // Log partial info about the credentials to help with debugging
-    if (credentials.project_id && credentials.client_email) {
-      logger.info(
-        `Project ID: ${credentials.project_id}, Client email: ${credentials.client_email}`,
-        { component: "VERTEX-AUTH" }
-      );
-      logger.info("Service account details", {
-        project_id: credentials.project_id,
-        client_email: credentials.client_email,
-        auth_method: "json_credentials_direct",
-      });
-    }
+    // Add logic to clean up the temp file when the process exits
+    process.on("exit", () => {
+      try {
+        if (fs.existsSync(tempCredentialsFile)) {
+          fs.unlinkSync(tempCredentialsFile);
+          logger.info(
+            `Cleaned up temporary credentials file: ${tempCredentialsFile}`,
+            { component: "VERTEX-AUTH" }
+          );
+        }
+      } catch (error) {
+        logger.error(`Failed to clean up temp file: ${error.message}`, {
+          component: "VERTEX-AUTH",
+        });
+      }
+    });
   } catch (error) {
-    logger.error("Error parsing credentials from environment variable", {
+    logger.error("Error creating temporary credentials file", {
       component: "VERTEX-AUTH",
       message: error.message,
-      credentialLength:
-        process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON?.length || 0,
     });
-    logger.error("Error parsing credentials from environment variable", error);
+    logger.error("Error creating temporary credentials file", error);
   }
 } else if (credentialsPath) {
   // Running locally - use the file path
   logger.info(`Using service account key file: ${credentialsPath}`, {
     component: "VERTEX-AUTH",
   });
-  vertexOptions.googleAuthOptions = { keyFilename: credentialsPath };
-  logger.info("Using service account credentials from file", {
-    path: credentialsPath,
-    auth_method: "key_file",
-  });
+  process.env.GOOGLE_APPLICATION_CREDENTIALS = credentialsPath;
 } else {
+  logger.warn(
+    "No explicit credentials provided, falling back to application default credentials",
+    { component: "VERTEX-AUTH" }
+  );
   logger.warn(
     "No explicit credentials provided, falling back to application default credentials",
     { component: "VERTEX-AUTH" }
   );
 }
 
+// Initialize the Vertex client
 const vertexAI = new VertexAI(vertexOptions);
 
 // System prompt for gardening assistance
@@ -193,10 +186,21 @@ export async function generateVertexResponse(messages, options = {}) {
       `Sending request to model: ${modelName} with ${vertexMessages.length} messages`,
       { component: "VERTEX-REQUEST" }
     );
+    logger.debug(
+      `Sending request to model: ${modelName} with ${vertexMessages.length} messages`,
+      { component: "VERTEX-REQUEST" }
+    );
 
     const response = await generativeModel.generateContent(request);
 
     // Log the response
+    logger.debug(
+      `Received response from Vertex AI: ${
+        response.response?.candidates ? "Success" : "Error"
+      }`,
+      { component: "VERTEX-RESPONSE" }
+    );
+
     logger.debug(
       `Received response from Vertex AI: ${
         response.response?.candidates ? "Success" : "Error"

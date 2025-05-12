@@ -40,12 +40,12 @@ const PlantSustainabilityInfo = ({
             {metrics.sustainabilityScore.toFixed(1)}
           </div>
           <div className="ml-2 text-sm opacity-90">/ 5.0</div>
-          
+
           {/* Visual score indicator */}
           <div className="ml-auto flex items-center">
             <div className="w-24 bg-white bg-opacity-30 rounded-full h-2">
-              <div 
-                className="h-2 rounded-full bg-white" 
+              <div
+                className="h-2 rounded-full bg-white"
                 style={{ width: `${(metrics.sustainabilityScore / 5) * 100}%` }}
               ></div>
             </div>
@@ -109,34 +109,57 @@ const PlantSustainabilityInfo = ({
 
         {/* SDG Contributions */}
         <div className="mt-4">
-          <h4 className="font-bold text-md mb-2">
-            UN Sustainable Development Goals Impact
+          <h4 className="font-bold text-md mb-2 flex items-center justify-between">
+            <span>UN Sustainable Development Goals Impact</span>
+            {metrics.sdgs && metrics.sdgs.length > 6 && (
+              <span className="text-xs opacity-70">
+                Showing top contributions
+              </span>
+            )}
           </h4>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-            {metrics.sdgs && metrics.sdgs.map((sdgKey) => {
-              const sdg = sdgGoals[sdgKey];
-              if (!sdg) return null;
-              return (
-                <div
-                  key={sdgKey}
-                  className="tooltip"
-                  data-tip={sdg.description}
-                >
-                  <div
-                    className="flex flex-col items-center p-2 rounded-lg"
-                    style={{ backgroundColor: `${sdg.color}20` }}
-                  >
-                    <div className="text-xl">{sdg.icon}</div>
-                    <div className="text-xs font-medium text-center">
-                      SDG {sdg.number}
+            {metrics.sdgs &&
+              // Sort by sdgContributions value and take top 6
+              [...metrics.sdgs]
+                .sort((a, b) => {
+                  const valueA = metrics.sdgContributions?.[a] || 0;
+                  const valueB = metrics.sdgContributions?.[b] || 0;
+                  return valueB - valueA;
+                })
+                .slice(0, 6)
+                .map((sdgKey) => {
+                  const sdg = sdgGoals[sdgKey];
+                  if (!sdg) return null;
+                  const contributionValue =
+                    metrics.sdgContributions?.[sdgKey] || 0;
+                  return (
+                    <div
+                      key={sdgKey}
+                      className="tooltip"
+                      data-tip={`${sdg.description} (Contribution: ${Math.round(
+                        contributionValue
+                      )} points)`}
+                    >
+                      <div
+                        className="flex items-center gap-2 p-2 rounded-lg"
+                        style={{ backgroundColor: `${sdg.color}20` }}
+                      >
+                        <div className="text-xl">{sdg.icon}</div>
+                        <div className="flex-1">
+                          <div className="text-xs font-medium">
+                            SDG {sdg.number}
+                          </div>
+                          <div className="text-xs opacity-70 line-clamp-1">
+                            {sdg.name}
+                          </div>
+                        </div>
+                        <div className="badge badge-sm">
+                          {Math.round(contributionValue)}
+                        </div>
+                      </div>
                     </div>
-                    <div className="text-xs opacity-70 text-center line-clamp-1">
-                      {sdg.name}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+                  );
+                })}
           </div>
         </div>
 

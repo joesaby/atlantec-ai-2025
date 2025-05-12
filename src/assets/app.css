@@ -5,7 +5,8 @@
 }
 
 /* Global fixes for scrolling issues */
-body, html {
+body,
+html {
   overflow-x: hidden;
   max-width: 100%;
 }

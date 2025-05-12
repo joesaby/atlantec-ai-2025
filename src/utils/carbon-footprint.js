@@ -230,6 +230,10 @@ export function calculateCarbonSavings(
     biodiversityBonus,
     pollinatorSupport,
     sdgContributions: calculateSDGContributions(category, isOrganic),
+    // Create an array of active SDGs (those with contributions > 0)
+    sdgs: Object.entries(calculateSDGContributions(category, isOrganic))
+      .filter(([_, value]) => value > 0)
+      .map(([key]) => key),
   };
 }
 
@@ -242,21 +246,77 @@ export function calculateCarbonSavings(
 function calculateSDGContributions(category, isOrganic) {
   const contributions = {
     sdg2: 0, // Zero Hunger
+    sdg3: 0, // Good Health and Well-being
+    sdg4: 0, // Quality Education
     sdg6: 0, // Clean Water
+    sdg7: 0, // Affordable and Clean Energy
+    sdg8: 0, // Decent Work and Economic Growth
+    sdg9: 0, // Industry, Innovation and Infrastructure
     sdg11: 0, // Sustainable Cities
     sdg12: 0, // Responsible Consumption
     sdg13: 0, // Climate Action
+    sdg14: 0, // Life Below Water
     sdg15: 0, // Life on Land
   };
 
   // All plants contribute to SDG2 (Zero Hunger)
   contributions.sdg2 = 10;
 
+  // Good Health and Well-being (SDG3)
+  if (
+    ["leafyGreens", "berries", "herbs", "flowers", "perennialFruit"].includes(
+      category
+    )
+  ) {
+    contributions.sdg3 = 15; // These plants typically have higher health benefits
+  } else {
+    contributions.sdg3 = 10;
+  }
+  if (isOrganic) contributions.sdg3 += 5; // Organic growing provides higher health benefits
+
+  // Quality Education (SDG4)
+  contributions.sdg4 = 8; // All gardening contributes to learning
+  if (
+    ["herbs", "flowers", "uncommonVegetables", "perennialFruit"].includes(
+      category
+    )
+  ) {
+    contributions.sdg4 += 5; // These plants often require more knowledge and skill
+  }
+
   // Water conservation (SDG6)
   if (["rootVegetables", "herbs", "leafyGreens"].includes(category)) {
     contributions.sdg6 = 15; // These plants typically use less water
   } else {
     contributions.sdg6 = 8;
+  }
+
+  // Affordable and Clean Energy (SDG7)
+  if (isOrganic) {
+    contributions.sdg7 = 12; // Organic growing uses less energy-intensive inputs
+  } else {
+    contributions.sdg7 = 5;
+  }
+  // Extra points for plants that require less energy (no heated greenhouse, etc.)
+  if (["rootVegetables", "herbs", "berries"].includes(category)) {
+    contributions.sdg7 += 5;
+  }
+
+  // Decent Work and Economic Growth (SDG8)
+  contributions.sdg8 = 8; // Base value for economic benefit
+  if (["perennialFruit", "berries"].includes(category)) {
+    contributions.sdg8 += 7; // These can provide economic returns through surplus
+  }
+
+  // Industry, Innovation and Infrastructure (SDG9)
+  contributions.sdg9 = 5; // Base value for innovation
+  if (isOrganic) {
+    contributions.sdg9 += 5; // Organic methods often involve innovative approaches
+  }
+  if (
+    ["uncommonVegetables", "perennialFruit", "rarePlants"].includes(category)
+  ) {
+    contributions.sdg9 += 5; // These categories often involve more innovation
   }
 
   // Urban greening (SDG11)
@@ -273,6 +333,17 @@ function calculateSDGContributions(category, isOrganic) {
     contributions.sdg13 = 10;
   }
   if (isOrganic) contributions.sdg13 += 5;
+
+  // Life Below Water (SDG14)
+  if (isOrganic) {
+    contributions.sdg14 = 10; // Organic methods reduce water pollution
+  } else {
+    contributions.sdg14 = 3;
+  }
+  // Plants that help filter water or reduce runoff
+  if (["perennialFruit", "berries", "leafyGreens"].includes(category)) {
+    contributions.sdg14 += 5;
+  }
 
   // Life on land (SDG15)
   if (["perennialFruit", "berries", "herbs"].includes(category)) {
@@ -300,10 +371,16 @@ export function calculateGardenSustainability(plants) {
 
   const sdgTotals = {
     sdg2: 0,
+    sdg3: 0,
+    sdg4: 0,
     sdg6: 0,
+    sdg7: 0,
+    sdg8: 0,
+    sdg9: 0,
     sdg11: 0,
     sdg12: 0,
     sdg13: 0,
+    sdg14: 0,
     sdg15: 0,
   };
 

@@ -13,6 +13,22 @@ export const sdgGoals = {
     icon: "🌽",
     color: "#d3a029",
   },
+  sdg3: {
+    id: "sdg3",
+    number: 3,
+    name: "Good Health and Well-being",
+    description: "Gardening promotes physical and mental well-being",
+    icon: "❤️",
+    color: "#4c9f38",
+  },
+  sdg4: {
+    id: "sdg4",
+    number: 4,
+    name: "Quality Education",
+    description: "Gardens provide learning opportunities and skill development",
+    icon: "📚",
+    color: "#c5192d",
+  },
   sdg6: {
     id: "sdg6",
     number: 6,
@@ -20,6 +36,30 @@ export const sdgGoals = {
     description: "Water conservation practices protect this precious resource",
     icon: "💧",
     color: "#26bde2",
+  },
+  sdg7: {
+    id: "sdg7",
+    number: 7,
+    name: "Affordable and Clean Energy",
+    description: "Sustainable gardening reduces energy consumption",
+    icon: "⚡",
+    color: "#fcc30b",
+  },
+  sdg8: {
+    id: "sdg8",
+    number: 8,
+    name: "Decent Work and Economic Growth",
+    description: "Local food production creates economic opportunities",
+    icon: "💼",
+    color: "#a21942",
+  },
+  sdg9: {
+    id: "sdg9",
+    number: 9,
+    name: "Industry, Innovation and Infrastructure",
+    description: "Sustainable gardening promotes innovative techniques",
+    icon: "🔧",
+    color: "#fd6925",
   },
   sdg11: {
     id: "sdg11",
@@ -45,6 +85,14 @@ export const sdgGoals = {
     description: "Practices that help mitigate climate change",
     icon: "🌍",
     color: "#3f7e44",
+  },
+  sdg14: {
+    id: "sdg14",
+    number: 14,
+    name: "Life Below Water",
+    description: "Gardening practices that protect water ecosystems",
+    icon: "🌊",
+    color: "#0a97d9",
   },
   sdg15: {
     id: "sdg15",
@@ -474,6 +522,299 @@ export const sustainablePractices = {
       },
     ],
   },
+  health: {
+    name: "Health and Well-being",
+    icon: "heart",
+    description:
+      "Gardening promotes physical exercise, mental well-being, and provides nutritious food.",
+    sdgs: ["sdg3", "sdg2"],
+    practices: [
+      {
+        id: "health-1",
+        name: "Therapeutic Gardening",
+        description:
+          "Creating a garden space dedicated to mental well-being and relaxation.",
+        impact: "medium",
+        difficulty: "easy",
+        sdgs: ["sdg3"],
+        tips: "Include fragrant herbs like lavender and rosemary, which thrive in Irish gardens and have calming properties. Add seating where you can relax and enjoy the garden sensory experience.",
+      },
+      {
+        id: "health-2",
+        name: "Nutritional Planning",
+        description:
+          "Growing a diversity of nutrient-rich vegetables and fruits for a balanced diet.",
+        impact: "high",
+        difficulty: "medium",
+        sdgs: ["sdg2", "sdg3"],
+        tips: "Focus on nutrient-dense crops like kale, berries, and herbs that grow well in Ireland's climate and provide essential vitamins and minerals.",
+      },
+      {
+        id: "health-3",
+        name: "Physical Activity Tracking",
+        description:
+          "Monitoring the physical benefits of gardening activities as exercise.",
+        impact: "medium",
+        difficulty: "easy",
+        sdgs: ["sdg3"],
+        tips: "Just 30 minutes of moderate gardening activities burns approximately 125-200 calories. Track different activities from digging (high intensity) to planting (moderate).",
+      },
+      {
+        id: "health-4",
+        name: "Culinary Herb Garden",
+        description:
+          "Growing herbs for cooking that enhance flavor while reducing salt and using medicinal properties.",
+        impact: "medium",
+        difficulty: "easy",
+        sdgs: ["sdg3", "sdg12"],
+        tips: "Herbs like parsley, mint, and thyme are easy to grow in Ireland's climate and can be used fresh or dried for year-round use.",
+      },
+    ],
+  },
+  education: {
+    name: "Garden Education",
+    icon: "book-open",
+    description:
+      "Gardens provide tremendous learning opportunities for all ages.",
+    sdgs: ["sdg4", "sdg12"],
+    practices: [
+      {
+        id: "education-1",
+        name: "Garden Journaling",
+        description:
+          "Keeping detailed records of garden activities, observations and learnings.",
+        impact: "medium",
+        difficulty: "easy",
+        sdgs: ["sdg4"],
+        tips: "Document planting dates, weather conditions, successes and failures. Include photographs to track plant development across Ireland's growing season.",
+      },
+      {
+        id: "education-2",
+        name: "Plant Identification",
+        description:
+          "Learning to identify common plants, weeds, and beneficial insects in your garden.",
+        impact: "medium",
+        difficulty: "medium",
+        sdgs: ["sdg4", "sdg15"],
+        tips: "Start with common Irish native plants and gradually expand your knowledge. Use plant identification apps to help with learning.",
+      },
+      {
+        id: "education-3",
+        name: "Garden Sharing",
+        description:
+          "Sharing garden knowledge and skills with family, friends, or community.",
+        impact: "high",
+        difficulty: "medium",
+        sdgs: ["sdg4", "sdg11"],
+        tips: "Organize garden visits, create a blog, or participate in local garden clubs to exchange knowledge about successful techniques for Irish growing conditions.",
+      },
+      {
+        id: "education-4",
+        name: "Experimental Plots",
+        description:
+          "Dedicating a small area to experiment with new plants or techniques.",
+        impact: "medium",
+        difficulty: "medium",
+        sdgs: ["sdg4", "sdg9"],
+        tips: "Start small with controlled experiments, like comparing different mulching materials or trialing unusual vegetable varieties suited to Irish conditions.",
+      },
+    ],
+  },
+  energy: {
+    name: "Clean Energy",
+    icon: "sun",
+    description:
+      "Implementing energy-efficient and renewable energy practices in gardening.",
+    sdgs: ["sdg7", "sdg13"],
+    practices: [
+      {
+        id: "energy-1",
+        name: "Manual Tools",
+        description:
+          "Using hand tools instead of power equipment whenever possible.",
+        impact: "medium",
+        difficulty: "medium",
+        sdgs: ["sdg7", "sdg13"],
+        tips: "Quality hand tools are often more practical in small Irish gardens and eliminate fossil fuel use. Proper maintenance keeps them efficient.",
+      },
+      {
+        id: "energy-2",
+        name: "Solar Garden Lighting",
+        description:
+          "Installing solar-powered lighting for garden illumination.",
+        impact: "low",
+        difficulty: "easy",
+        sdgs: ["sdg7", "sdg13"],
+        tips: "Position solar lights to maximize exposure during daylight hours, even in Ireland's cloudier conditions. Modern solar lights work well even with indirect light.",
+      },
+      {
+        id: "energy-3",
+        name: "Passive Solar Structures",
+        description:
+          "Designing garden structures to capture and store solar energy.",
+        impact: "medium",
+        difficulty: "high",
+        sdgs: ["sdg7", "sdg9", "sdg13"],
+        tips: "Coldframes, cloches, and small polytunnels oriented south maximize limited Irish sunshine. Using thermal mass (water barrels, stones) stores heat for overnight release.",
+      },
+      {
+        id: "energy-4",
+        name: "Natural Windbreaks",
+        description:
+          "Planting hedges and trees to reduce energy needs by blocking wind.",
+        impact: "medium",
+        difficulty: "medium",
+        sdgs: ["sdg7", "sdg13", "sdg15"],
+        tips: "Dense evergreen hedges on the windward side (often west in Ireland) can reduce heat loss from structures by up to 30% and protect tender plants.",
+      },
+    ],
+  },
+  economic: {
+    name: "Garden Economy",
+    icon: "euro-sign",
+    description:
+      "Using gardening to create economic benefits and opportunities.",
+    sdgs: ["sdg8", "sdg12"],
+    practices: [
+      {
+        id: "economic-1",
+        name: "Seed and Plant Sharing",
+        description:
+          "Creating networks for exchanging seeds, cuttings, and divided plants.",
+        impact: "medium",
+        difficulty: "easy",
+        sdgs: ["sdg8", "sdg11", "sdg12"],
+        tips: "Organize community seed swaps or join online groups specific to Irish growing conditions to exchange locally-adapted varieties.",
+      },
+      {
+        id: "economic-2",
+        name: "Food Preservation",
+        description:
+          "Preserving garden harvests for year-round use and added value.",
+        impact: "high",
+        difficulty: "medium",
+        sdgs: ["sdg2", "sdg8", "sdg12"],
+        tips: "Traditional methods like freezing berries, making jams, and storing root vegetables work well for preserving Irish garden produce through winter months.",
+      },
+      {
+        id: "economic-3",
+        name: "Micro-Enterprise",
+        description:
+          "Developing small garden-based businesses from surplus harvest.",
+        impact: "high",
+        difficulty: "high",
+        sdgs: ["sdg8", "sdg12"],
+        tips: "Start with high-value crops like herbs, cut flowers, or unusual vegetable varieties. Research local regulations for selling home-grown produce in Ireland.",
+      },
+      {
+        id: "economic-4",
+        name: "Garden Tool Library",
+        description: "Creating or joining a community tool-sharing initiative.",
+        impact: "medium",
+        difficulty: "medium",
+        sdgs: ["sdg8", "sdg11", "sdg12"],
+        tips: "Coordinate with neighbors or local groups to share expensive or occasionally-used tools like shredders, pressure washers, or specialized pruners.",
+      },
+    ],
+  },
+  innovation: {
+    name: "Garden Innovation",
+    icon: "lightbulb",
+    description:
+      "Implementing innovative gardening techniques and technologies.",
+    sdgs: ["sdg9", "sdg11"],
+    practices: [
+      {
+        id: "innovation-1",
+        name: "Smart Garden Systems",
+        description:
+          "Implementing simple technology to optimize garden management.",
+        impact: "medium",
+        difficulty: "high",
+        sdgs: ["sdg9", "sdg6", "sdg12"],
+        tips: "Try moisture sensors or simple timers for irrigation to adapt to Ireland's variable rainfall patterns. Start simple and expand as needed.",
+      },
+      {
+        id: "innovation-2",
+        name: "Vertical Growing Systems",
+        description:
+          "Using vertical space to increase growing capacity in small areas.",
+        impact: "medium",
+        difficulty: "medium",
+        sdgs: ["sdg9", "sdg11", "sdg2"],
+        tips: "Living walls, trellises, and stackable containers work well for herbs, greens, and strawberries even in limited Irish urban gardens.",
+      },
+      {
+        id: "innovation-3",
+        name: "Hydroponics/Aquaponics",
+        description:
+          "Growing plants using nutrient-rich water rather than soil.",
+        impact: "high",
+        difficulty: "high",
+        sdgs: ["sdg9", "sdg6", "sdg2"],
+        tips: "Small-scale systems can be effective indoors or in protected structures, extending Ireland's growing season. Start with simple passive systems before investing in pumps or more complex setups.",
+      },
+      {
+        id: "innovation-4",
+        name: "Biochar Production",
+        description:
+          "Making and using biochar to sequester carbon and improve soil.",
+        impact: "high",
+        difficulty: "high",
+        sdgs: ["sdg9", "sdg13", "sdg15"],
+        tips: "Small-scale methods using garden waste can be done safely with proper research. Biochar works well in Ireland's often acidic soils when properly activated with compost.",
+      },
+    ],
+  },
+  waterProtection: {
+    name: "Water Protection",
+    icon: "droplet",
+    description:
+      "Gardening practices that protect water quality and aquatic ecosystems.",
+    sdgs: ["sdg14", "sdg6"],
+    practices: [
+      {
+        id: "water-protection-1",
+        name: "Rain Gardens",
+        description:
+          "Creating planted depressions that absorb and filter rainwater runoff.",
+        impact: "high",
+        difficulty: "medium",
+        sdgs: ["sdg14", "sdg6", "sdg11"],
+        tips: "Especially valuable in Irish urban areas with heavy rainfall. Use native moisture-loving plants that can handle both wet and dry conditions.",
+      },
+      {
+        id: "water-protection-2",
+        name: "Permeable Surfaces",
+        description:
+          "Using permeable materials for paths and patios to allow water infiltration.",
+        impact: "high",
+        difficulty: "high",
+        sdgs: ["sdg14", "sdg6", "sdg11"],
+        tips: "Gravel, permeable paving, or spaced stepping stones work well in Ireland's wet climate and reduce waterway pollution from surface runoff.",
+      },
+      {
+        id: "water-protection-3",
+        name: "Buffer Zones",
+        description:
+          "Creating vegetated areas around water features to filter runoff.",
+        impact: "high",
+        difficulty: "medium",
+        sdgs: ["sdg14", "sdg15", "sdg6"],
+        tips: "If your garden borders any water feature, leave at least 2 meters of densely planted native vegetation to capture pollutants before they reach the water.",
+      },
+      {
+        id: "water-protection-4",
+        name: "Chemical-Free Maintenance",
+        description:
+          "Eliminating synthetic fertilizers and pesticides to prevent water pollution.",
+        impact: "high",
+        difficulty: "medium",
+        sdgs: ["sdg14", "sdg6", "sdg3"],
+        tips: "Use compost tea, seaweed extract, and other natural alternatives suitable for Irish growing conditions instead of synthetic products that can leach into waterways.",
+      },
+    ],
+  },
 };
 
 // Calculate food growing impact based on user input
@@ -502,6 +843,42 @@ export const calculateFoodGrowingImpact = (
   // Food miles saved
   const foodMilesSaved = foodCarbonFootprint.averageFoodMiles.domesticProduce;
 
+  // Calculate SDG impacts based on crop type and amount
+  const sdgImpacts = {
+    sdg2: 10 * amount, // Food security (Zero Hunger)
+    sdg3: 5 * amount, // Health benefits (Good Health and Well-being)
+    sdg4: 2 * amount, // Learning opportunity (Quality Education)
+    sdg6: 8 * amount, // Water conservation (Clean Water)
+    sdg7: 4 * amount, // Energy savings (Affordable and Clean Energy)
+    sdg8: 3 * amount, // Economic value (Decent Work and Economic Growth)
+    sdg9: 2 * amount, // Innovation potential (Industry, Innovation and Infrastructure)
+    sdg11: 5 * amount, // Community impact (Sustainable Cities)
+    sdg12: 10 * amount, // Responsible consumption
+    sdg13: 8 * amount, // Climate action
+    sdg14: 3 * amount, // Water ecosystem protection (Life Below Water)
+    sdg15: 5 * amount, // Biodiversity (Life on Land)
+  };
+
+  // Adjust impacts based on crop type
+  if (["kale", "cabbage", "spinach", "lettuce"].includes(crop)) {
+    sdgImpacts.sdg3 += 5 * amount; // Leafy greens are especially nutritious (SDG3)
+  }
+
+  if (["apples", "strawberries", "berries"].includes(crop)) {
+    sdgImpacts.sdg15 += 5 * amount; // Fruit supports pollinators (SDG15)
+    sdgImpacts.sdg3 += 3 * amount; // Fruits provide additional health benefits
+  }
+
+  if (["herbs", "basil", "parsley", "mint", "thyme"].includes(crop)) {
+    sdgImpacts.sdg3 += 4 * amount; // Herbs have medicinal properties
+    sdgImpacts.sdg9 += 3 * amount; // Herbs represent culinary innovation
+  }
+
+  if (["potatoes", "onions", "carrots"].includes(crop)) {
+    sdgImpacts.sdg2 += 5 * amount; // Root vegetables provide significant food security
+    sdgImpacts.sdg8 += 3 * amount; // Economic staples
+  }
+
   return {
     crop,
     amount,
@@ -510,6 +887,7 @@ export const calculateFoodGrowingImpact = (
     foodMilesSaved,
     waterSaved: amount * 20, // Rough estimate: 20L water saved per kg
     transportEmissionsSaved: ((foodMilesSaved * 0.1) / 1000) * amount, // Rough estimate of transport emissions
+    sdgImpacts, // Include SDG impacts in the return object
   };
 };
 
@@ -578,6 +956,22 @@ export const calculateAnnualGardenImpact = (areaInSquareMeters = 10) => {
   const yieldPerSquareMeter = 4; // kg per square meter per year (conservative estimate)
   const totalYield = areaInSquareMeters * yieldPerSquareMeter;
 
+  // Calculate SDG impacts based on garden area and yield
+  const sdgImpacts = {
+    sdg2: totalYield * 2.5, // Food security (Zero Hunger)
+    sdg3: totalYield * 2.0, // Health benefits (Good Health and Well-being)
+    sdg4: areaInSquareMeters * 1.0, // Learning opportunity (Quality Education)
+    sdg6: totalYield * 2.0, // Water conservation (Clean Water)
+    sdg7: totalYield * 1.0, // Energy savings (Affordable and Clean Energy)
+    sdg8: totalYield * 0.75, // Economic value (Decent Work and Economic Growth)
+    sdg9: areaInSquareMeters * 0.5, // Innovation potential (Industry, Innovation and Infrastructure)
+    sdg11: areaInSquareMeters * 1.25, // Community impact (Sustainable Cities)
+    sdg12: totalYield * 2.5, // Responsible consumption
+    sdg13: totalYield * 2.0, // Climate action
+    sdg14: totalYield * 0.75, // Water ecosystem protection (Life Below Water)
+    sdg15: areaInSquareMeters * 1.5, // Biodiversity (Life on Land)
+  };
+
   // Conservative estimates of impact
   return {
     totalYield: totalYield, // kg of produce
@@ -588,5 +982,6 @@ export const calculateAnnualGardenImpact = (areaInSquareMeters = 10) => {
     mealCount: Math.round(totalYield / 0.25), // Approx number of meal portions
     foodMilesSaved:
       totalYield * foodCarbonFootprint.averageFoodMiles.domesticProduce,
+    sdgImpacts, // Include SDG impacts in the return object
   };
 };
