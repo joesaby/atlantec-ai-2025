@@ -4,6 +4,12 @@ import { samplePlants } from "../../data/plants";
 import { sampleTasks } from "../../data/gardening-tasks";
 import CardContainer from "./CardContainer";
 import ChatAvatar from "../common/ChatAvatar";
+import { isSoilQuery, extractCountyFromQuery } from "../../utils/soil-client";
+import {
+  extractMonthInfoFromQuery,
+  formatTimeString,
+} from "../../utils/date-utils";
+import GardeningCalendar from "./GardeningCalendar";
 
 const GardenAgent = () => {
   const [messages, setMessages] = useState([
@@ -254,127 +260,6 @@ const GardenAgent = () => {
     }
   }, [messages]);
 
-  // Extract month information from user query
-  const extractMonthInfoFromQuery = (query) => {
-    const monthInfo = {};
-    const lowercaseQuery = query.toLowerCase();
-
-    // Check for seasons mentioned
-    if (lowercaseQuery.includes("spring")) {
-      monthInfo.season = "spring";
-    } else if (lowercaseQuery.includes("summer")) {
-      monthInfo.season = "summer";
-    } else if (
-      lowercaseQuery.includes("autumn") ||
-      lowercaseQuery.includes("fall")
-    ) {
-      monthInfo.season = "autumn";
-    } else if (lowercaseQuery.includes("winter")) {
-      monthInfo.season = "winter";
-    }
-
-    // Check for specific months mentioned
-    const months = [
-      "january",
-      "february",
-      "march",
-      "april",
-      "may",
-      "june",
-      "july",
-      "august",
-      "september",
-      "october",
-      "november",
-      "december",
-    ];
-
-    // Find any month mentioned in the query
-    const mentionedMonth = months.find((month) =>
-      lowercaseQuery.includes(month)
-    );
-    if (mentionedMonth) {
-      // Convert month name to number (1-12)
-      monthInfo.month = months.indexOf(mentionedMonth) + 1;
-
-      // If a specific month is mentioned (without season), we only want to show that month
-      if (!monthInfo.season) {
-        monthInfo.isSingleMonth = true;
-        monthInfo.months = 1;
-      }
-    }
-
-    // Check for number of months specification
-    const monthsMatch = lowercaseQuery.match(/next\s+(\d+)\s+months/);
-    if (monthsMatch && monthsMatch[1]) {
-      monthInfo.months = parseInt(monthsMatch[1], 10);
-    }
-
-    return monthInfo;
-  };
-
-  // Check if a query is related to soil
-  const isSoilQuery = (query) => {
-    const soilKeywords = [
-      "soil",
-      "dirt",
-      "earth",
-      "ground",
-      "loam",
-      "clay",
-      "sandy",
-      "peat",
-      "ph level",
-      "acidic",
-      "alkaline",
-      "drainage",
-      "soil type",
-    ];
-
-    const lowercaseQuery = query.toLowerCase();
-    return soilKeywords.some((keyword) => lowercaseQuery.includes(keyword));
-  };
-
-  // Extract county name from a query if present
-  const extractCountyFromQuery = (query) => {
-    const irishCounties = [
-      "carlow",
-      "cavan",
-      "clare",
-      "cork",
-      "donegal",
-      "dublin",
-      "galway",
-      "kerry",
-      "kildare",
-      "kilkenny",
-      "laois",
-      "leitrim",
-      "limerick",
-      "longford",
-      "louth",
-      "mayo",
-      "meath",
-      "monaghan",
-      "offaly",
-      "roscommon",
-      "sligo",
-      "tipperary",
-      "waterford",
-      "westmeath",
-      "wexford",
-      "wicklow",
-    ];
-
-    const lowercaseQuery = query.toLowerCase();
-    const foundCounty = irishCounties.find((county) =>
-      lowercaseQuery.includes(county)
-    );
-    return foundCounty
-      ? foundCounty.charAt(0).toUpperCase() + foundCounty.slice(1)
-      : null;
-  };
-
   // Clear chat history
   const clearChat = () => {
     setMessages([
@@ -388,13 +273,9 @@ const GardenAgent = () => {
     setDrawerOpen(false);
   };
 
-  // Format timestamp - Update to handle client/server time zone differences
+  // Format timestamp - Use the utility function
   const formatTime = (date) => {
-    const d = new Date(date);
-    // Use UTC methods to ensure consistent time formatting between server and client
-    const hours = d.getUTCHours().toString().padStart(2, "0");
-    const minutes = d.getUTCMinutes().toString().padStart(2, "0");
-    return `${hours}:${minutes}`;
+    return formatTimeString(date);
   };
 
   // Determine the card container type based on message content

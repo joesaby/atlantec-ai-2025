@@ -1,5 +1,6 @@
 import React from "react";
 import TaskCard from "./TaskCard";
+import { getMonthName } from "../../utils/date-utils";
 
 /**
  * MonthlyTasks Component
@@ -15,9 +16,14 @@ const MonthlyTasks = ({ monthData, expanded = false }) => {
           className="flex justify-between items-center cursor-pointer"
           onClick={() => setIsExpanded(!isExpanded)}
         >
-          <h2 className="card-title text-lg">{monthData.name || getMonthName(monthData.month)}</h2>
+          <h2 className="card-title text-lg">
+            {monthData.name || getMonthName(monthData.month)}
+          </h2>
           <div className="badge badge-primary">
-            {monthData.tasks && Array.isArray(monthData.tasks) ? monthData.tasks.length : 0} tasks
+            {monthData.tasks && Array.isArray(monthData.tasks)
+              ? monthData.tasks.length
+              : 0}{" "}
+            tasks
           </div>
           <button className="btn btn-sm btn-circle btn-ghost">
             <svg
@@ -41,27 +47,20 @@ const MonthlyTasks = ({ monthData, expanded = false }) => {
 
         {isExpanded && (
           <div className="mt-4 grid gap-4 md:grid-cols-2">
-            {monthData.tasks && Array.isArray(monthData.tasks) ? 
+            {monthData.tasks && Array.isArray(monthData.tasks) ? (
               monthData.tasks.map((task) => (
                 <TaskCard key={task.id} task={task} />
-              )) : 
-              <p className="text-center col-span-2">No tasks available for this month.</p>
-            }
+              ))
+            ) : (
+              <p className="text-center col-span-2">
+                No tasks available for this month.
+              </p>
+            )}
           </div>
         )}
       </div>
     </div>
   );
 };
-
-/**
- * Helper function to get month name from month number
- * @param {number} monthNum - Month number (1-12)
- * @returns {string} - Month name
- */
-function getMonthName(monthNum) {
-  const date = new Date(2025, monthNum - 1, 1);
-  return date.toLocaleString('default', { month: 'long' });
-}
 
 export default MonthlyTasks;

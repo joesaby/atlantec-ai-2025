@@ -1,16 +1,7 @@
 import React from "react";
+import { getCurrentSeason } from "../../utils/date-utils";
 
 const SeasonalOverview = () => {
-  // Determine current season based on month
-  const getCurrentSeason = () => {
-    const month = new Date().getMonth() + 1; // 1-indexed (1 = January, 12 = December)
-
-    if (month >= 3 && month <= 5) return "spring";
-    if (month >= 6 && month <= 8) return "summer";
-    if (month >= 9 && month <= 11) return "autumn";
-    return "winter";
-  };
-
   // Season-specific data
   const seasonData = {
     spring: {
