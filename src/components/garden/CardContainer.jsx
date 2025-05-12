@@ -76,7 +76,7 @@ const CardContainer = ({
       }`;
       break;
     case "soil":
-      alertTitle = `Soil details for ${message.soilInfo.county}`;
+      alertTitle = `Soil information for ${message.soilInfo.county}`;
       break;
     default:
       alertTitle = "Information";
@@ -186,6 +186,8 @@ const CardContainer = ({
               ? "View Calendar"
               : type === "sustainability"
               ? "View Impact"
+              : type === "soil"
+              ? "View Soil Details"
               : "Expand"}
           </button>
         )}
