@@ -45,10 +45,15 @@ if (process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
   // Running on Netlify - use the environment variable with JSON content
   try {
     // Log authentication attempt
-    logger.info("Using credentials from GOOGLE_APPLICATION_CREDENTIALS_JSON env var", { component: "VERTEX-AUTH" });
-    
-    const credentials = JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON);
-    
+    logger.info(
+      "Using credentials from GOOGLE_APPLICATION_CREDENTIALS_JSON env var",
+      { component: "VERTEX-AUTH" }
+    );
+
+    const credentials = JSON.parse(
+      process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON
+    );
+
     // IMPORTANT: For Netlify, do NOT set process.env.GOOGLE_APPLICATION_CREDENTIALS
     // as it will try to interpret the JSON string as a file path
 
@@ -59,14 +64,21 @@ if (process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
     // ALSO create a temporary credentials file at a Netlify-writable location
     // This ensures the Google Auth library can find the credentials properly
     // More details: https://cloud.google.com/docs/authentication/production
-    
-    logger.info("Setting up authentication for Google Cloud API", { component: "VERTEX-AUTH" });
-    
-    logger.info("Using service account credentials from environment variable (JSON)");
-    
+
+    logger.info("Setting up authentication for Google Cloud API", {
+      component: "VERTEX-AUTH",
+    });
+
+    logger.info(
+      "Using service account credentials from environment variable (JSON)"
+    );
+
     // Log partial info about the credentials to help with debugging
     if (credentials.project_id && credentials.client_email) {
-      logger.info(`Project ID: ${credentials.project_id}, Client email: ${credentials.client_email}`, { component: "VERTEX-AUTH" });
+      logger.info(
+        `Project ID: ${credentials.project_id}, Client email: ${credentials.client_email}`,
+        { component: "VERTEX-AUTH" }
+      );
       logger.info("Service account details", {
         project_id: credentials.project_id,
         client_email: credentials.client_email,
@@ -77,20 +89,26 @@ if (process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
     logger.error("Error parsing credentials from environment variable", {
       component: "VERTEX-AUTH",
       message: error.message,
-      credentialLength: process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON?.length || 0
+      credentialLength:
+        process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON?.length || 0,
     });
     logger.error("Error parsing credentials from environment variable", error);
   }
 } else if (credentialsPath) {
   // Running locally - use the file path
-  logger.info(`Using service account key file: ${credentialsPath}`, { component: "VERTEX-AUTH" });
+  logger.info(`Using service account key file: ${credentialsPath}`, {
+    component: "VERTEX-AUTH",
+  });
   vertexOptions.googleAuthOptions = { keyFilename: credentialsPath };
   logger.info("Using service account credentials from file", {
     path: credentialsPath,
     auth_method: "key_file",
   });
 } else {
-  logger.warn("No explicit credentials provided, falling back to application default credentials", { component: "VERTEX-AUTH" });
+  logger.warn(
+    "No explicit credentials provided, falling back to application default credentials",
+    { component: "VERTEX-AUTH" }
+  );
 }
 
 const vertexAI = new VertexAI(vertexOptions);
@@ -116,6 +134,16 @@ Add personal touches to your responses like:
 - "Your garden will love..." instead of "Gardens benefit from..."
 - Occasional gardening metaphors or Irish gardening wisdom
 - Brief stories or experiences about gardening in Ireland
+
+SUSTAINABILITY GUIDANCE:
+When users ask about sustainability, carbon footprint, or eco-friendly gardening:
+- Provide specific information on carbon footprint savings from growing plants vs. buying them
+- Mention water conservation benefits, especially relevant during Irish dry periods
+- Highlight biodiversity benefits of certain plant types
+- Discuss UN Sustainable Development Goals (SDGs) that relate to gardening practices
+- Offer practical sustainable gardening tips specific to Irish conditions
+- Be encouraging and positive about the environmental benefits of home gardening
+- Indicate SHOWING_SUSTAINABILITY_CARDS in your response for sustainability queries
 
 When users ask about gardening tasks, provide very short and concise responses (1-2 sentences) and explicitly suggest clicking the View Calendar button. For example: "I've prepared those November tasks for you! Click the View Calendar button below to see what you should be doing in your garden." or "Here are your spring gardening tasks ready for you. Click View Calendar to start planning your season!"
 
@@ -159,15 +187,23 @@ export async function generateVertexResponse(messages, options = {}) {
       model: modelName,
       messageCount: vertexMessages.length,
     });
-    
+
     // Log the request
-    logger.debug(`Sending request to model: ${modelName} with ${vertexMessages.length} messages`, { component: "VERTEX-REQUEST" });
+    logger.debug(
+      `Sending request to model: ${modelName} with ${vertexMessages.length} messages`,
+      { component: "VERTEX-REQUEST" }
+    );
 
     const response = await generativeModel.generateContent(request);
 
     // Log the response
-    logger.debug(`Received response from Vertex AI: ${response.response?.candidates ? 'Success' : 'Error'}`, { component: "VERTEX-RESPONSE" });
-    
+    logger.debug(
+      `Received response from Vertex AI: ${
+        response.response?.candidates ? "Success" : "Error"
+      }`,
+      { component: "VERTEX-RESPONSE" }
+    );
+
     // Log response summary without sensitive content
     logger.info("Received response from Vertex AI", {
       statusCode: response.response?.candidates ? 200 : 500,
@@ -262,6 +298,9 @@ export async function processGardeningQueryWithVertex(
   logger.debug("Checking response for card indicators", {
     hasPlantCards: responseText.includes("SHOWING_PLANT_CARDS"),
     hasTaskCards: responseText.includes("SHOWING_TASK_CARDS"),
+    hasSustainabilityCards: responseText.includes(
+      "SHOWING_SUSTAINABILITY_CARDS"
+    ),
     responseLength: responseText.length,
   });
 
@@ -275,12 +314,37 @@ export async function processGardeningQueryWithVertex(
     cardType = "task";
     logger.info("Task cards detected in response");
     console.log("Set cardType to 'task' from explicit marker");
+  } else if (responseText.includes("SHOWING_SUSTAINABILITY_CARDS")) {
+    content = responseText.replace("SHOWING_SUSTAINABILITY_CARDS", "").trim();
+    cardType = "sustainability";
+    logger.info("Sustainability cards detected in response");
+    console.log("Set cardType to 'sustainability' from explicit marker");
   } else {
     // Smart detection of content type without explicit markers
     const lowercaseContent = responseText.toLowerCase();
+    const lowercaseQuery = query.toLowerCase();
 
     // Check for plant-related content patterns
     if (
+      (lowercaseQuery.includes("carbon") ||
+        lowercaseQuery.includes("footprint") ||
+        lowercaseQuery.includes("sustainability") ||
+        lowercaseQuery.includes("sustainable") ||
+        lowercaseQuery.includes("eco-friendly") ||
+        lowercaseQuery.includes("environment") ||
+        lowercaseQuery.includes("sdg")) &&
+      (lowercaseContent.includes("carbon") ||
+        lowercaseContent.includes("footprint") ||
+        lowercaseContent.includes("emissions") ||
+        lowercaseContent.includes("sustainable") ||
+        lowercaseContent.includes("environmental impact"))
+    ) {
+      cardType = "sustainability";
+      logger.info("Sustainability cards inferred from content analysis");
+      console.log("Set cardType to 'sustainability' based on content analysis");
+    }
+    // Check for plant-related content patterns
+    else if (
       (lowercaseContent.includes("plant") ||
         lowercaseContent.includes("flower") ||
         lowercaseContent.includes("shrub") ||

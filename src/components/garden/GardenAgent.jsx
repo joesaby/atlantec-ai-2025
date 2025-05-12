@@ -3,7 +3,9 @@ import PlantCard from "../plants/PlantCard";
 import TaskCard from "./TaskCard";
 import SoilInfo from "../soil/SoilInfo";
 import GardeningCalendar from "./GardeningCalendar";
-import { selectCardsForResponse } from "../../utils/cards";
+import PlantSustainabilityInfo from "../sustainability/PlantSustainabilityInfo";
+import FoodSustainabilityInfo from "../sustainability/FoodSustainabilityInfo";
+import { selectCardsForResponse, CARD_TYPES } from "../../utils/cards";
 import { samplePlants } from "../../data/plants";
 import { sampleTasks } from "../../data/gardening-tasks";
 
@@ -405,10 +407,34 @@ const GardenAgent = () => {
   // Render different card types
   const renderCard = (card) => {
     switch (card.type) {
-      case "plant":
+      case CARD_TYPES.PLANT:
         return <PlantCard plant={card.data} key={card.data.id} />;
-      case "task":
+
+      case CARD_TYPES.TASK:
         return <TaskCard task={card.data} key={card.data.id} />;
+      case CARD_TYPES.SUSTAINABILITY:
+        // Check if this is a food sustainability card with crop data
+        if (card.data.isFoodSustainability) {
+          return (
+            <FoodSustainabilityInfo
+              crop={card.data.crop}
+              quantity={card.data.quantity}
+              gardenArea={card.data.gardenArea}
+              key={card.data.id}
+            />
+          );
+        } else {
+          // Regular plant sustainability
+          return (
+            <PlantSustainabilityInfo
+              plantName={card.data.plantName}
+              quantity={card.data.quantity}
+              isOrganic={card.data.isOrganic}
+              showDetailedBreakdown={card.data.showDetailedBreakdown}
+              key={card.data.id}
+            />
+          );
+        }
       default:
         return null;
     }
@@ -1063,8 +1089,8 @@ const GardenAgent = () => {
                 </button>
               </div>
               <div className="text-xs text-base-content/50 mt-2">
-                Try asking about "plant recommendations" or "gardening tasks for
-                spring"
+                Try asking about "plant recommendations", "sustainability of
+                potatoes", or "carbon footprint of growing vegetables"
               </div>
             </form>
           </div>
