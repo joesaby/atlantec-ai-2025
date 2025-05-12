@@ -179,15 +179,9 @@ const FoodSustainabilityInfo = ({ crop, quantity, gardenArea }) => {
                         </td>
                       </tr>
                       <tr>
-                        <td className="font-semibold">
-                          Food Miles Eliminated:
-                        </td>
+                        <td className="font-semibold">Food Miles Eliminated:</td>
                         <td>
-                          {formatWithUnit(
-                            specificImpact.foodMilesSaved,
-                            "km",
-                            0
-                          )}
+                          {formatWithUnit(specificImpact.foodMilesSaved, "km", 0)}
                         </td>
                       </tr>
                       <tr>
@@ -195,11 +189,7 @@ const FoodSustainabilityInfo = ({ crop, quantity, gardenArea }) => {
                           Packaging Waste Avoided:
                         </td>
                         <td>
-                          {formatWithUnit(
-                            specificImpact.packagingSaved,
-                            "g",
-                            0
-                          )}
+                          {formatWithUnit(specificImpact.packagingSaved, "g", 0)}
                         </td>
                       </tr>
                     </tbody>
@@ -207,9 +197,7 @@ const FoodSustainabilityInfo = ({ crop, quantity, gardenArea }) => {
 
                   {specificImpact.sdgImpacts && (
                     <div className="mt-4">
-                      <h4 className="font-semibold mb-2">
-                        UN SDG Contributions:
-                      </h4>
+                      <h4 className="font-semibold mb-2">UN SDG Contributions:</h4>
                       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
                         {Object.entries(specificImpact.sdgImpacts)
                           .filter(([_, value]) => value > 0)
@@ -234,9 +222,7 @@ const FoodSustainabilityInfo = ({ crop, quantity, gardenArea }) => {
                                     {sdg.name}
                                   </div>
                                 </div>
-                                <div className="badge badge-sm">
-                                  {Math.round(value)}
-                                </div>
+                                <div className="badge badge-sm">{Math.round(value)}</div>
                               </div>
                             );
                           })}

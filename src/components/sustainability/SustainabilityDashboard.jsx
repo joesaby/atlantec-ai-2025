@@ -145,29 +145,150 @@ const SustainabilityDashboard = () => {
             {activeSDGs.length > 0 ? (
               <div className="mt-4">
                 <p className="mb-2">Contributing to these UN SDGs:</p>
-                <div className="flex flex-wrap gap-2 justify-center">
-                  {activeSDGs.map(([sdgKey, score]) => {
-                    const sdg = sdgGoals[sdgKey];
-                    if (!sdg) return null;
-                    return (
-                      <div
-                        key={sdgKey}
-                        className={`badge badge-lg gap-1 tooltip ${getSDGProgressColor(
-                          score
-                        )}`}
-                        data-tip={`${sdg.name} (Score: ${score})`}
-                        style={{
-                          backgroundColor: sdg.color,
-                          color: "#fff",
-                          textShadow: "0px 0px 2px rgba(0,0,0,0.5)",
-                          border: "none",
-                        }}
-                      >
-                        <span className="text-lg">{sdg.icon}</span>
-                        <span className="font-bold">{sdg.number}</span>
+
+                {/* Group SDGs by category */}
+                <div className="mb-4">
+                  <div className="collapse collapse-arrow bg-base-100 mb-2">
+                    <input type="checkbox" defaultChecked />
+                    <div className="collapse-title text-sm font-medium">
+                      Planet & Environment
+                    </div>
+                    <div className="collapse-content">
+                      <div className="flex flex-wrap gap-2 justify-center">
+                        {activeSDGs
+                          .filter(([sdgKey]) =>
+                            ["sdg6", "sdg13", "sdg14", "sdg15"].includes(sdgKey)
+                          )
+                          .map(([sdgKey, score]) => {
+                            const sdg = sdgGoals[sdgKey];
+                            if (!sdg) return null;
+                            return (
+                              <div
+                                key={sdgKey}
+                                className={`badge badge-lg gap-1 tooltip ${getSDGProgressColor(
+                                  score
+                                )}`}
+                                data-tip={`${sdg.name} (Score: ${score})`}
+                                style={{
+                                  backgroundColor: sdg.color,
+                                  color: "#fff",
+                                  textShadow: "0px 0px 2px rgba(0,0,0,0.5)",
+                                  border: "none",
+                                }}
+                              >
+                                <span className="text-lg">{sdg.icon}</span>
+                                <span className="font-bold">{sdg.number}</span>
+                              </div>
+                            );
+                          })}
                       </div>
-                    );
-                  })}
+                    </div>
+                  </div>
+
+                  <div className="collapse collapse-arrow bg-base-100 mb-2">
+                    <input type="checkbox" defaultChecked />
+                    <div className="collapse-title text-sm font-medium">
+                      People & Wellbeing
+                    </div>
+                    <div className="collapse-content">
+                      <div className="flex flex-wrap gap-2 justify-center">
+                        {activeSDGs
+                          .filter(([sdgKey]) =>
+                            ["sdg2", "sdg3", "sdg4", "sdg11"].includes(sdgKey)
+                          )
+                          .map(([sdgKey, score]) => {
+                            const sdg = sdgGoals[sdgKey];
+                            if (!sdg) return null;
+                            return (
+                              <div
+                                key={sdgKey}
+                                className={`badge badge-lg gap-1 tooltip ${getSDGProgressColor(
+                                  score
+                                )}`}
+                                data-tip={`${sdg.name} (Score: ${score})`}
+                                style={{
+                                  backgroundColor: sdg.color,
+                                  color: "#fff",
+                                  textShadow: "0px 0px 2px rgba(0,0,0,0.5)",
+                                  border: "none",
+                                }}
+                              >
+                                <span className="text-lg">{sdg.icon}</span>
+                                <span className="font-bold">{sdg.number}</span>
+                              </div>
+                            );
+                          })}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="collapse collapse-arrow bg-base-100">
+                    <input type="checkbox" defaultChecked />
+                    <div className="collapse-title text-sm font-medium">
+                      Economy & Innovation
+                    </div>
+                    <div className="collapse-content">
+                      <div className="flex flex-wrap gap-2 justify-center">
+                        {activeSDGs
+                          .filter(([sdgKey]) =>
+                            ["sdg7", "sdg8", "sdg9", "sdg12"].includes(sdgKey)
+                          )
+                          .map(([sdgKey, score]) => {
+                            const sdg = sdgGoals[sdgKey];
+                            if (!sdg) return null;
+                            return (
+                              <div
+                                key={sdgKey}
+                                className={`badge badge-lg gap-1 tooltip ${getSDGProgressColor(
+                                  score
+                                )}`}
+                                data-tip={`${sdg.name} (Score: ${score})`}
+                                style={{
+                                  backgroundColor: sdg.color,
+                                  color: "#fff",
+                                  textShadow: "0px 0px 2px rgba(0,0,0,0.5)",
+                                  border: "none",
+                                }}
+                              >
+                                <span className="text-lg">{sdg.icon}</span>
+                                <span className="font-bold">{sdg.number}</span>
+                              </div>
+                            );
+                          })}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* All SDGs in one view for smaller screens */}
+                <div className="md:hidden mt-2">
+                  <div className="text-sm font-medium mb-2">
+                    All SDG Contributions:
+                  </div>
+                  <div className="flex flex-wrap gap-2 justify-center">
+                    {activeSDGs.map(([sdgKey, score]) => {
+                      const sdg = sdgGoals[sdgKey];
+                      if (!sdg) return null;
+                      return (
+                        <div
+                          key={sdgKey}
+                          className={`badge badge-lg gap-1 tooltip ${getSDGProgressColor(
+                            score
+                          )}`}
+                          data-tip={`${sdg.name} (Score: ${score})`}
+                          style={{
+                            backgroundColor: sdg.color,
+                            color: "#fff",
+                            textShadow: "0px 0px 2px rgba(0,0,0,0.5)",
+                            border: "none",
+                          }}
+                        >
+                          <span className="text-lg">{sdg.icon}</span>
+                          <span className="font-bold">{sdg.number}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
             ) : (

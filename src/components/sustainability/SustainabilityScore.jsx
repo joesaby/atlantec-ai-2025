@@ -60,26 +60,53 @@ const SustainabilityScore = ({
         {/* Show SDG impacts */}
         {metrics.sdgs.length > 0 && (
           <div className="mb-4">
-            <h4 className="font-semibold text-sm mb-1">
-              Supports UN Sustainable Development Goals:
+            <h4 className="font-semibold text-sm mb-1 flex items-center justify-between">
+              <span>Supports UN Sustainable Development Goals:</span>
+              {metrics.sdgs.length > 5 && (
+                <span className="text-xs opacity-70">
+                  Top {Math.min(5, metrics.sdgs.length)} shown
+                </span>
+              )}
             </h4>
-            <div className="flex flex-wrap gap-1">
-              {metrics.sdgs.map((sdgId) => (
-                <div
-                  key={sdgId}
-                  className="tooltip"
-                  data-tip={`${sdgGoals[sdgId].name}: ${sdgGoals[sdgId].description}`}
-                >
-                  <div
-                    className="badge badge-outline gap-1"
-                    style={{ borderColor: sdgGoals[sdgId].color }}
-                  >
-                    <span>{sdgGoals[sdgId].icon}</span>
-                    <span>Goal {sdgGoals[sdgId].number}</span>
-                  </div>
-                </div>
-              ))}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-2">
+              {metrics.sdgs
+                .slice(0, 6) // Show top 6 maximum
+                .map((sdgId) => {
+                  const contribution = metrics.sdgContributions?.[sdgId] || 0;
+                  return (
+                    <div
+                      key={sdgId}
+                      className="tooltip flex items-center gap-2 p-2 rounded-md"
+                      data-tip={`${sdgGoals[sdgId].name}: ${sdgGoals[sdgId].description}`}
+                      style={{ backgroundColor: `${sdgGoals[sdgId].color}15` }}
+                    >
+                      <div className="text-xl">{sdgGoals[sdgId].icon}</div>
+                      <div className="flex-1">
+                        <div className="text-xs font-medium">
+                          Goal {sdgGoals[sdgId].number}
+                        </div>
+                        <div className="text-xs opacity-70 line-clamp-1">
+                          {sdgGoals[sdgId].name}
+                        </div>
+                      </div>
+                      <div
+                        className="badge badge-sm"
+                        style={{
+                          backgroundColor: `${sdgGoals[sdgId].color}30`,
+                        }}
+                      >
+                        {Math.round(contribution)}
+                      </div>
+                    </div>
+                  );
+                })}
             </div>
+
+            {metrics.sdgs.length > 6 && (
+              <div className="text-xs text-center mt-2 opacity-70">
+                +{metrics.sdgs.length - 6} more goals supported
+              </div>
+            )}
           </div>
         )}
 
