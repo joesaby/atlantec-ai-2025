@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, createRef } from "react";
+import ReactMarkdown from "react-markdown";
 import { selectCardsForResponse, CARD_TYPES } from "../../utils/cards";
 import { samplePlants } from "../../data/plants";
 import { sampleTasks } from "../../data/gardening-tasks";
@@ -41,17 +42,29 @@ const GardenAgent = () => {
     if (taskInfoExpanded && messages.length > 0) {
       // Find the latest message with task cards
       const latestMessage = messages[messages.length - 1];
-      if (latestMessage?.cards?.length > 0 && latestMessage.cards[0].type === "task") {
+      if (
+        latestMessage?.cards?.length > 0 &&
+        latestMessage.cards[0].type === "task"
+      ) {
         // Update current calendar tasks when task info is expanded
         setCurrentCalendarTasks(latestMessage.cards);
-        console.log("Updated calendar tasks with", latestMessage.cards.length, "tasks");
+        console.log(
+          "Updated calendar tasks with",
+          latestMessage.cards.length,
+          "tasks"
+        );
       }
     }
   }, [taskInfoExpanded, messages]);
 
   // Log any calendar state changes for debugging
   useEffect(() => {
-    console.log("Calendar overlay state changed:", calendarOverlayOpen, "with tasks:", currentCalendarTasks.length);
+    console.log(
+      "Calendar overlay state changed:",
+      calendarOverlayOpen,
+      "with tasks:",
+      currentCalendarTasks.length
+    );
   }, [calendarOverlayOpen, currentCalendarTasks]);
 
   // Prevent drawer from closing when clicking expanded content
@@ -411,13 +424,15 @@ const GardenAgent = () => {
                       <div>
                         {/* Chat bubble message content */}
                         <div
-                          className="chat-bubble bg-emerald-800 text-white mb-2 overflow-hidden break-words whitespace-pre-wrap"
+                          className="chat-bubble bg-emerald-800 text-white mb-2 overflow-hidden break-words"
                           style={{
                             maxWidth: "90vw",
                             overflowWrap: "break-word",
                           }}
                         >
-                          {message.content}
+                          <div className="prose prose-sm prose-invert max-w-none">
+                            <ReactMarkdown>{message.content}</ReactMarkdown>
+                          </div>
                         </div>
 
                         {/* Card container (if applicable) */}
@@ -452,7 +467,7 @@ const GardenAgent = () => {
                                   ? {
                                       currentCalendarTasks,
                                       setCurrentCalendarTasks,
-                                      setCalendarOverlayOpen
+                                      setCalendarOverlayOpen,
                                     }
                                   : null
                               }
