@@ -1,0 +1,44 @@
+/* Styling for sustainability cards to fix scrolling issues */
+
+.sustainability-cards-container {
+  position: relative;
+  overflow: hidden;
+}
+
+.sustainability-card-item {
+  max-width: 100%;
+  transition: all 0.3s ease;
+}
+
+.sustainability-card-item > div {
+  max-width: 100%;
+}
+
+/* Improve responsiveness of grid layouts */
+@media (max-width: 640px) {
+  .grid.grid-cols-2,
+  .grid.grid-cols-3 {
+    grid-template-columns: repeat(1, 1fr);
+  }
+}
+
+/* Remove overflow issues */
+.chat .chat-bubble a {
+  word-break: break-all;
+}
+
+/* Fixes for tables in sustainability cards */
+.sustainability-card-item table {
+  table-layout: fixed;
+  width: 100%;
+}
+
+.sustainability-card-item table td {
+  word-break: break-word;
+  vertical-align: top;
+}
+
+/* Make sure alerts don't overflow */
+.sustainability-card-item .alert {
+  overflow-wrap: break-word;
+}

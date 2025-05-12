@@ -43,12 +43,12 @@ const FoodSustainabilityInfo = ({ crop, quantity, gardenArea }) => {
   };
 
   return (
-    <div className="card bg-base-100 shadow-xl overflow-hidden">
+    <div className="card bg-base-100 shadow-xl overflow-hidden max-w-full">
       <div className="bg-gradient-to-r from-green-800 to-green-600 text-white p-4">
-        <h3 className="text-xl font-bold flex items-center gap-2">
+        <h3 className="text-xl font-bold flex items-center gap-2 flex-wrap">
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            className="h-6 w-6"
+            className="h-6 w-6 flex-shrink-0"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -60,13 +60,13 @@ const FoodSustainabilityInfo = ({ crop, quantity, gardenArea }) => {
               d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"
             />
           </svg>
-          Sustainability Impact: {crop ? `Growing ${crop}` : "Food Growing"}
+          <span className="truncate">Sustainability Impact: {crop ? `Growing ${crop}` : "Food Growing"}</span>
         </h3>
       </div>
 
       <div className="card-body">
         {/* Visual impact indicators */}
-        <div className="flex justify-around p-3 bg-base-200 rounded-lg mb-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-3 bg-base-200 rounded-lg mb-4">
           <ImpactLevel
             level={crop === "herbs" ? 5 : 4}
             icon="🌍"
@@ -89,11 +89,11 @@ const FoodSustainabilityInfo = ({ crop, quantity, gardenArea }) => {
 
         {/* Primary metrics */}
         {specificImpact ? (
-          <div className="stats stats-vertical lg:stats-horizontal shadow w-full text-center">
+          <div className="stats stats-vertical sm:stats-horizontal shadow w-full text-center flex-wrap">
             <div className="stat">
               <div className="stat-figure text-success text-3xl">🌍</div>
               <div className="stat-title">Carbon Saved</div>
-              <div className="stat-value text-success">
+              <div className="stat-value text-success text-lg md:text-xl">
                 {specificImpact.carbonSaved.toFixed(2)} kg
               </div>
               <div className="stat-desc">CO₂ compared to store-bought</div>

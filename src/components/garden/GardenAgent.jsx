@@ -69,6 +69,7 @@ const GardenAgent = () => {
   const [soilInfoExpanded, setSoilInfoExpanded] = useState(false);
   const [taskInfoExpanded, setTaskInfoExpanded] = useState(false);
   const [plantsExpanded, setPlantsExpanded] = useState(false);
+  const [sustainabilityExpanded, setSustainabilityExpanded] = useState(false);
   const [calendarOverlayOpen, setCalendarOverlayOpen] = useState(false);
   const [currentCalendarTasks, setCurrentCalendarTasks] = useState([]);
   const messagesEndRef = useRef(null);
@@ -77,7 +78,7 @@ const GardenAgent = () => {
   // Prevent drawer from closing when clicking expanded content
   useEffect(() => {
     // Force drawer to stay open if content is expanded
-    if (soilInfoExpanded || taskInfoExpanded) {
+    if (soilInfoExpanded || taskInfoExpanded || sustainabilityExpanded) {
       setDrawerOpen(true);
 
       // Force the body to have scrolling enabled
@@ -97,12 +98,25 @@ const GardenAgent = () => {
         }
       };
     }
-  }, [soilInfoExpanded, taskInfoExpanded]);
+  }, [soilInfoExpanded, taskInfoExpanded, sustainabilityExpanded]);
 
   // Auto-scroll to the bottom when messages change
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Auto-scroll when card expansion state changes
+  useEffect(() => {
+    // Only auto-scroll if the user is expanding/collapsing the latest message
+    if (messages.length > 0) {
+      setTimeout(() => scrollToBottom(), 100);
+    }
+  }, [
+    plantsExpanded,
+    soilInfoExpanded,
+    taskInfoExpanded,
+    sustainabilityExpanded,
+  ]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -115,6 +129,8 @@ const GardenAgent = () => {
     // Reset any expanded state when submitting a new query
     if (soilInfoExpanded) setSoilInfoExpanded(false);
     if (taskInfoExpanded) setTaskInfoExpanded(false);
+    if (sustainabilityExpanded) setSustainabilityExpanded(false);
+    if (plantsExpanded) setPlantsExpanded(false);
 
     // Add user message
     const userMessage = {
@@ -211,6 +227,28 @@ const GardenAgent = () => {
       }
 
       setMessages((prevMessages) => [...prevMessages, responseObj]);
+
+      // After the message is added, make sure to scroll properly
+      setTimeout(() => {
+        // Ensure the message is visible by scrolling to it
+        const messageElements = document.querySelectorAll(
+          "[data-message-index]"
+        );
+        if (messageElements.length > 0) {
+          const lastMessageElement =
+            messageElements[messageElements.length - 1];
+          if (lastMessageElement) {
+            lastMessageElement.scrollIntoView({
+              behavior: "smooth",
+              block: "center",
+            });
+          }
+        }
+
+        // Ensure document scrolling is enabled
+        document.body.style.overflow = "auto";
+        document.documentElement.style.overflow = "auto";
+      }, 200);
     } catch (error) {
       console.error("Error processing query:", error);
       // Add fallback response in case of error
@@ -440,6 +478,41 @@ const GardenAgent = () => {
     }
   };
 
+  // Custom CSS for fixing sustainability card issues
+  useEffect(() => {
+    // Add inline styling to fix scrolling issues
+    const style = document.createElement("style");
+    style.textContent = `
+      .sustainability-cards-container {
+        position: relative;
+        overflow: hidden;
+      }
+      
+      .sustainability-card-item {
+        max-width: 100%;
+      }
+      
+      .chat .chat-bubble {
+        max-width: 100%;
+        word-break: break-word;
+      }
+      
+      body, html {
+        overflow-x: hidden;
+        max-width: 100%;
+      }
+      
+      .drawer {
+        overflow: visible;
+      }
+    `;
+    document.head.appendChild(style);
+
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, []);
+
   return (
     <>
       {/* Calendar Modal Overlay - completely separate from drawer */}
@@ -643,7 +716,13 @@ const GardenAgent = () => {
                       {message.soilInfo ? (
                         // For soil-related queries, show the SoilInfo component
                         <div>
-                          <div className="chat-bubble bg-emerald-800 text-white mb-2">
+                          <div
+                            className="chat-bubble bg-emerald-800 text-white mb-2 overflow-hidden break-words"
+                            style={{
+                              maxWidth: "90vw",
+                              overflowWrap: "break-word",
+                            }}
+                          >
                             {message.content}
                           </div>
                           <div className="mt-2 max-w-3xl">
@@ -757,7 +836,13 @@ const GardenAgent = () => {
                         message.cards[0].type === "task" ? (
                         // For task cards, show a notification with an expand/collapse button
                         <div>
-                          <div className="chat-bubble bg-emerald-800 text-white mb-2">
+                          <div
+                            className="chat-bubble bg-emerald-800 text-white mb-2 overflow-hidden break-words"
+                            style={{
+                              maxWidth: "90vw",
+                              overflowWrap: "break-word",
+                            }}
+                          >
                             {message.content}
                           </div>
                           <div className="mt-2 max-w-3xl">
@@ -830,111 +915,239 @@ const GardenAgent = () => {
                           </div>
                         </div>
                       ) : message.cards && message.cards.length > 0 ? (
-                        // For plant cards, show with expand/collapse functionality
+                        // Handle different card types
                         <div>
-                          <div className="chat-bubble bg-emerald-800 text-white mb-2">
+                          <div
+                            className="chat-bubble bg-emerald-800 text-white mb-2 overflow-hidden break-words"
+                            style={{
+                              maxWidth: "90vw",
+                              overflowWrap: "break-word",
+                            }}
+                          >
                             {message.content}
                           </div>
                           <div className="mt-2 max-w-3xl">
-                            {/* Add a notification banner with expand/collapse button for plant recommendations */}
-                            <div className="alert alert-success mb-4 flex justify-between items-center">
-                              <div className="flex items-center gap-2">
-                                <svg
-                                  xmlns="http://www.w3.org/2000/svg"
-                                  className="stroke-current shrink-0 h-6 w-6"
-                                  fill="none"
-                                  viewBox="0 0 24 24"
-                                >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth="2"
-                                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                                  />
-                                </svg>
-                                <span>
-                                  {message.cards.length > 3 && !plantsExpanded
-                                    ? `Showing top 3 of ${message.cards.length} plant recommendations`
-                                    : `${message.cards.length} Plant recommendations for your garden`}
-                                </span>
-                              </div>
-                              {message.cards.length > 3 && (
-                                <button
-                                  className="btn btn-sm"
-                                  onClick={() => {
-                                    if (index === messages.length - 1) {
-                                      // Toggle expanded state
-                                      setPlantsExpanded(!plantsExpanded);
-
-                                      // Ensure proper scrolling
-                                      document.documentElement.style.overflow =
-                                        "auto";
-                                      document.body.style.overflow = "auto";
-
-                                      // When expanding, scroll to show more content
-                                      // When collapsing, scroll back to the message
-                                      setTimeout(() => {
-                                        const messageEl =
-                                          document.querySelector(
-                                            `[data-message-index="${index}"]`
-                                          );
-                                        if (messageEl) {
-                                          const messageRect =
-                                            messageEl.getBoundingClientRect();
-                                          const targetY =
-                                            window.scrollY +
-                                            messageRect.top -
-                                            100;
-                                          window.scrollTo({
-                                            top: targetY,
-                                            behavior: "smooth",
-                                          });
-                                        }
-                                      }, 100);
-                                    }
-                                  }}
-                                >
-                                  {index === messages.length - 1 &&
-                                  plantsExpanded
-                                    ? "Show Less"
-                                    : "Show All"}
-                                </button>
-                              )}
-                            </div>
-
-                            {/* Only render plant cards based on expanded state */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2 mb-4">
-                              {message.cards
-                                .slice(
-                                  0,
-                                  index === messages.length - 1 &&
-                                    !plantsExpanded &&
-                                    message.cards.length > 3
-                                    ? 3
-                                    : message.cards.length
-                                )
-                                .map((card) => renderCard(card))}
-                            </div>
-
-                            {/* Show a "Show More" button if applicable */}
-                            {index === messages.length - 1 &&
-                              !plantsExpanded &&
-                              message.cards.length > 3 && (
-                                <div className="mt-6 pb-2 text-center bg-base-200 rounded-lg py-3 animate-pulse">
+                            {/* Check if these are sustainability cards or plant cards */}
+                            {message.cards[0].type ===
+                            CARD_TYPES.SUSTAINABILITY ? (
+                              // Sustainability Cards
+                              <div>
+                                <div className="alert alert-success mb-4 flex justify-between items-center">
+                                  <div className="flex items-center gap-2">
+                                    <svg
+                                      xmlns="http://www.w3.org/2000/svg"
+                                      className="stroke-current shrink-0 h-6 w-6"
+                                      fill="none"
+                                      viewBox="0 0 24 24"
+                                    >
+                                      <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth="2"
+                                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                                      />
+                                    </svg>
+                                    <span>
+                                      Sustainability Impact Information
+                                    </span>
+                                  </div>
                                   <button
-                                    onClick={() => setPlantsExpanded(true)}
-                                    className="btn btn-primary btn-sm"
+                                    className="btn btn-sm"
+                                    onClick={() => {
+                                      if (index === messages.length - 1) {
+                                        // Toggle expanded state
+                                        const newExpandedState =
+                                          !sustainabilityExpanded;
+                                        setSustainabilityExpanded(
+                                          newExpandedState
+                                        );
+
+                                        // First ensure the document has normal scroll
+                                        document.documentElement.style.overflow =
+                                          "auto";
+                                        document.body.style.overflow = "auto";
+                                        document.body.style.height = "auto";
+
+                                        // When expanding/collapsing, scroll to a good position
+                                        setTimeout(() => {
+                                          const messageEl =
+                                            document.querySelector(
+                                              `[data-message-index="${index}"]`
+                                            );
+                                          if (messageEl) {
+                                            const messageRect =
+                                              messageEl.getBoundingClientRect();
+                                            const targetY =
+                                              window.scrollY +
+                                              messageRect.top -
+                                              100;
+
+                                            window.scrollTo({
+                                              top: targetY,
+                                              behavior: "smooth",
+                                            });
+                                          }
+                                        }, 100);
+                                      }
+                                    }}
                                   >
-                                    Show {message.cards.length - 3} More Plants
+                                    {index === messages.length - 1 &&
+                                    sustainabilityExpanded
+                                      ? "Collapse"
+                                      : "Expand"}
                                   </button>
                                 </div>
-                              )}
+
+                                {/* Show all cards when expanded, or just the first one when collapsed */}
+                                <div className="sustainability-cards-container relative">
+                                  <div
+                                    className={`flex flex-col gap-6 mt-2 mb-4 max-w-2xl mx-auto`}
+                                  >
+                                    {message.cards
+                                      .slice(
+                                        0,
+                                        index === messages.length - 1 &&
+                                          !sustainabilityExpanded
+                                          ? 1
+                                          : message.cards.length
+                                      )
+                                      .map((card) => (
+                                        <div
+                                          key={card.data.id}
+                                          className="w-full sustainability-card-item"
+                                        >
+                                          {renderCard(card)}
+                                        </div>
+                                      ))}
+                                  </div>
+
+                                  {/* Show indicator if there are more cards */}
+                                  {index === messages.length - 1 &&
+                                    !sustainabilityExpanded &&
+                                    message.cards.length > 1 && (
+                                      <div className="mt-6 pb-2 text-center bg-base-200 rounded-lg py-3">
+                                        <button
+                                          onClick={() =>
+                                            setSustainabilityExpanded(true)
+                                          }
+                                          className="btn btn-primary btn-sm"
+                                        >
+                                          Show {message.cards.length - 1} More
+                                          Impact Cards
+                                        </button>
+                                      </div>
+                                    )}
+                                </div>
+                              </div>
+                            ) : (
+                              // Plant recommendation cards
+                              <div>
+                                <div className="alert alert-success mb-4 flex justify-between items-center">
+                                  <div className="flex items-center gap-2">
+                                    <svg
+                                      xmlns="http://www.w3.org/2000/svg"
+                                      className="stroke-current shrink-0 h-6 w-6"
+                                      fill="none"
+                                      viewBox="0 0 24 24"
+                                    >
+                                      <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth="2"
+                                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                                      />
+                                    </svg>
+                                    <span>
+                                      {message.cards.length > 3 &&
+                                      !plantsExpanded
+                                        ? `Showing top 3 of ${message.cards.length} plant recommendations`
+                                        : `${message.cards.length} Plant recommendations for your garden`}
+                                    </span>
+                                  </div>
+                                  {message.cards.length > 3 && (
+                                    <button
+                                      className="btn btn-sm"
+                                      onClick={() => {
+                                        if (index === messages.length - 1) {
+                                          // Toggle expanded state
+                                          setPlantsExpanded(!plantsExpanded);
+
+                                          // Ensure proper scrolling
+                                          document.documentElement.style.overflow =
+                                            "auto";
+                                          document.body.style.overflow = "auto";
+
+                                          // When expanding, scroll to show more content
+                                          // When collapsing, scroll back to the message
+                                          setTimeout(() => {
+                                            const messageEl =
+                                              document.querySelector(
+                                                `[data-message-index="${index}"]`
+                                              );
+                                            if (messageEl) {
+                                              const messageRect =
+                                                messageEl.getBoundingClientRect();
+                                              const targetY =
+                                                window.scrollY +
+                                                messageRect.top -
+                                                100;
+                                              window.scrollTo({
+                                                top: targetY,
+                                                behavior: "smooth",
+                                              });
+                                            }
+                                          }, 100);
+                                        }
+                                      }}
+                                    >
+                                      {index === messages.length - 1 &&
+                                      plantsExpanded
+                                        ? "Show Less"
+                                        : "Show All"}
+                                    </button>
+                                  )}
+                                </div>
+
+                                {/* Only render plant cards based on expanded state */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2 mb-4">
+                                  {message.cards
+                                    .slice(
+                                      0,
+                                      index === messages.length - 1 &&
+                                        !plantsExpanded &&
+                                        message.cards.length > 3
+                                        ? 3
+                                        : message.cards.length
+                                    )
+                                    .map((card) => renderCard(card))}
+                                </div>
+
+                                {/* Show a "Show More" button if applicable */}
+                                {index === messages.length - 1 &&
+                                  !plantsExpanded &&
+                                  message.cards.length > 3 && (
+                                    <div className="mt-6 pb-2 text-center bg-base-200 rounded-lg py-3 animate-pulse">
+                                      <button
+                                        onClick={() => setPlantsExpanded(true)}
+                                        className="btn btn-primary btn-sm"
+                                      >
+                                        Show {message.cards.length - 3} More
+                                        Plants
+                                      </button>
+                                    </div>
+                                  )}
+                              </div>
+                            )}
                           </div>
                         </div>
                       ) : (
                         // For regular text messages with no cards
                         <div
-                          className="chat-bubble bg-emerald-800 text-white"
+                          className="chat-bubble bg-emerald-800 text-white overflow-hidden break-words"
+                          style={{
+                            maxWidth: "90vw",
+                            overflowWrap: "break-word",
+                          }}
                           dangerouslySetInnerHTML={{
                             __html: markdownToHtml(message.content),
                           }}

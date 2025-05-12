@@ -1,4 +1,22 @@
 @import "tailwindcss";
+@import "../components/sustainability/sustainability-styles.css";
 @plugin "daisyui" {
   themes: light --default, dark --prefersdark, lemonade;
+}
+
+/* Global fixes for scrolling issues */
+body, html {
+  overflow-x: hidden;
+  max-width: 100%;
+}
+
+/* Fix for drawer overflow */
+.drawer {
+  overflow: visible;
+}
+
+/* Fix for chat bubble content */
+.chat .chat-bubble {
+  max-width: 100%;
+  word-break: break-word;
 }

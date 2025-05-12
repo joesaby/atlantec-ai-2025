@@ -16,12 +16,12 @@ const PlantSustainabilityInfo = ({
   const metrics = calculateCarbonSavings(plantName, quantity, isOrganic);
 
   return (
-    <div className="bg-base-100 shadow-lg rounded-lg overflow-hidden">
+    <div className="bg-base-100 shadow-lg rounded-lg overflow-hidden max-w-full">
       <div className="bg-gradient-to-r from-green-700 to-green-500 p-4 text-white">
-        <h3 className="text-xl font-bold flex items-center gap-2">
+        <h3 className="text-xl font-bold flex items-center gap-2 flex-wrap">
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            className="h-6 w-6"
+            className="h-6 w-6 flex-shrink-0"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -33,13 +33,23 @@ const PlantSustainabilityInfo = ({
               d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"
             />
           </svg>
-          Sustainability Impact
+          <span className="truncate">Sustainability Impact: {plantName}</span>
         </h3>
         <div className="flex items-center mt-1">
           <div className="text-3xl font-bold">
             {metrics.sustainabilityScore.toFixed(1)}
           </div>
           <div className="ml-2 text-sm opacity-90">/ 5.0</div>
+          
+          {/* Visual score indicator */}
+          <div className="ml-auto flex items-center">
+            <div className="w-24 bg-white bg-opacity-30 rounded-full h-2">
+              <div 
+                className="h-2 rounded-full bg-white" 
+                style={{ width: `${(metrics.sustainabilityScore / 5) * 100}%` }}
+              ></div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -47,7 +57,7 @@ const PlantSustainabilityInfo = ({
         <h4 className="font-bold text-lg mb-2">Environmental Benefits</h4>
 
         {/* Main metrics */}
-        <div className="grid grid-cols-2 gap-4 mb-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
           <div className="bg-base-200 p-3 rounded-lg">
             <div className="text-sm opacity-70">Carbon Footprint Reduction</div>
             <div className="font-bold text-lg">
@@ -98,36 +108,34 @@ const PlantSustainabilityInfo = ({
         )}
 
         {/* SDG Contributions */}
-        <div className="mt-6">
-          <h4 className="font-bold text-lg mb-2">
+        <div className="mt-4">
+          <h4 className="font-bold text-md mb-2">
             UN Sustainable Development Goals Impact
           </h4>
-          <div className="grid grid-cols-3 gap-2">
-            {Object.entries(metrics.sdgContributions).map(([sdgKey, value]) => {
-              if (value > 0) {
-                const sdg = sdgGoals[sdgKey];
-                return (
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            {metrics.sdgs && metrics.sdgs.map((sdgKey) => {
+              const sdg = sdgGoals[sdgKey];
+              if (!sdg) return null;
+              return (
+                <div
+                  key={sdgKey}
+                  className="tooltip"
+                  data-tip={sdg.description}
+                >
                   <div
-                    key={sdgKey}
-                    className="tooltip"
-                    data-tip={sdg.description}
+                    className="flex flex-col items-center p-2 rounded-lg"
+                    style={{ backgroundColor: `${sdg.color}20` }}
                   >
-                    <div
-                      className="flex flex-col items-center p-2 rounded-lg"
-                      style={{ backgroundColor: `${sdg.color}20` }}
-                    >
-                      <div className="text-xl">{sdg.icon}</div>
-                      <div className="text-xs font-medium text-center">
-                        SDG {sdg.number}
-                      </div>
-                      <div className="text-xs opacity-70 text-center">
-                        {sdg.name}
-                      </div>
+                    <div className="text-xl">{sdg.icon}</div>
+                    <div className="text-xs font-medium text-center">
+                      SDG {sdg.number}
+                    </div>
+                    <div className="text-xs opacity-70 text-center line-clamp-1">
+                      {sdg.name}
                     </div>
                   </div>
-                );
-              }
-              return null;
+                </div>
+              );
             })}
           </div>
         </div>

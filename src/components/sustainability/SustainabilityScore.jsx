@@ -29,10 +29,10 @@ const SustainabilityScore = ({
   }
 
   return (
-    <div className="card bg-base-100 shadow-xl">
+    <div className="card bg-base-100 shadow-xl w-full">
       <div className="card-body p-4">
         <h3 className="card-title text-lg flex items-center justify-between">
-          <span>Sustainability Impact</span>
+          <span>Sustainability Impact: {plantName}</span>
           <div className="badge badge-accent">
             {metrics.sustainabilityScore}/5
           </div>
