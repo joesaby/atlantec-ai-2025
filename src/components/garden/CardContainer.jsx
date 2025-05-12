@@ -29,6 +29,8 @@ const CardContainer = ({
 }) => {
   // State to track if user has clicked expand at least once
   const [hasExpandedOnce, setHasExpandedOnce] = useState(false);
+  // State to track if all plant cards are shown
+  const [showAllPlants, setShowAllPlants] = useState(false);
 
   // Determine container display settings based on card type
   let itemsPerRow, maxCollapsedItems, initialVisibleItems;
@@ -36,8 +38,8 @@ const CardContainer = ({
   switch (type) {
     case CARD_TYPES.PLANT:
       itemsPerRow = 2; // 2 cards per row for plants
-      maxCollapsedItems = 3;
-      initialVisibleItems = 3; // Show 3 items initially
+      maxCollapsedItems = 2; // Show 2 plant cards initially when expanded
+      initialVisibleItems = 0; // Don't show any plant cards initially (collapsed state)
       break;
     case CARD_TYPES.TASK:
       itemsPerRow = 1; // Single column for tasks
@@ -47,7 +49,7 @@ const CardContainer = ({
     case CARD_TYPES.SUSTAINABILITY:
       itemsPerRow = 1; // Single column for sustainability
       maxCollapsedItems = 1;
-      initialVisibleItems = 0; // Changed to 0 - Don't show sustainability cards initially
+      initialVisibleItems = 0; // Don't show sustainability cards initially
       break;
     case CARD_TYPES.SOIL:
       itemsPerRow = 1; // Single column for soil
@@ -57,16 +59,14 @@ const CardContainer = ({
     default:
       itemsPerRow = 1;
       maxCollapsedItems = 2;
-      initialVisibleItems = 2;
+      initialVisibleItems = 0; // Default to not showing cards initially
   }
 
   // Format the alert title based on card type
   let alertTitle;
   switch (type) {
     case CARD_TYPES.PLANT:
-      alertTitle = isExpanded
-        ? `${message.cards?.length} Plant recommendations for your garden`
-        : `Plant recommendations for your garden`;
+      alertTitle = `${message.cards?.length} Plants suitable for your garden`;
       break;
     case CARD_TYPES.TASK:
       alertTitle = `${message.cards?.length} Gardening tasks available`;
@@ -86,10 +86,22 @@ const CardContainer = ({
   // Always show the expand button for all card types
   const showButton = type === CARD_TYPES.SOIL || message.cards?.length > 0;
 
-  // Calculate how many items to show based on expansion state
-  const itemsToShow = isExpanded
-    ? message.cards?.length || 0
-    : Math.min(initialVisibleItems, message.cards?.length || 0);
+  // Calculate how many items to show based on expansion state and type
+  const itemsToShow = () => {
+    if (!isExpanded) {
+      return 0;
+    }
+
+    if (type === CARD_TYPES.PLANT) {
+      if (showAllPlants) {
+        return message.cards?.length || 0;
+      }
+      return Math.min(maxCollapsedItems, message.cards?.length || 0);
+    }
+
+    // For other types, show all when expanded
+    return message.cards?.length || 0;
+  };
 
   // Render different card types
   const renderCard = (card) => {
@@ -136,6 +148,11 @@ const CardContainer = ({
       // Toggle expanded state
       const newExpandedState = !isExpanded;
       setExpanded(newExpandedState);
+
+      // Reset showAllPlants when collapsing
+      if (!newExpandedState) {
+        setShowAllPlants(false);
+      }
 
       // Track that expand has been clicked at least once
       if (newExpandedState) {
@@ -233,13 +250,15 @@ const CardContainer = ({
             }}
           >
             {index === messagesLength - 1 && isExpanded
-              ? "Collapse"
+              ? "Hide"
               : type === CARD_TYPES.TASK
               ? "View Calendar"
               : type === CARD_TYPES.SUSTAINABILITY
               ? "View Impact"
               : type === CARD_TYPES.SOIL
               ? "View Soil Details"
+              : type === CARD_TYPES.PLANT
+              ? "View Plants"
               : "Expand"}
           </button>
         )}
@@ -274,39 +293,34 @@ const CardContainer = ({
           </div>
         )}
 
-      {/* Regular cards display - do NOT display task cards or sustainability cards when not expanded */}
-      {type !== CARD_TYPES.SOIL &&
-        type !== CARD_TYPES.TASK &&
-        !(type === CARD_TYPES.SUSTAINABILITY && !isExpanded) &&
-        message.cards && (
-          <div
-            className={`grid grid-cols-1 ${
-              itemsPerRow > 1 ? "md:grid-cols-2" : ""
-            } gap-4 mt-2 mb-4`}
-          >
-            {message.cards
-              .slice(0, itemsToShow)
-              .map((card) => renderCard(card))}
-          </div>
-        )}
+      {/* Only show cards when expanded - this applies to all card types */}
+      {isExpanded && message.cards && message.cards.length > 0 && (
+        <div
+          className={`grid grid-cols-1 ${
+            itemsPerRow > 1 ? "md:grid-cols-2" : ""
+          } gap-4 mt-2 mb-4`}
+        >
+          {message.cards
+            .slice(0, itemsToShow())
+            .map((card) => renderCard(card))}
+        </div>
+      )}
 
-      {/* "Show more" button - ONLY show after user has clicked Expand once */}
+      {/* "Show All Plants" button - Only show for plant cards when there are more than maxCollapsedItems */}
       {index === messagesLength - 1 &&
         isExpanded &&
-        hasExpandedOnce &&
+        type === CARD_TYPES.PLANT &&
         message.cards &&
-        type !== CARD_TYPES.TASK &&
-        type !== CARD_TYPES.SUSTAINABILITY &&
-        message.cards.length > initialVisibleItems && (
+        message.cards.length > maxCollapsedItems &&
+        !showAllPlants && (
           <div className="mt-6 pb-2 text-center bg-base-200 rounded-lg py-3">
             <button
               onClick={() => {
-                // For other types, show all items
-                setExpanded(true);
+                setShowAllPlants(true);
               }}
               className="btn btn-primary btn-sm"
             >
-              {`Show All ${type === CARD_TYPES.PLANT ? "Plants" : "Items"}`}
+              Show All Plants ({message.cards.length - maxCollapsedItems} more)
             </button>
           </div>
         )}

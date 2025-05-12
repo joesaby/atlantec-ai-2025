@@ -16,7 +16,7 @@ export const CARD_TYPES = {
 
 // Sample data for card selection
 // In a production environment, these would be fetched from a database
-export const samplePlants = plants.slice(0, 5);
+export const samplePlants = plants;
 export const sampleTasks = gardeningTasks
   .flatMap((month) => month.tasks)
   .slice(0, 5);
@@ -65,6 +65,249 @@ export function selectCardsForResponse(query, llmResponse) {
 }
 
 /**
+ * Returns plant cards based on the query and LLM response
+ * @param {string} query - The user's original query
+ * @param {string} content - The text content of the LLM response
+ * @returns {Array} - Array of plant card objects
+ */
+function getPlantCards(query, content) {
+  const combinedText = (query + " " + content).toLowerCase();
+
+  // Check for specific plant type requests
+  const isFlowerRequest = hasFlowerKeywords(combinedText);
+  const isVegetableRequest = hasVegetableKeywords(combinedText);
+  const isFruitRequest = hasFruitKeywords(combinedText);
+
+  // Filter plants based on request type
+  let filteredPlants = samplePlants;
+
+  if (isFlowerRequest && !isVegetableRequest && !isFruitRequest) {
+    // Show only flowering plants
+    filteredPlants = samplePlants.filter((plant) => isFloweringPlant(plant));
+    console.log(
+      `Filtering for flowers only: Found ${filteredPlants.length} flowering plants`
+    );
+  } else if (isVegetableRequest && !isFlowerRequest && !isFruitRequest) {
+    // Show only vegetable plants
+    filteredPlants = samplePlants.filter((plant) => isVegetablePlant(plant));
+    console.log(
+      `Filtering for vegetables only: Found ${filteredPlants.length} vegetable plants`
+    );
+  } else if (isFruitRequest && !isFlowerRequest && !isVegetableRequest) {
+    // Show only fruit plants
+    filteredPlants = samplePlants.filter((plant) => isFruitPlant(plant));
+    console.log(
+      `Filtering for fruits only: Found ${filteredPlants.length} fruit plants`
+    );
+  } else if (isVegetableRequest && isFruitRequest && !isFlowerRequest) {
+    // Show edible plants (both fruits and vegetables)
+    filteredPlants = samplePlants.filter(
+      (plant) => isVegetablePlant(plant) || isFruitPlant(plant)
+    );
+    console.log(
+      `Filtering for edible plants: Found ${filteredPlants.length} edible plants`
+    );
+  }
+
+  // Limit to 6 plants to avoid overwhelming the UI
+  const limitedPlants = filteredPlants.slice(0, 6);
+
+  // Return plants as cards
+  return limitedPlants.map((plant) => ({
+    type: CARD_TYPES.PLANT,
+    data: plant,
+  }));
+}
+
+/**
+ * Checks if text contains flower-related keywords
+ * @param {string} text - Text to analyze
+ * @returns {boolean} - Whether the text is flower-related
+ */
+function hasFlowerKeywords(text) {
+  const flowerKeywords = [
+    "flower",
+    "flowers",
+    "flowering",
+    "bloom",
+    "blooms",
+    "blooming",
+    "wildflower",
+    "ornamental",
+    "decorative plant",
+    "garden flower",
+    "floral",
+    "bouquet",
+    "pollinator",
+    "hydrangea",
+    "fuchsia",
+    "foxglove",
+    "primrose",
+    "heather",
+  ];
+
+  return flowerKeywords.some((keyword) => text.includes(keyword));
+}
+
+/**
+ * Checks if text contains vegetable-related keywords
+ * @param {string} text - Text to analyze
+ * @returns {boolean} - Whether the text is vegetable-related
+ */
+function hasVegetableKeywords(text) {
+  const vegetableKeywords = [
+    "vegetable",
+    "vegetables",
+    "veg",
+    "veggies",
+    "edible",
+    "crop",
+    "crops",
+    "veggie",
+    "veg patch",
+    "potato",
+    "cabbage",
+    "carrot",
+    "onion",
+    "leek",
+    "kale",
+  ];
+
+  return vegetableKeywords.some((keyword) => text.includes(keyword));
+}
+
+/**
+ * Checks if text contains fruit-related keywords
+ * @param {string} text - Text to analyze
+ * @returns {boolean} - Whether the text is fruit-related
+ */
+function hasFruitKeywords(text) {
+  const fruitKeywords = [
+    "fruit",
+    "fruits",
+    "berry",
+    "berries",
+    "orchard",
+    "apple",
+    "strawberry",
+    "blackberry",
+    "rhubarb",
+    "raspberry",
+    "gooseberry",
+    "soft fruit",
+  ];
+
+  return fruitKeywords.some((keyword) => text.includes(keyword));
+}
+
+/**
+ * Determines if a plant is a flowering/ornamental plant
+ * @param {Object} plant - Plant object
+ * @returns {boolean} - Whether the plant is a flowering plant
+ */
+function isFloweringPlant(plant) {
+  // Check for flowering indicators
+  if (plant.floweringSeason && !plant.harvestSeason) return true;
+
+  // Check for wildflowers, native plants with biodiversity value
+  if (
+    plant.nativeToIreland &&
+    plant.biodiversityValue >= 4 &&
+    !plant.harvestSeason
+  )
+    return true;
+
+  // Check name for flower indicators
+  const flowerIndicators = [
+    "flower",
+    "wildflower",
+    "primrose",
+    "foxglove",
+    "fuchsia",
+    "hydrangea",
+    "heather",
+  ];
+  if (
+    flowerIndicators.some((indicator) =>
+      plant.commonName.toLowerCase().includes(indicator)
+    )
+  )
+    return true;
+
+  return false;
+}
+
+/**
+ * Determines if a plant is a vegetable/edible plant
+ * @param {Object} plant - Plant object
+ * @returns {boolean} - Whether the plant is a vegetable plant
+ */
+function isVegetablePlant(plant) {
+  // First check if this is a fruit - if so, it's not a vegetable
+  if (isFruitPlant(plant)) return false;
+
+  // Check for harvest indicators (vegetables have harvest seasons)
+  if (plant.harvestSeason && !plant.floweringSeason) {
+    // Explicitly check for vegetable indicators
+    const vegetableIndicators = [
+      "potato",
+      "cabbage",
+      "carrot",
+      "onion",
+      "leek",
+      "kale",
+    ];
+    if (
+      vegetableIndicators.some((indicator) =>
+        plant.commonName.toLowerCase().includes(indicator)
+      )
+    )
+      return true;
+  }
+
+  return false;
+}
+
+/**
+ * Determines if a plant is a fruit plant
+ * @param {Object} plant - Plant object
+ * @returns {boolean} - Whether the plant is a fruit plant
+ */
+function isFruitPlant(plant) {
+  if (plant.harvestSeason) {
+    // Check for specific fruit indicators
+    const fruitIndicators = [
+      "apple",
+      "berry",
+      "fruit",
+      "strawberry",
+      "blackberry",
+      "rhubarb",
+      "raspberry",
+      "gooseberry",
+    ];
+
+    if (
+      fruitIndicators.some((indicator) =>
+        plant.commonName.toLowerCase().includes(indicator)
+      )
+    )
+      return true;
+
+    // Check for tree fruits
+    if (
+      plant.commonName.toLowerCase().includes("tree") &&
+      !plant.commonName.toLowerCase().includes("oak") &&
+      !plant.commonName.toLowerCase().includes("pine")
+    ) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+/**
  * Check if the sustainability query is specifically about food growing
  * @param {string} query - The user's query
  * @param {string} content - The LLM response content
@@ -91,23 +334,6 @@ function isFoodGrowingSustainabilityQuery(query, content) {
 
   // Check if any food growing terms are present
   return foodGrowingTerms.some((term) => combinedText.includes(term));
-}
-
-/**
- * Returns plant cards based on the query and LLM response
- * @param {string} query - The user's original query
- * @param {string} content - The text content of the LLM response
- * @returns {Array} - Array of plant card objects
- */
-function getPlantCards(query, content) {
-  // Limit to 6 plants to avoid overwhelming the UI
-  const limitedPlants = samplePlants.slice(0, 6);
-
-  // Return plants as cards
-  return limitedPlants.map((plant) => ({
-    type: CARD_TYPES.PLANT,
-    data: plant,
-  }));
 }
 
 /**
@@ -637,12 +863,33 @@ export async function getRelevantCards(query, cardType, limit = 3) {
   // 2. Use embeddings to find semantic matches
   // 3. Apply filters for properties mentioned in the query
 
-  // For now, return a subset of our sample data
   switch (cardType) {
-    case CARD_TYPES.PLANT:
-      return samplePlants
+    case CARD_TYPES.PLANT: {
+      // Apply the same filtering logic as in getPlantCards
+      let filteredPlants = samplePlants;
+      const isFlowerRequest = hasFlowerKeywords(query);
+      const isVegetableRequest = hasVegetableKeywords(query);
+
+      if (isFlowerRequest && !isVegetableRequest) {
+        filteredPlants = samplePlants.filter((plant) =>
+          isFloweringPlant(plant)
+        );
+        console.log(
+          `Relevant cards: Filtering for flowers only: Found ${filteredPlants.length} flowering plants`
+        );
+      } else if (isVegetableRequest && !isFlowerRequest) {
+        filteredPlants = samplePlants.filter((plant) =>
+          isVegetablePlant(plant)
+        );
+        console.log(
+          `Relevant cards: Filtering for vegetables only: Found ${filteredPlants.length} vegetable plants`
+        );
+      }
+
+      return filteredPlants
         .slice(0, limit)
         .map((plant) => ({ type: CARD_TYPES.PLANT, data: plant }));
+    }
 
     case CARD_TYPES.TASK:
       return sampleTasks
