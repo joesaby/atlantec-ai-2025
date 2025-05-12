@@ -1,0 +1,26 @@
+[build]
+  command = "npm run netlify-build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "18"
+  NPM_FLAGS = "--no-audit --no-fund"
+  NETLIFY_USE_YARN = "false"
+  NETLIFY_RESTORE_CACHE = "true"
+  # Fix for native modules on Netlify
+  NETLIFY_USE_NATIVE_MODULES = "true"
+
+# Production context: all deploys from the Production branch set in your site's
+# deploy contexts will inherit these settings.
+[context.production]
+  command = "npm run netlify-build"
+
+# Deploy Preview context: all deploys generated from a pull/merge request will
+# inherit these settings.
+[context.deploy-preview]
+  command = "npm run netlify-build"
+
+# Branch deploy context: all deploys that are not from a pull/merge request or
+# from the Production branch will inherit these settings.
+[context.branch-deploy]
+  command = "npm run netlify-build"

@@ -2,7 +2,7 @@
  * Test script to verify Vertex AI connectivity
  */
 
-import { checkLLMHealth, generateText } from "./utils/llm-client.js";
+import { checkLLMHealth, generateText } from "./utils/vertex-client.js";
 
 
 async function testConnection() {

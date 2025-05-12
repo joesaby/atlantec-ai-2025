@@ -3,7 +3,7 @@
  * Combines knowledge retrieval from Neo4j with Vertex AI generation
  */
 
-import { generateText } from "./llm-client.js";
+import { generateText } from "./vertex-client.js";
 import { runQuery, closeDriver } from "../database/neo4j-client.js";
 
 /**
