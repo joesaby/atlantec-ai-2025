@@ -2,6 +2,8 @@
  * Database of gardening tasks specific to Irish growing conditions
  * Tasks are organized by month and category
  */
+import { getCurrentMonth, getMonthName } from "../utils/date-utils";
+
 export const gardeningTasks = [
   // January
   {
@@ -566,7 +568,7 @@ export function getTasksForMonth(month) {
  * @returns {Array} Array of tasks for the current month
  */
 export function getTasksForCurrentMonth() {
-  const currentMonth = new Date().getMonth() + 1; // JavaScript months are 0-indexed
+  const currentMonth = getCurrentMonth();
   return getTasksForMonth(currentMonth);
 }
 
@@ -581,9 +583,7 @@ export function getTasksForUpcomingMonths(startMonth, months = 3) {
 
   for (let i = 0; i < months; i++) {
     const month = ((startMonth - 1 + i) % 12) + 1; // Loop around to January after December
-    const monthName = new Date(2000, month - 1, 1).toLocaleString("en-IE", {
-      month: "long",
-    });
+    const monthName = getMonthName(month);
 
     tasks.push({
       month,
@@ -608,9 +608,7 @@ export function getTasksByCategory(category) {
     if (tasks.length > 0) {
       allTasks.push({
         month: month.month,
-        monthName: new Date(2000, month.month - 1, 1).toLocaleString("en-IE", {
-          month: "long",
-        }),
+        monthName: getMonthName(month.month),
         tasks,
       });
     }
