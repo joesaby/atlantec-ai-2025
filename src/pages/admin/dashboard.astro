@@ -93,14 +93,11 @@ import Layout from '../../layouts/Layout.astro';
           <button id="check-env" class="btn btn-outline">
             Check Environment
           </button>
-          <button id="test-auth" class="btn btn-outline btn-primary">
-            Test Vertex Auth
-          </button>
           <div class="indicator">
             <span class="indicator-item badge badge-success hidden" id="auth-success-badge">✓</span>
             <span class="indicator-item badge badge-error hidden" id="auth-error-badge">✗</span>
-            <button id="test-direct-auth" class="btn btn-outline btn-secondary">
-              Advanced Auth Test
+            <button id="test-auth" class="btn btn-outline btn-primary">
+              Advanced Vertex Auth
             </button>
           </div>
         </div>
@@ -169,8 +166,7 @@ import Layout from '../../layouts/Layout.astro';
 
     // Event listeners for diagnostic view
     document.getElementById('check-env').addEventListener('click', checkEnvironment);
-    document.getElementById('test-auth').addEventListener('click', testVertexAuth);
-    document.getElementById('test-direct-auth').addEventListener('click', testDirectAuth);
+    document.getElementById('test-auth').addEventListener('click', testDirectAuth);
   });
 
   // Main tab navigation

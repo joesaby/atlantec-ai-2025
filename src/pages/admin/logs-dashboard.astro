@@ -93,11 +93,8 @@ import Layout from '../../layouts/Layout.astro';
           <button id="check-env" class="btn btn-outline">
             Check Environment
           </button>
-          <button id="test-auth" class="btn btn-outline btn-error">
-            Test Vertex Auth
-          </button>
-          <button id="test-direct-auth" class="btn btn-outline btn-warning">
-            Test Direct Auth
+          <button id="test-auth" class="btn btn-outline btn-warning" disabled>
+            Vertex Auth Disabled
           </button>
         </div>
       </div>
@@ -165,8 +162,6 @@ import Layout from '../../layouts/Layout.astro';
 
     // Event listeners for diagnostic view
     document.getElementById('check-env').addEventListener('click', checkEnvironment);
-    document.getElementById('test-auth').addEventListener('click', testVertexAuth);
-    document.getElementById('test-direct-auth').addEventListener('click', testDirectAuth);
   });
 
   // Main tab navigation
@@ -485,57 +480,5 @@ import Layout from '../../layouts/Layout.astro';
       });
   }
   
-  function testVertexAuth() {
-    document.getElementById('diagnostic-output').textContent = 'Testing Vertex AI authentication...';
-    
-    fetch('/api/auth-test')
-      .then(response => response.json())
-      .then(data => {
-        if (!data.success) {
-          document.getElementById('diagnostic-output').textContent = 
-            `❌ Authentication failed!\n\n` +
-            `Error: ${data.error}\n` +
-            `Error type: ${data.errorName}\n` +
-            `Cause: ${data.cause || 'Unknown'}\n\n` +
-            `Stack trace:\n${data.stack}`;
-        } else {
-          document.getElementById('diagnostic-output').textContent = 
-            `✅ Vertex AI authentication successful!\n\n` +
-            `Authentication method: ${data.authMethod}\n` +
-            `Project ID: ${data.projectId}\n` +
-            `Location: ${data.location}\n` +
-            `Model: ${data.modelName}\n\n` +
-            `Sample response: "${data.modelResponse}"`;
-        }
-      })
-      .catch(error => {
-        document.getElementById('diagnostic-output').textContent = `Error making auth test request: ${error.message}`;
-      });
-  }
-  
-  function testDirectAuth() {
-    document.getElementById('diagnostic-output').textContent = 'Testing direct Google Auth authentication...';
-    
-    fetch('/api/direct-auth-test')
-      .then(response => response.json())
-      .then(data => {
-        if (!data.success) {
-          document.getElementById('diagnostic-output').textContent = 
-            `❌ Direct authentication failed!\n\n` +
-            `Error: ${data.error}\n` +
-            `Error type: ${data.errorName}\n\n` +
-            `Stack trace:\n${data.stack}`;
-        } else {
-          document.getElementById('diagnostic-output').textContent = 
-            `✅ Direct Google authentication successful!\n\n` +
-            `Authentication method: ${data.method}\n` +
-            `Project ID: ${data.project_id}\n` +
-            `Client email: ${data.client_email}\n\n` +
-            `Token info: ${JSON.stringify(data.token_info, null, 2)}`;
-        }
-      })
-      .catch(error => {
-        document.getElementById('diagnostic-output').textContent = `Error making direct auth test request: ${error.message}`;
-      });
-  }
+  // Auth test functions removed
 </script>
