@@ -5,47 +5,6 @@ import { sampleTasks } from "../../data/gardening-tasks";
 import CardContainer from "./CardContainer";
 import ChatAvatar from "../common/ChatAvatar";
 
-// Function to convert markdown to HTML
-const markdownToHtml = (text) => {
-  if (!text) return "";
-
-  return (
-    text
-      // Bold
-      .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
-      // Italic
-      .replace(/\*(.*?)\*/g, "<em>$1</em>")
-      .replace(/_(.*?)_/g, "<em>$1</em>")
-      // Headers - h3 and h4 only for chat context
-      .replace(
-        /^### (.*?)$/gm,
-        '<h3 class="text-lg font-bold mt-2 mb-1">$1</h3>'
-      )
-      .replace(
-        /^#### (.*?)$/gm,
-        '<h4 class="text-md font-bold mt-2 mb-1">$1</h4>'
-      )
-      // Lists
-      .replace(/^- (.*?)$/gm, "<li>$1</li>")
-      .replace(
-        /<li>.*?<\/li>(\n<li>.*?<\/li>)+/g,
-        (match) => `<ul class="list-disc list-inside my-2">${match}</ul>`
-      )
-      .replace(/^(\d+)\. (.*?)$/gm, "<li>$2</li>")
-      .replace(/<li>.*?<\/li>(\n<li>.*?<\/li>)+/g, (match) => {
-        if (match.startsWith("<ul>")) return match;
-        return `<ol class="list-decimal list-inside my-2">${match}</ol>`;
-      })
-      // Links
-      .replace(
-        /\[(.*?)\]\((.*?)\)/g,
-        '<a href="$2" class="text-accent underline" target="_blank">$1</a>'
-      )
-      // Line breaks
-      .replace(/\n/g, "<br />")
-  );
-};
-
 const GardenAgent = () => {
   const [messages, setMessages] = useState([
     {
@@ -549,15 +508,14 @@ const GardenAgent = () => {
                       <div>
                         {/* Chat bubble message content */}
                         <div
-                          className="chat-bubble bg-emerald-800 text-white mb-2 overflow-hidden break-words"
+                          className="chat-bubble bg-emerald-800 text-white mb-2 overflow-hidden break-words whitespace-pre-wrap"
                           style={{
                             maxWidth: "90vw",
                             overflowWrap: "break-word",
                           }}
-                          dangerouslySetInnerHTML={{
-                            __html: markdownToHtml(message.content),
-                          }}
-                        ></div>
+                        >
+                          {message.content}
+                        </div>
 
                         {/* Card container (if applicable) */}
                         {(message.cards?.length > 0 || message.soilInfo) && (
