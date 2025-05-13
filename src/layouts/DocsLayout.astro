@@ -264,10 +264,19 @@ const categoryColors = {
     allLinks.forEach(link => {
       if (link.getAttribute('href') === currentPath) {
         link.classList.add('bg-primary/10', 'text-primary', 'font-semibold');
+        
+        // Find the parent collapse element and ensure it's open
+        const parentCollapse = link.closest('.collapse-content')?.parentElement;
+        if (parentCollapse) {
+          const checkbox = parentCollapse.querySelector('input[type="checkbox"]');
+          if (checkbox) {
+            checkbox.checked = true;
+          }
+        }
       }
     });
     
-    // Optional: Scroll active item into view
+    // Scroll active item into view
     const activeLink = document.querySelector('.menu a.active');
     if (activeLink) {
       setTimeout(() => {
