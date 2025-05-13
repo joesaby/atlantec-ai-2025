@@ -1,0 +1,213 @@
+---
+import Layout from './Layout.astro';
+import { getCollection } from 'astro:content';
+
+const { frontmatter, headings } = Astro.props;
+
+// Get all documentation pages for sidebar
+const allDocs = await getCollection('docs');
+
+// Group docs by category
+const docsByCategory = allDocs.reduce((acc, doc) => {
+  const category = doc.data.category || 'general';
+  if (!acc[category]) {
+    acc[category] = [];
+  }
+  acc[category].push(doc);
+  return acc;
+}, {});
+
+// Sort the docs within each category by title
+Object.keys(docsByCategory).forEach(category => {
+  docsByCategory[category].sort((a, b) => 
+    a.data.title.localeCompare(b.data.title)
+  );
+});
+
+// Sort categories
+const sortedCategories = Object.keys(docsByCategory).sort();
+---
+
+<Layout title={`${frontmatter.title} | Documentation`} description={frontmatter.description}>
+  <div class="drawer lg:drawer-open">
+    <input id="docs-drawer" type="checkbox" class="drawer-toggle" />
+    <div class="drawer-content p-4 lg:p-8">
+      <div class="lg:hidden mb-4 flex">
+        <label for="docs-drawer" class="btn btn-primary drawer-button">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+          Menu
+        </label>
+      </div>
+      
+      <div class="prose prose-lg prose-slate max-w-none w-full">
+        <h1 class="text-primary">{frontmatter.title}</h1>
+        <div class="markdown-content">
+          <slot />
+        </div>
+      </div>
+    </div>
+    <div class="drawer-side z-10">
+      <label for="docs-drawer" aria-label="close sidebar" class="drawer-overlay"></label>
+      <div class="menu p-4 w-64 min-h-full bg-base-200 text-base-content">
+        <div class="mb-4">
+          <a href="/docs" class="text-xl font-bold mb-2 hover:text-primary transition-colors">Documentation</a>
+          <div class="divider"></div>
+        </div>
+        
+        {sortedCategories.map(category => (
+          <div class="mb-6">
+            <h3 class="text-lg font-semibold mb-2 capitalize">{category}</h3>
+            <ul class="menu menu-sm">
+              {docsByCategory[category].map(doc => (
+                <li>
+                  <a 
+                    href={`/docs/${doc.slug}`}
+                    class={Astro.url.pathname.includes(doc.slug) ? 'active' : ''}
+                  >
+                    {doc.data.title}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+    </div>
+  </div>
+</Layout>
+
+<style>
+  .drawer-side {
+    height: calc(100% - 4rem);
+    top: 4rem;
+  }
+  
+  @media (min-width: 1024px) {
+    .drawer-content {
+      padding-left: 16rem !important;
+    }
+  }
+  
+  .prose {
+    max-width: none;
+    width: 100%;
+    padding: 0 2rem;
+  }
+
+  /* Enhanced Markdown Styling */
+  .markdown-content :global(h1),
+  .markdown-content :global(h2),
+  .markdown-content :global(h3),
+  .markdown-content :global(h4),
+  .markdown-content :global(h5),
+  .markdown-content :global(h6) {
+    margin-top: 1.5rem;
+    margin-bottom: 1rem;
+    color: hsl(var(--p));
+    font-weight: bold;
+    line-height: 1.2;
+  }
+
+  .markdown-content :global(h1) {
+    font-size: 2rem;
+  }
+
+  .markdown-content :global(h2) {
+    font-size: 1.75rem;
+    border-bottom: 1px solid hsl(var(--p) / 0.2);
+    padding-bottom: 0.5rem;
+  }
+
+  .markdown-content :global(h3) {
+    font-size: 1.5rem;
+  }
+
+  .markdown-content :global(h4) {
+    font-size: 1.25rem;
+  }
+
+  .markdown-content :global(p) {
+    margin-bottom: 1.25rem;
+    line-height: 1.7;
+  }
+
+  .markdown-content :global(ul),
+  .markdown-content :global(ol) {
+    margin-bottom: 1.25rem;
+    padding-left: 1.5rem;
+  }
+
+  .markdown-content :global(li) {
+    margin-bottom: 0.5rem;
+  }
+
+  .markdown-content :global(ul li) {
+    list-style-type: disc;
+  }
+
+  .markdown-content :global(ol li) {
+    list-style-type: decimal;
+  }
+
+  .markdown-content :global(blockquote) {
+    border-left: 4px solid hsl(var(--p));
+    padding-left: 1rem;
+    margin-left: 0;
+    margin-right: 0;
+    font-style: italic;
+    background: hsl(var(--p) / 0.1);
+    padding: 1rem;
+    border-radius: 0.5rem;
+  }
+
+  .markdown-content :global(pre) {
+    background: hsl(var(--b1));
+    padding: 1rem;
+    border-radius: 0.5rem;
+    overflow-x: auto;
+    margin-bottom: 1.5rem;
+  }
+
+  .markdown-content :global(code) {
+    background: hsl(var(--b2));
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.875em;
+  }
+
+  .markdown-content :global(pre code) {
+    background: transparent;
+    padding: 0;
+    border-radius: 0;
+  }
+
+  .markdown-content :global(a) {
+    color: hsl(var(--p));
+    text-decoration: underline;
+  }
+
+  .markdown-content :global(a:hover) {
+    color: hsl(var(--pf));
+  }
+
+  .markdown-content :global(table) {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 1.5rem;
+  }
+
+  .markdown-content :global(th),
+  .markdown-content :global(td) {
+    border: 1px solid hsl(var(--b3));
+    padding: 0.5rem 0.75rem;
+  }
+
+  .markdown-content :global(th) {
+    background: hsl(var(--b2));
+    text-align: left;
+  }
+
+  .markdown-content :global(tr:nth-child(even)) {
+    background: hsl(var(--b1));
+  }
+</style>
