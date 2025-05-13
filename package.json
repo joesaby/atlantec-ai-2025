@@ -5,11 +5,8 @@
   "scripts": {
     "dev": "astro dev",
     "build": "astro build",
-    "prebuild-netlify": "node scripts/netlify-prebuild-fix.js",
-    "netlify-build": "npm run prebuild-netlify && npm run build",
     "preview": "astro preview",
-    "astro": "astro",
-    "validate-vertex": "node scripts/validate-vertex-ai.js"
+    "astro": "astro"
   },
   "dependencies": {
     "@astrojs/netlify": "^6.3.2",
