@@ -4,6 +4,14 @@ import { sustainablePractices } from '../data/sustainability-metrics';
 import SustainabilityDashboard from '../components/sustainability/SustainabilityDashboard';
 import ResourceUsageTracker from '../components/sustainability/ResourceUsageTracker';
 import SustainabilityPractices from '../components/sustainability/SustainabilityPractices';
+import SeasonalSustainabilityTips from '../components/sustainability/SeasonalSustainabilityTips';
+import SustainabilityAchievements from '../components/sustainability/SustainabilityAchievements';
+import CarbonFootprintCalculator from '../components/sustainability/CarbonFootprintCalculator';
+import BiodiversityImpact from '../components/sustainability/BiodiversityImpact';
+import WaterUsageInsights from '../components/sustainability/WaterUsageInsights';
+import CommunityImpact from '../components/sustainability/CommunityImpact';
+import SustainabilityEducation from '../components/sustainability/SustainabilityEducation';
+import FoodSustainabilityComparison from '../components/sustainability/FoodSustainabilityComparison';
 ---
 
 <Layout title="Sustainability Tracker - Irish Garden Assistant">
@@ -14,33 +22,161 @@ import SustainabilityPractices from '../components/sustainability/Sustainability
       practices with personalized recommendations for Irish gardening conditions.
     </p>
     
-    <!-- Sustainability Dashboard -->
-    <SustainabilityDashboard client:load />
+    <!-- Navigation tabs for better organization -->
+    <div class="tabs tabs-boxed justify-center mb-8">
+      <a class="tab tab-active" data-tab="dashboard">Dashboard</a>
+      <a class="tab" data-tab="resources">Resource Usage</a>
+      <a class="tab" data-tab="biodiversity">Biodiversity</a>
+      <a class="tab" data-tab="community">Community</a>
+      <a class="tab" data-tab="practices">Your Practices</a>
+      <a class="tab" data-tab="education">Learn More</a>
+    </div>
     
-    <!-- Resource Usage Tracker -->
-    <ResourceUsageTracker client:load />
+    <!-- Dashboard Section -->
+    <div id="dashboard-section" class="tab-content active mb-16">
+      <!-- Sustainability Dashboard -->
+      <div class="mb-8">
+        <SustainabilityDashboard client:load />
+      </div>
+      
+      <!-- Seasonal Tips and Monthly Challenge -->
+      <SeasonalSustainabilityTips client:load />
+      
+      <!-- Sustainability Achievements -->
+      <SustainabilityAchievements client:load />
+    </div>
     
-    <!-- Sustainable Practices Categories -->
-    <h2 class="text-2xl font-bold mb-6">Sustainable Gardening Practices</h2>
-    <SustainabilityPractices client:load />
+    <!-- Resources Section -->
+    <div id="resources-section" class="tab-content hidden mb-16">
+      <h2 class="text-2xl font-bold mb-6 text-center">Resource Management & Impact</h2>
+      
+      <!-- Carbon Footprint Calculator -->
+      <CarbonFootprintCalculator client:load />
+      
+      <!-- Food Sustainability Comparison -->
+      <FoodSustainabilityComparison client:load />
+      
+      <!-- Water Usage Insights -->
+      <WaterUsageInsights client:load />
+      
+      <!-- Resource Usage Tracker -->
+      <ResourceUsageTracker client:load />
+    </div>
     
-    <div class="mt-12 bg-base-200 p-6 rounded-lg">
-      <h3 class="text-xl font-bold mb-4">About Irish Sustainable Gardening</h3>
-      <p class="mb-4">
-        Sustainable gardening in Ireland takes advantage of the unique climate and growing 
-        conditions while preserving the rich biodiversity and natural resources of the island.
-      </p>
-      <p class="mb-4">
-        With abundant rainfall (1000+ mm annually in most regions), water conservation may seem 
-        less critical than in other countries, but proper management during increasingly common 
-        dry spells is becoming important. Ireland's mild, maritime climate allows year-round 
-        growing with proper planning.
-      </p>
-      <p>
-        The protection of Ireland's peatlands is a particular sustainability focus, as these 
-        environments serve as valuable carbon sinks and unique habitats. Using peat-free gardening 
-        methods helps preserve these important ecosystems.
-      </p>
+    <!-- Biodiversity Section -->
+    <div id="biodiversity-section" class="tab-content hidden mb-16">
+      <h2 class="text-2xl font-bold mb-6 text-center">Biodiversity Impact</h2>
+      
+      <!-- Biodiversity Impact -->
+      <BiodiversityImpact client:load />
+    </div>
+    
+    <!-- Community Section -->
+    <div id="community-section" class="tab-content hidden mb-16">
+      <h2 class="text-2xl font-bold mb-6 text-center">Community & Sharing</h2>
+      
+      <!-- Community Impact -->
+      <CommunityImpact client:load />
+    </div>
+    
+    <!-- Practices Section -->
+    <div id="practices-section" class="tab-content hidden mb-16">
+      <h2 class="text-2xl font-bold mb-6 text-center">Sustainable Gardening Practices</h2>
+      
+      <!-- Sustainable Practices Categories -->
+      <SustainabilityPractices client:load />
+    </div>
+    
+    <!-- Education Section -->
+    <div id="education-section" class="tab-content hidden mb-16">
+      <h2 class="text-2xl font-bold mb-6 text-center">Learn About Sustainability</h2>
+      
+      <!-- Educational Content -->
+      <SustainabilityEducation client:load />
+    
+      <div class="mt-12 bg-base-200 p-6 rounded-lg">
+        <h3 class="text-xl font-bold mb-4">About Irish Sustainable Gardening</h3>
+        <p class="mb-4">
+          Sustainable gardening in Ireland takes advantage of the unique climate and growing 
+          conditions while preserving the rich biodiversity and natural resources of the island.
+        </p>
+        <p class="mb-4">
+          With abundant rainfall (1000+ mm annually in most regions), water conservation may seem 
+          less critical than in other countries, but proper management during increasingly common 
+          dry spells is becoming important. Ireland's mild, maritime climate allows year-round 
+          growing with proper planning.
+        </p>
+        <p>
+          The protection of Ireland's peatlands is a particular sustainability focus, as these 
+          environments serve as valuable carbon sinks and unique habitats. Using peat-free gardening 
+          methods helps preserve these important ecosystems.
+        </p>
+      </div>
     </div>
   </div>
+  
+  <style>
+    .tab-content {
+      display: none;
+    }
+    
+    .tab-content.active {
+      display: block;
+    }
+  </style>
+  
+  <script>
+    // Tab navigation functionality
+    document.addEventListener('DOMContentLoaded', () => {
+      const tabs = document.querySelectorAll('.tabs .tab');
+      const tabContents = document.querySelectorAll('.tab-content');
+      
+      // Function to show a specific tab
+      function showTab(tabId: string) {
+        // Hide all tab contents
+        tabContents.forEach(content => {
+          content.classList.remove('active');
+          content.classList.add('hidden');
+        });
+        
+        // Show the selected tab content
+        const selectedContent = document.getElementById(tabId + '-section');
+        if (selectedContent) {
+          selectedContent.classList.remove('hidden');
+          selectedContent.classList.add('active');
+        }
+        
+        // Update active tab
+        tabs.forEach(tab => {
+          tab.classList.remove('tab-active');
+          if (tab.getAttribute('data-tab') === tabId) {
+            tab.classList.add('tab-active');
+          }
+        });
+      }
+      
+      // Add click event listeners to tabs
+      tabs.forEach(tab => {
+        tab.addEventListener('click', (e) => {
+          e.preventDefault();
+          const tabId = tab.getAttribute('data-tab') || '';
+          if (tabId) {
+            showTab(tabId);
+            
+            // Update URL with hash for direct linking
+            window.history.replaceState(null, '', '#' + tabId);
+          }
+        });
+      });
+      
+      // Check for hash in URL to open specific tab on page load
+      if (window.location.hash) {
+        const tabId = window.location.hash.substring(1);
+        const tabElement = document.querySelector(`.tab[data-tab="${tabId}"]`);
+        if (tabElement) {
+          showTab(tabId);
+        }
+      }
+    });
+  </script>
 </Layout>
