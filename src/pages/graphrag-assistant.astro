@@ -1,0 +1,55 @@
+---
+import Layout from '../layouts/Layout.astro';
+import GraphRagAssistant from '../components/graphrag/GraphRagAssistant';
+---
+
+<Layout title="GraphRAG Assistant | Irish Garden Assistant">
+    <main class="container mx-auto px-4 py-8">
+        <h1 class="text-3xl font-bold text-center text-emerald-800 mb-2">GraphRAG Garden Assistant</h1>
+        <p class="text-center text-gray-600 mb-8">Intelligent gardening recommendations powered by graphs and LLMs</p>
+        
+        <div class="mb-12">
+            <GraphRagAssistant client:load />
+        </div>
+        
+        <div class="max-w-4xl mx-auto p-6 bg-white rounded-lg shadow-md mb-8">
+            <h2 class="text-2xl font-bold text-emerald-700 mb-4">About GraphRAG Technology</h2>
+            <div class="prose max-w-none">
+                <p>Our GraphRAG (Graph-based Retrieval Augmented Generation) system combines the power of graphs with AI language m
+                odels to provide more accurate and contextually relevant gardening advice for Irish gardeners.</p>
+                <h3>How it Works:</h3>
+                <ol>
+                    <li><strong>Graph Storage:</strong> We've built a detailed graph of Irish plants, soil types, counties, and their relationships.</li>
+                    <li><strong>Intelligent Retrieval:</strong> When you ask a question or seek recommendations, we query the graph database to find the most relevant gardening information.</li>
+                    <li><strong>Augmented Generation:</strong> An open-source language model uses the retrieved information to generate detailed, accurate, and personalized responses.</li>
+                </ol>
+                
+                <h3>Benefits:</h3>
+                <ul>
+                    <li>More personalized recommendations based on Irish growing conditions</li>
+                    <li>Answers that account for plant relationships and companion planting</li>
+                    <li>Insights derived from structured gardening knowledge</li>
+                    <li>Privacy-friendly approach using open-source technology</li>
+                </ul>
+            </div>
+        </div>
+    </main>
+</Layout>
+
+<style>
+    .prose h3 {
+        color: #047857;
+        margin-top: 1.5rem;
+        margin-bottom: 0.75rem;
+        font-weight: 600;
+    }
+    
+    .prose ul, .prose ol {
+        margin-left: 1.5rem;
+        margin-bottom: 1.25rem;
+    }
+    
+    .prose li {
+        margin-bottom: 0.5rem;
+    }
+</style>

@@ -2,9 +2,9 @@
 // Client for Google Cloud Vertex AI Generative Models
 
 import { VertexAI } from "@google-cloud/vertexai";
+import { GoogleAuth } from "google-auth-library";
 import dotenv from "dotenv";
 import fs from "fs";
-import os from "os";
 import path from "path";
 
 // Use the unified logger which works in both dev and Netlify environments
@@ -15,12 +15,24 @@ import { detectCardType } from "./card-utils.js";
 dotenv.config();
 
 // Configuration
-const projectId = process.env.VERTEX_PROJECT_ID;
+const projectId =
+  process.env.VERTEX_PROJECT_ID || process.env.GOOGLE_CLOUD_PROJECT;
 const location = process.env.VERTEX_LOCATION || "europe-west1";
-const modelName = process.env.VERTEX_MODEL || "gemini-2.0-flash-001";
+const modelName =
+  process.env.VERTEX_MODEL ||
+  process.env.GOOGLE_AI_MODEL ||
+  "gemini-2.0-flash-001";
 const credentialsPath = process.env.VERTEX_SERVICE_ACCOUNT_KEY;
 const temperature = parseFloat(process.env.TEMPERATURE || "0.7");
 const maxTokens = parseInt(process.env.MAX_TOKENS || "1024");
+
+// Endpoint for direct API access
+const API_ENDPOINT = `https://${location}-aiplatform.googleapis.com/v1/projects/${projectId}/locations/${location}/publishers/google/models/${modelName}:generateContent`;
+
+// Create auth client using Google Auth Library
+const auth = new GoogleAuth({
+  scopes: ["https://www.googleapis.com/auth/cloud-platform"],
+});
 
 // Initialize Vertex with configuration
 let vertexOptions = {
@@ -367,9 +379,161 @@ export async function createUnifiedClient() {
   };
 }
 
+/**
+ * Checks if the Vertex AI connection is healthy
+ * @returns {Promise<Object>} Health status object
+ */
+export async function checkLLMHealth() {
+  try {
+    const client = await auth.getClient();
+    const token = await client.getAccessToken();
+
+    // Simple health check - just making sure we can get a valid token
+    if (token && token.token) {
+      return {
+        healthy: true,
+        message: "Successfully connected to Vertex AI",
+        model: modelName,
+        project: projectId,
+      };
+    } else {
+      return {
+        healthy: false,
+        message: "Failed to get a valid authentication token",
+        error: "Authentication error",
+      };
+    }
+  } catch (error) {
+    logger.error("Health check failed", {
+      error: error.message,
+      component: "VERTEX-HEALTH",
+    });
+    return {
+      healthy: false,
+      message: "Failed to connect to Vertex AI",
+      error: error.message,
+    };
+  }
+}
+
+/**
+ * Generates text using Vertex AI Gemini directly through the REST API
+ * @param {string} prompt - The prompt for text generation
+ * @param {Object} options - Generation options
+ * @returns {Promise<string>} Generated text
+ */
+export async function generateText(prompt, options = {}) {
+  try {
+    const client = await auth.getClient();
+    const token = await client.getAccessToken();
+
+    const maxTokens = options.maxTokens || maxTokens;
+    const tempValue = options.temperature || temperature;
+
+    // Prepare request for Gemini API (using the generateContent endpoint)
+    const requestBody = {
+      contents: [
+        {
+          role: "user",
+          parts: [
+            {
+              text: prompt,
+            },
+          ],
+        },
+      ],
+      generationConfig: {
+        temperature: tempValue,
+        maxOutputTokens: maxTokens,
+        topK: 40,
+        topP: 0.95,
+      },
+    };
+
+    logger.debug("Sending direct API request to Vertex AI", {
+      endpoint: API_ENDPOINT,
+      promptLength: prompt.length,
+      model: modelName,
+    });
+
+    // Make the API request
+    const response = await fetch(API_ENDPOINT, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token.token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(requestBody),
+    });
+
+    // Parse the response
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        `Vertex AI API error: ${data.error?.message || JSON.stringify(data)}`
+      );
+    }
+
+    logger.debug("Received direct API response from Vertex AI", {
+      status: response.status,
+      hasContent: !!data.candidates?.[0]?.content,
+    });
+
+    // Extract and return the generated text from Gemini response format
+    return data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+  } catch (error) {
+    logger.error("Error generating text with direct API call", error);
+    throw error;
+  }
+}
+
+/**
+ * Generates a gardening answer using Vertex AI
+ * @param {string} question - The gardening question
+ * @param {Object} gardenContext - Additional context about the garden
+ * @returns {Promise<string>} The gardening advice
+ */
+export async function generateGardeningAnswer(question, gardenContext = {}) {
+  const { county, soilType, sunExposure } = gardenContext;
+
+  let contextPrompt =
+    "As an Irish gardening assistant, please provide helpful advice for the following question:\n\n";
+
+  if (county) {
+    contextPrompt += `Location: County ${county}, Ireland\n`;
+  }
+
+  if (soilType) {
+    contextPrompt += `Soil type: ${soilType}\n`;
+  }
+
+  if (sunExposure) {
+    contextPrompt += `Sun exposure: ${sunExposure}\n`;
+  }
+
+  contextPrompt += `\nQuestion: ${question}\n\nPlease provide practical, specific advice tailored to Irish gardening conditions.`;
+
+  logger.info("Generating gardening answer", {
+    questionLength: question.length,
+    hasCounty: !!county,
+    hasSoilType: !!soilType,
+    hasSunExposure: !!sunExposure,
+  });
+
+  return generateText(contextPrompt, {
+    maxTokens: 800,
+    temperature: 0.5,
+  });
+}
+
+// Add the new functions to the default export
 export default {
   generateVertexResponse,
   processGardeningQueryWithVertex,
   countTokens,
   createUnifiedClient,
+  checkLLMHealth, // Added from llm-client.js
+  generateText, // Added from llm-client.js
+  generateGardeningAnswer, // Added from llm-client.js
 };

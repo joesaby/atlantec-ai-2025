@@ -3,6 +3,10 @@
 // A simple script to directly verify credentials
 
 import { GoogleAuth } from 'google-auth-library';
+import * as dotenv from 'dotenv';
+
+// Load environment variables from .env file
+dotenv.config();
 
 // Simple direct test
 async function main() {

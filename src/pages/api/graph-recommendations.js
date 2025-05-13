@@ -1,16 +1,15 @@
 /**
- * API route for handling plant recommendations
+ * API route for handling graph-based plant recommendations
  */
 
-import { getPlantRecommendations } from "../../utils/plant-recommender.js";
+import { getGraphPlantRecommendations } from "../../utils/graph-recommender.js";
 
 // Mark this endpoint as server-rendered to handle POST requests
 export const prerender = false;
 
 export async function POST({ request }) {
   try {
-    const { county, sunExposure, soilType, gardenType, plantType } =
-      await request.json();
+    const { county, requirements } = await request.json();
 
     if (!county) {
       return new Response(JSON.stringify({ error: "County is required" }), {
@@ -19,20 +18,17 @@ export async function POST({ request }) {
       });
     }
 
-    const recommendations = await getPlantRecommendations(
+    const recommendations = await getGraphPlantRecommendations({
       county,
-      sunExposure,
-      soilType,
-      gardenType,
-      plantType
-    );
+      ...requirements,
+    });
 
     return new Response(JSON.stringify({ recommendations }), {
       status: 200,
       headers: { "Content-Type": "application/json" },
     });
   } catch (error) {
-    console.error("Error getting plant recommendations:", error);
+    console.error("Error getting graph recommendations:", error);
 
     return new Response(
       JSON.stringify({
