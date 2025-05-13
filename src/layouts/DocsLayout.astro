@@ -52,7 +52,7 @@ const categoryColors = {
           
           {sortedCategories.map(category => (
             <div class="collapse collapse-arrow mb-2 bg-base-100 rounded-box" id={`desktop-category-${category}`}>
-              <input type="checkbox" checked={docsByCategory[category].some(doc => Astro.url.pathname === `/docs/${doc.slug}`)} /> 
+              <input type="checkbox" checked /> 
               <div class="collapse-title font-medium capitalize flex items-center">
                 <div class={`badge badge-${categoryColors[category] || 'primary'} mr-2`}></div>
                 {category}
@@ -100,7 +100,7 @@ const categoryColors = {
             
             {sortedCategories.map(category => (
               <div class="collapse collapse-arrow mb-2 bg-base-100 rounded-box" id={`mobile-category-${category}`}>
-                <input type="checkbox" checked={docsByCategory[category].some(doc => Astro.url.pathname === `/docs/${doc.slug}`)} /> 
+                <input type="checkbox" checked /> 
                 <div class="collapse-title font-medium capitalize flex items-center">
                   <div class={`badge badge-${categoryColors[category] || 'primary'} mr-2`}></div>
                   {category}
