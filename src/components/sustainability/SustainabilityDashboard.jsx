@@ -121,7 +121,7 @@ const SustainabilityDashboard = () => {
               Level: {sustainabilityLevel.level}
             </p>
             <p className="text-sm mt-2">
-              Keep adding sustainable practices to increase your score!
+              Add more sustainable practices to improve your score!
             </p>
           </div>
         </div>
@@ -301,6 +301,20 @@ const SustainabilityDashboard = () => {
                 UN Sustainable Development Goals measure your garden's wider
                 impact
               </p>
+              <p className="mt-1">
+                <a
+                  href="#practices"
+                  className="link-hover text-primary"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    document
+                      .querySelector('.tab[data-tab="practices"]')
+                      ?.click();
+                  }}
+                >
+                  Add practices to increase your impact →
+                </a>
+              </p>
             </div>
           </div>
         </div>
@@ -326,6 +340,61 @@ const SustainabilityDashboard = () => {
                 ? `You've adopted ${activePracticeCount} sustainable practices!`
                 : "Start by adding sustainable practices from the categories below!"}
             </p>
+            <div className="mt-4">
+              <a
+                href="#practices"
+                className="btn btn-primary btn-sm gap-2"
+                onClick={(e) => {
+                  e.preventDefault();
+                  const tabId = "practices";
+                  // Handle tab switching programmatically
+                  const tabs = document.querySelectorAll(".tabs .tab");
+                  const tabContents = document.querySelectorAll(".tab-content");
+
+                  // Hide all tab contents
+                  tabContents.forEach((content) => {
+                    content.classList.remove("active");
+                    content.classList.add("hidden");
+                  });
+
+                  // Show the selected tab content
+                  const selectedContent = document.getElementById(
+                    tabId + "-section"
+                  );
+                  if (selectedContent) {
+                    selectedContent.classList.remove("hidden");
+                    selectedContent.classList.add("active");
+                  }
+
+                  // Update active tab
+                  tabs.forEach((tab) => {
+                    tab.classList.remove("tab-active");
+                    if (tab.getAttribute("data-tab") === tabId) {
+                      tab.classList.add("tab-active");
+                    }
+                  });
+
+                  // Update URL with hash for direct linking
+                  window.history.replaceState(null, "", "#" + tabId);
+                }}
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-4 w-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                  />
+                </svg>
+                Add or Manage Your Practices
+              </a>
+            </div>
           </div>
         </div>
       </div>

@@ -582,57 +582,6 @@ const BiodiversityTracker = () => {
         </div>
       </div>
 
-      {/* Biodiversity Timeline */}
-      <div className="mt-6">
-        <h4 className="font-semibold mb-4">Your Biodiversity Journey</h4>
-        <div className="overflow-x-auto">
-          <table className="table table-zebra">
-            <thead>
-              <tr>
-                <th>Practice</th>
-                <th>Impact</th>
-                <th>Implemented</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {biodiversityPractices.length > 0 ? (
-                biodiversityPractices.map((practice, index) => (
-                  <tr key={index}>
-                    <td>{practice.name}</td>
-                    <td>
-                      <div
-                        className={`badge ${
-                          practice.impact === "high"
-                            ? "badge-success"
-                            : practice.impact === "medium"
-                            ? "badge-warning"
-                            : "badge-info"
-                        }`}
-                      >
-                        {practice.impact}
-                      </div>
-                    </td>
-                    <td>{formatDate(practice.implementedOn)}</td>
-                    <td>
-                      <div className="badge badge-success badge-outline">
-                        Active
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="4" className="text-center py-4">
-                    No biodiversity practices implemented yet
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
       {/* Next Steps */}
       <div className="mt-6 bg-base-200 p-4 rounded-lg">
         <h4 className="font-semibold mb-3">
