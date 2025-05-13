@@ -14,6 +14,22 @@ const SustainabilityEducation = () => {
       `,
       image: "/images/sustainability/principles.jpg",
     },
+    sdgs: {
+      title: "UN Sustainable Development Goals",
+      content: `
+        Home gardening contributes to several United Nations Sustainable Development Goals (SDGs).
+        These global goals provide a blueprint for addressing the world's most pressing environmental,
+        social, and economic challenges by 2030. Your gardening activities in Ireland directly 
+        support goals related to climate action, biodiversity, sustainable food production, and more.
+      `,
+      keyPoints: [
+        "Environmental Goals: Climate Action (SDG 13), Life on Land (SDG 15), Clean Water (SDG 6)",
+        "Wellbeing Goals: Zero Hunger (SDG 2), Good Health (SDG 3), Sustainable Communities (SDG 11)",
+        "Economic Goals: Responsible Consumption (SDG 12), Economic Growth (SDG 8)",
+        "Your garden's impact is tracked in the SDG Impact Visualization section of this app",
+      ],
+      image: "/images/sustainability/sdgs.jpg",
+    },
     soil: {
       title: "Soil Health",
       content: `
@@ -127,6 +143,12 @@ const SustainabilityEducation = () => {
           Overview
         </a>
         <a
+          className={`tab ${activePrinciple === "sdgs" ? "tab-active" : ""}`}
+          onClick={() => setActivePrinciple("sdgs")}
+        >
+          UN SDGs
+        </a>
+        <a
           className={`tab ${activePrinciple === "soil" ? "tab-active" : ""}`}
           onClick={() => setActivePrinciple("soil")}
         >
@@ -204,6 +226,7 @@ const SustainabilityEducation = () => {
           <div className="text-center">
             <div className="mb-3 text-6xl">
               {activePrinciple === "overview" && "♻️"}
+              {activePrinciple === "sdgs" && "🌍"}
               {activePrinciple === "soil" && "🌱"}
               {activePrinciple === "water" && "💧"}
               {activePrinciple === "biodiversity" && "🦋"}
@@ -213,6 +236,8 @@ const SustainabilityEducation = () => {
             <p className="text-sm italic">
               {activePrinciple === "overview" &&
                 "Sustainable gardening connects all aspects of your garden into a harmonious system"}
+              {activePrinciple === "sdgs" &&
+                "The UN's 17 Sustainable Development Goals were adopted by all member states in 2015"}
               {activePrinciple === "soil" &&
                 "A teaspoon of healthy soil contains more microorganisms than there are people on Earth"}
               {activePrinciple === "water" &&
@@ -231,6 +256,34 @@ const SustainabilityEducation = () => {
       <div className="mt-6">
         <h4 className="font-semibold mb-3">Further Resources</h4>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <a
+            href="https://sdgs.un.org/goals"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="link link-primary flex items-center"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-4 w-4 mr-2"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101"
+              />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M14.828 14.828a4 4 0 015.656 0l4 4a4 4 0 01-5.656 5.656l-1.102-1.101"
+              />
+            </svg>
+            United Nations Sustainable Development Goals
+          </a>
           <a
             href="https://www.giy.ie"
             target="_blank"

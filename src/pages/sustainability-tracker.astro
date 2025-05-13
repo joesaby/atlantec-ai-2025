@@ -12,6 +12,7 @@ import BiodiversityTracker from '../components/sustainability/BiodiversityTracke
 import WaterUsageInsights from '../components/sustainability/WaterUsageInsights';
 import SustainabilityEducation from '../components/sustainability/SustainabilityEducation';
 import FoodSustainabilityComparison from '../components/sustainability/FoodSustainabilityComparison';
+import SDGImpactVisualization from '../components/sustainability/SDGImpactVisualization';
 ---
 
 <Layout title="Sustainability Tracker - Irish Garden Assistant">
@@ -25,7 +26,7 @@ import FoodSustainabilityComparison from '../components/sustainability/FoodSusta
     <!-- Navigation tabs for better organization -->
     <div class="tabs tabs-boxed justify-center mb-8">
       <a class="tab tab-active" data-tab="dashboard">Dashboard</a>
-      <a class="tab" data-tab="resources">Resource Usage</a>
+      <a class="tab" data-tab="resources">Impact & Resources</a>
       <a class="tab" data-tab="biodiversity">Biodiversity</a>
       <a class="tab" data-tab="practices">Your Practices</a>
       <a class="tab" data-tab="education">Learn More</a>
@@ -47,7 +48,10 @@ import FoodSustainabilityComparison from '../components/sustainability/FoodSusta
     
     <!-- Resources Section -->
     <div id="resources-section" class="tab-content hidden mb-16">
-      <h2 class="text-2xl font-bold mb-6 text-center">Resource Management & Impact</h2>
+      <h2 class="text-2xl font-bold mb-6 text-center">UN SDGs & Resource Management</h2>
+      
+      <!-- UN SDG Impact Visualization -->
+      <SDGImpactVisualization client:load />
       
       <!-- Carbon Footprint Calculator -->
       <CarbonFootprintCalculator client:load />
@@ -99,11 +103,83 @@ import FoodSustainabilityComparison from '../components/sustainability/FoodSusta
           dry spells is becoming important. Ireland's mild, maritime climate allows year-round 
           growing with proper planning.
         </p>
-        <p>
+        <p class="mb-4">
           The protection of Ireland's peatlands is a particular sustainability focus, as these 
           environments serve as valuable carbon sinks and unique habitats. Using peat-free gardening 
           methods helps preserve these important ecosystems.
         </p>
+      </div>
+      
+      <!-- SDG Education Section -->
+      <div class="mt-8 bg-base-200 p-6 rounded-lg">
+        <h3 class="text-xl font-bold mb-4 flex items-center gap-2">
+          <span class="text-2xl">🌍</span> 
+          UN Sustainable Development Goals
+        </h3>
+        <p class="mb-4">
+          The United Nations Sustainable Development Goals (SDGs) are 17 interconnected global goals 
+          designed to be a "blueprint for achieving a better and more sustainable future for all" by 2030. 
+          Home gardening contributes to several of these goals:
+        </p>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          <div class="card bg-base-100">
+            <div class="card-body p-4">
+              <h4 class="card-title text-sm flex items-center gap-2">
+                <span class="text-xl">🌱</span> Environmental Impact
+              </h4>
+              <ul class="list-disc pl-5 text-sm">
+                <li><strong>SDG 13 (Climate Action):</strong> Home gardens reduce food miles and carbon footprint</li>
+                <li><strong>SDG 15 (Life on Land):</strong> Organic gardening protects soil health and biodiversity</li>
+                <li><strong>SDG 6 (Clean Water):</strong> Rainwater harvesting and reduced chemical use protect water resources</li>
+              </ul>
+            </div>
+          </div>
+          
+          <div class="card bg-base-100">
+            <div class="card-body p-4">
+              <h4 class="card-title text-sm flex items-center gap-2">
+                <span class="text-xl">❤️</span> Health & Wellbeing
+              </h4>
+              <ul class="list-disc pl-5 text-sm">
+                <li><strong>SDG 2 (Zero Hunger):</strong> Home food production increases food security</li>
+                <li><strong>SDG 3 (Good Health):</strong> Gardening provides exercise and fresh, nutritious food</li>
+                <li><strong>SDG 11 (Sustainable Communities):</strong> Green spaces improve community wellbeing</li>
+              </ul>
+            </div>
+          </div>
+          
+          <div class="card bg-base-100">
+            <div class="card-body p-4">
+              <h4 class="card-title text-sm flex items-center gap-2">
+                <span class="text-xl">💼</span> Economic Benefits
+              </h4>
+              <ul class="list-disc pl-5 text-sm">
+                <li><strong>SDG 12 (Responsible Consumption):</strong> Growing your own reduces packaging waste</li>
+                <li><strong>SDG 8 (Decent Work):</strong> Local gardening can support local economies</li>
+                <li><strong>SDG 7 (Affordable Energy):</strong> Strategic planting can reduce home energy costs</li>
+              </ul>
+            </div>
+          </div>
+          
+          <div class="card bg-base-100">
+            <div class="card-body p-4">
+              <h4 class="card-title text-sm">Track Your SDG Impact</h4>
+              <p class="text-sm">Your garden's impact on these goals is tracked in the SDG Impact Visualization section. Increase your impact by:</p>
+              <ul class="list-disc pl-5 text-sm mt-2">
+                <li>Growing more diverse crops and plants</li>
+                <li>Using sustainable practices like rainwater harvesting</li>
+                <li>Sharing surplus produce with your community</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        
+        <div class="text-center">
+          <a href="#resources-section" class="btn btn-primary btn-sm" onclick="document.querySelector('.tab[data-tab=resources]').click()">
+            View Your SDG Impact
+          </a>
+        </div>
       </div>
     </div>
   </div>
