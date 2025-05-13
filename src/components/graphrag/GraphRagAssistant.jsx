@@ -37,23 +37,32 @@ export default function GraphRagAssistant() {
   // Add new function to verify API availability
   useEffect(() => {
     async function checkApiAvailability() {
+      // Changed from /api/direct-auth-test to /api/vertex-auth-test
+      console.log("GraphRAG: Checking API availability at /api/vertex-auth-test");
       try {
-        const response = await fetch("/api/direct-auth-test", {
+        const response = await fetch("/api/vertex-auth-test", {
           method: "GET",
         });
 
+        console.log("GraphRAG: API check response status:", response.status);
+        
         if (!response.ok) {
           const data = await response.json();
-          setApiError(
-            `AI service unavailable: ${data.error || "Authentication failed"}`
-          );
-          console.error("API authentication failed:", data);
+          console.error("GraphRAG: API authentication failed response data:", data);
+          const errorMessage = `AI service unavailable: ${data.error || "Authentication failed"}`;
+          console.error("GraphRAG: Setting error message:", errorMessage);
+          setApiError(errorMessage);
+        } else {
+          console.log("GraphRAG: API authentication successful");
         }
       } catch (error) {
+        console.error("GraphRAG: API check error:", error);
+        console.error("GraphRAG: Error name:", error.name);
+        console.error("GraphRAG: Error message:", error.message);
+        console.error("GraphRAG: Error stack:", error.stack);
         setApiError(
           "Unable to connect to AI service. Please check your configuration."
         );
-        console.error("API check error:", error);
       }
     }
 

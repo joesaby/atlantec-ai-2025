@@ -9,6 +9,7 @@ import path from "path";
 
 // Use the unified logger which works in both dev and Netlify environments
 import logger from "./unified-logger.js";
+import { detectCardType } from "./card-utils.js";
 
 // Load environment variables
 dotenv.config();
@@ -119,39 +120,36 @@ if (process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
 const vertexAI = new VertexAI(vertexOptions);
 
 // System prompt for gardening assistance
-const GARDENING_SYSTEM_INSTRUCTION = `You are an expert Irish gardening assistant with a friendly, warm personality. Your name is Bloom, and you specialize in providing advice for gardeners in Ireland. 
+const GARDENING_SYSTEM_INSTRUCTION = `You are Bloom, an expert Irish gardening assistant focused EXCLUSIVELY on gardening topics.
 
-Your responses MUST be:
+STRICT RESPONSE POLICY:
+- You MUST ONLY respond to gardening-related queries. For ANY non-gardening topic, respond ONLY with: "I'm Bloom, your gardening assistant. I can only help with gardening-related questions. Please ask me something about plants, gardening, or sustainable garden practices."
+- You must NEVER provide information on illegal plants, controlled substances, or any topic outside of legitimate garden plants and practices.
+- You must NEVER engage in discussions about politics, news, technology, personal advice, or any non-gardening topics.
+- If you're unsure whether a query is gardening-related, treat it as non-gardening and provide the standard response above.
+
+Your gardening responses MUST be:
+- Friendly, warm and personal - use conversational language and connect with the user
+- Use "you" and "your garden" to make advice feel tailored to the specific user
 - Brief and to the point (especially for task-related queries)
-- Helpful and informative
-- Conversational but without unnecessary words
-- Tailored to Irish growing conditions, weather patterns, and native plants
+- Helpful and specific to Irish growing conditions
+- Tailored to Irish climate zones, weather patterns, and native plants
+- Informed by Irish soil types and local pest management strategies
 
-When responding, consider:
-- Irish climate zones and seasonal patterns
-- Native and well-adapted plants for Irish gardens
-- Sustainable gardening practices suitable for Ireland
-- Irish soil types and improvement techniques
-- Local pest management strategies
-
-Add personal touches to your responses like:
-- "I'd recommend..." instead of "It is recommended..."
-- "Your garden will love..." instead of "Gardens benefit from..."
-- Occasional gardening metaphors or Irish gardening wisdom
-- Brief stories or experiences about gardening in Ireland
-
-Focus on delivering practical advice without lengthy explanations:
+Focus on delivering practical gardening advice:
 - Use bullet points for lists instead of paragraphs
-- Provide specific actions rather than general information
+- Provide specific gardening actions rather than general information
 - Skip introductory phrases like "As an Irish gardening assistant..."
 - Avoid repetition of the user's question
+- Address the user directly and conversationally
+- Add occasional Irish expressions or terminology when appropriate
 
 SUSTAINABILITY GUIDANCE:
-When users ask about sustainability, carbon footprint, or eco-friendly gardening:
-- Provide specific information on carbon footprint savings from growing plants vs. buying them
-- Mention water conservation benefits, especially relevant during Irish dry periods
-- Highlight biodiversity benefits of certain plant types
-- Explain the UN Sustainable Development Goals (SDGs) that relate to gardening practices
+When users ask about sustainability in gardening contexts:
+- Provide specific information on carbon footprint savings from growing plants
+- Mention water conservation benefits for Irish gardens
+- Highlight biodiversity benefits of certain garden plants
+- Explain gardening practices that align with UN Sustainable Development Goals
 - Offer practical sustainable gardening tips specific to Irish conditions
 - Be encouraging and positive about the environmental benefits of home gardening
 - Indicate SHOWING_SUSTAINABILITY_CARDS in your response for sustainability queries
@@ -324,102 +322,13 @@ export async function processGardeningQueryWithVertex(
   // Generate the response
   const responseText = await generateVertexResponse(vertexConversation);
 
-  // Parse the response to extract any card indicators
-  let content = responseText;
-  let cardType = null;
-
-  logger.debug("Checking response for card indicators", {
-    hasPlantCards: responseText.includes("SHOWING_PLANT_CARDS"),
-    hasTaskCards: responseText.includes("SHOWING_TASK_CARDS"),
-    hasSustainabilityCards: responseText.includes(
-      "SHOWING_SUSTAINABILITY_CARDS"
-    ),
-    responseLength: responseText.length,
-  });
-
-  if (responseText.includes("SHOWING_PLANT_CARDS")) {
-    content = responseText.replace("SHOWING_PLANT_CARDS", "").trim();
-    cardType = "plant";
-    logger.info("Plant cards detected in response");
-    console.log("Set cardType to 'plant' from explicit marker");
-  } else if (responseText.includes("SHOWING_TASK_CARDS")) {
-    content = responseText.replace("SHOWING_TASK_CARDS", "").trim();
-    cardType = "task";
-    logger.info("Task cards detected in response");
-    console.log("Set cardType to 'task' from explicit marker");
-  } else if (responseText.includes("SHOWING_SUSTAINABILITY_CARDS")) {
-    content = responseText.replace("SHOWING_SUSTAINABILITY_CARDS", "").trim();
-    cardType = "sustainability";
-    logger.info("Sustainability cards detected in response");
-    console.log("Set cardType to 'sustainability' from explicit marker");
-  } else {
-    // Smart detection of content type without explicit markers
-    const lowercaseContent = responseText.toLowerCase();
-    const lowercaseQuery = query.toLowerCase();
-
-    // Check for plant-related content patterns
-    if (
-      (lowercaseQuery.includes("carbon") ||
-        lowercaseQuery.includes("footprint") ||
-        lowercaseQuery.includes("sustainability") ||
-        lowercaseQuery.includes("sustainable") ||
-        lowercaseQuery.includes("eco-friendly") ||
-        lowercaseQuery.includes("environment") ||
-        lowercaseQuery.includes("sdg")) &&
-      (lowercaseContent.includes("carbon") ||
-        lowercaseContent.includes("footprint") ||
-        lowercaseContent.includes("emissions") ||
-        lowercaseContent.includes("sustainable") ||
-        lowercaseContent.includes("environmental impact"))
-    ) {
-      cardType = "sustainability";
-      logger.info("Sustainability cards inferred from content analysis");
-      console.log("Set cardType to 'sustainability' based on content analysis");
-    }
-    // Check for plant-related content patterns
-    else if (
-      (lowercaseContent.includes("plant") ||
-        lowercaseContent.includes("flower") ||
-        lowercaseContent.includes("shrub") ||
-        lowercaseContent.includes("tree")) &&
-      (lowercaseContent.includes("recommend") ||
-        lowercaseContent.includes("suggestion") ||
-        responseText.match(/\*\s+[A-Z][a-z]+\s+[a-z]+:/) || // Pattern like "* Plant name:"
-        responseText.match(/\*\s+\*[A-Z][a-z]+\s+[a-z]+\*/)) // Pattern like "* *Plant name*"
-    ) {
-      cardType = "plant";
-      logger.info("Plant cards inferred from content analysis");
-      console.log("Set cardType to 'plant' based on content analysis");
-    }
-    // Check for task-related content patterns
-    else if (
-      (lowercaseContent.includes("task") ||
-        lowercaseContent.includes("jobs") ||
-        lowercaseContent.includes("chore") ||
-        lowercaseContent.includes("to do") ||
-        lowercaseContent.includes("todo")) &&
-      (lowercaseContent.includes("garden") ||
-        lowercaseContent.includes("planting") ||
-        lowercaseContent.includes("maintenance"))
-    ) {
-      cardType = "task";
-      logger.info("Task cards inferred from content analysis");
-      console.log("Set cardType to 'task' based on content analysis");
-    } else {
-      logger.info("No card indicators found in response");
-      console.log("No card indicators found in response");
-    }
-  }
-
-  const result = {
-    content,
-    cardType,
-  };
+  // Use the card detection utility to extract card indicators
+  const result = detectCardType(responseText, query);
 
   logger.debug("Final structured response", {
-    contentLength: content.length,
-    cardType: cardType,
-    contentPreview: content.substring(0, 100) + "...",
+    contentLength: result.content.length,
+    cardType: result.cardType,
+    contentPreview: result.content.substring(0, 100) + "...",
   });
 
   return result;

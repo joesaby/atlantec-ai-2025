@@ -587,7 +587,7 @@ export function getTasksForUpcomingMonths(startMonth, months = 3) {
 
     tasks.push({
       month,
-      monthName,
+      name: monthName, // Changed monthName to name to match expected property in GardeningCalendar
       tasks: getTasksForMonth(month),
     });
   }

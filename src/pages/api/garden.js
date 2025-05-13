@@ -11,7 +11,7 @@ export async function POST({ request }) {
     // Debug request
     const text = await request.text();
     console.log("Request body:", text);
-    
+
     // Parse JSON manually to better handle errors
     let data;
     try {
@@ -21,7 +21,8 @@ export async function POST({ request }) {
       return new Response(
         JSON.stringify({
           error: "Invalid JSON in request",
-          content: "There was a problem with the request format. Please try again.",
+          content:
+            "There was a problem with the request format. Please try again.",
         }),
         {
           status: 400,
@@ -31,9 +32,9 @@ export async function POST({ request }) {
         }
       );
     }
-    
+
     const { query, conversationHistory } = data;
-    
+
     if (!query) {
       return new Response(
         JSON.stringify({
@@ -48,21 +49,21 @@ export async function POST({ request }) {
         }
       );
     }
-    
+
     // Use default empty array if conversationHistory is not provided
     const history = conversationHistory || [];
 
     console.log("Processing query:", query);
     console.log("History length:", history.length);
-    
+
     console.log("Calling Vertex AI with query:", query);
-    
-    const response = await processGardeningQueryWithVertex(
-      query,
-      history
+
+    const response = await processGardeningQueryWithVertex(query, history);
+
+    console.log(
+      "Detailed Vertex AI response:",
+      JSON.stringify(response, null, 2)
     );
-    
-    console.log("Detailed Vertex AI response:", JSON.stringify(response, null, 2));
 
     return new Response(JSON.stringify(response), {
       status: 200,
