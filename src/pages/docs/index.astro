@@ -32,35 +32,116 @@ const frontmatter = {
   title: "Documentation",
   description: "Garden Assistant documentation and guides"
 };
+
+// Get a color for each category
+const categoryColors = {
+  'arch': 'primary',
+  'devel-phases': 'secondary',
+  'research': 'accent',
+  'general': 'info'
+};
+
+// Get display names for categories
+const categoryNames = {
+  'arch': 'Architecture',
+  'devel-phases': 'Development Phases',
+  'research': 'Research',
+  'general': 'General'
+};
 ---
 
 <DocsLayout frontmatter={frontmatter}>
   <div class="space-y-8">
-    <p class="text-lg">
-      Welcome to the Garden Assistant documentation. This documentation covers all aspects of the project,
-      from architecture to development phases and features.
-    </p>
+    <div class="prose">
+      <p class="text-lg">
+        Welcome to the Garden Assistant documentation. This documentation covers all aspects of the project,
+        from architecture to development phases and features.
+      </p>
+    </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {sortedCategories.map(category => (
-        <div class="card bg-base-100 shadow-xl">
-          <div class="card-body">
-            <h2 class="card-title text-xl font-bold capitalize">{category}</h2>
-            <ul class="mt-4 space-y-2">
-              {docsByCategory[category].map(doc => (
-                <li>
-                  <a 
-                    href={`/docs/${doc.slug}`} 
-                    class="link link-primary text-lg hover:link-hover"
-                  >
-                    {doc.data.title}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </div>
+    <div class="card bg-base-100 shadow-xl">
+      <div class="card-body p-0">
+        <!-- Tabs for categories -->
+        <div role="tablist" class="tabs tabs-lifted">
+          {sortedCategories.map((category, index) => (
+            <a 
+              role="tab" 
+              class={`tab ${index === 0 ? 'tab-active' : ''} ${categoryColors[category] ? `text-${categoryColors[category]}` : ''}`}
+              data-category={category}
+            >
+              {categoryNames[category] || category.charAt(0).toUpperCase() + category.slice(1)}
+            </a>
+          ))}
         </div>
-      ))}
+
+        <!-- Tab content -->
+        {sortedCategories.map((category, index) => (
+          <div 
+            class={`category-content p-6 ${index === 0 ? 'block' : 'hidden'}`} 
+            id={`content-${category}`}
+          >
+            <div class="flex items-center gap-2 mb-4">
+              <div class={`badge badge-${categoryColors[category] || 'primary'} badge-lg`}></div>
+              <h2 class="text-2xl font-bold capitalize">{categoryNames[category] || category}</h2>
+            </div>
+            
+            <div class="overflow-x-auto">
+              <table class="table table-zebra w-full">
+                <thead>
+                  <tr>
+                    <th>Document</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {docsByCategory[category].map(doc => (
+                    <tr class="hover">
+                      <td>
+                        <a 
+                          href={`/docs/${doc.slug}`} 
+                          class="link link-primary font-medium"
+                        >
+                          {doc.data.title}
+                        </a>
+                      </td>
+                      <td>
+                        {doc.data.description || 
+                         `Documentation for ${doc.data.title.toLowerCase()}`}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   </div>
 </DocsLayout>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const tabs = document.querySelectorAll('.tabs [role="tab"]');
+    const contents = document.querySelectorAll('.category-content');
+    
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        // Remove active from all tabs
+        tabs.forEach(t => t.classList.remove('tab-active'));
+        // Add active to clicked tab
+        tab.classList.add('tab-active');
+        
+        // Hide all content
+        contents.forEach(c => c.classList.add('hidden'));
+        
+        // Show selected content
+        const category = tab.getAttribute('data-category');
+        const content = document.getElementById(`content-${category}`);
+        if (content) {
+          content.classList.remove('hidden');
+        }
+      });
+    });
+  });
+</script>
