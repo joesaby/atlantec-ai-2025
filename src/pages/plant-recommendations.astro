@@ -1,7 +1,6 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import PlantRecommendationForm from '../components/plants/PlantRecommendationForm';
-import PlantRecommendations from '../components/plants/PlantRecommendations';
 ---
 
 <Layout title="Plant Recommendations">
@@ -14,35 +13,6 @@ import PlantRecommendations from '../components/plants/PlantRecommendations';
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <div>
         <div id="recommendation-form"></div>
-
-        <div class="card bg-base-100 shadow-xl mt-6">
-          <div class="card-body">
-            <h3 class="font-bold text-lg">Why This Matters</h3>
-            <div class="py-2">
-              <ul class="list-disc list-inside text-sm space-y-2">
-                <li>Plants suited to your conditions are healthier and require fewer resources</li>
-                <li>Native plants support local pollinators and wildlife</li>
-                <li>Matching plants to soil type reduces the need for amendments</li>
-                <li>Well-matched plants are more resistant to pests and diseases</li>
-                <li>Sustainable gardening practices benefit the environment</li>
-              </ul>
-            </div>
-            <div class="card-actions mt-2">
-              <div class="stats stats-vertical shadow w-full">
-                <div class="stat">
-                  <div class="stat-title">Gardens in Ireland</div>
-                  <div class="stat-value text-primary">1.2M+</div>
-                  <div class="stat-desc">Potential for positive impact</div>
-                </div>
-                <div class="stat">
-                  <div class="stat-title">Native Species</div>
-                  <div class="stat-value text-secondary">800+</div>
-                  <div class="stat-desc">Support local ecosystems</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
 
       <div class="lg:col-span-2" id="results-container">
@@ -68,17 +38,53 @@ import PlantRecommendations from '../components/plants/PlantRecommendations';
 <script>
   // Client-side code to handle form submission and display results
   import React from 'react';
-  import ReactDOM from 'react-dom';
+  import { createRoot } from 'react-dom/client';
   import PlantRecommendationForm from '../components/plants/PlantRecommendationForm';
   import PlantRecommendations from '../components/plants/PlantRecommendations';
+
+  // Define the PlantRecommendation type
+  interface PlantRecommendation {
+    id: string | number;
+    commonName: string;
+    latinName: string;
+    imageUrl?: string;
+    matchPercentage: number;
+    description: string;
+    nativeToIreland?: boolean;
+    isPerennial?: boolean;
+    sunNeeds?: string;
+    waterNeeds?: string;
+    sustainabilityRating: number;
+    waterConservationRating: number;
+    biodiversityValue: number;
+  }
+
+  // Define the form data interface
+  interface PlantFormData {
+    county: string;
+    sunExposure: string;
+    plantType: string[];
+    nativeOnly: boolean;
+  }
 
   document.addEventListener('DOMContentLoaded', () => {
     const formContainer = document.getElementById('recommendation-form');
     const resultsContainer = document.getElementById('results-container');
+    
+    // Add null checks for the container elements
+    if (!formContainer || !resultsContainer) {
+      console.error('Could not find container elements');
+      return;
+    }
+    
     let isLoading = false;
-    let recommendations = [];
+    let recommendations: PlantRecommendation[] = [];
 
-    async function fetchRecommendations(formData) {
+    // Create React roots for both containers - containers are now guaranteed to be non-null
+    const formRoot = createRoot(formContainer);
+    const resultsRoot = createRoot(resultsContainer);
+
+    async function fetchRecommendations(formData: PlantFormData) {
       isLoading = true;
       renderComponents();
 
@@ -108,21 +114,19 @@ import PlantRecommendations from '../components/plants/PlantRecommendations';
 
     function renderComponents() {
       // Render the form
-      ReactDOM.render(
+      formRoot.render(
         React.createElement(PlantRecommendationForm, {
           onSubmit: fetchRecommendations,
           isLoading
-        }),
-        formContainer
+        })
       );
 
       // Render the results
-      ReactDOM.render(
+      resultsRoot.render(
         React.createElement(PlantRecommendations, {
           recommendations,
           isLoading
-        }),
-        resultsContainer
+        })
       );
     }
 

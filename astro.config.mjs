@@ -2,13 +2,16 @@
 import { defineConfig } from "astro/config";
 import tailwindcss from "@tailwindcss/vite";
 import react from "@astrojs/react";
-
 import netlify from "@astrojs/netlify";
 
 export default defineConfig({
   output: 'server',
   integrations: [react()],
-
+  adapter: netlify(),
+  server: {
+    port: 4322,
+    host: true
+  },
   vite: {
     plugins: [tailwindcss()],
     optimizeDeps: {
@@ -20,7 +23,11 @@ export default defineConfig({
     ssr: {
       noExternal: ["node-domexception", "whatwg-url"],
     },
+    server: {
+      hmr: {
+        port: 4322,
+        clientPort: 4322
+      }
+    }
   },
-
-  adapter: netlify(),
 });
