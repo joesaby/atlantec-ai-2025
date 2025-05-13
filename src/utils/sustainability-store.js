@@ -414,3 +414,92 @@ export const resetUserProgress = () => {
   saveUserProgress(defaultUserProgress);
   return defaultUserProgress;
 };
+
+// Get all accepted and completed challenges
+export const getChallengeProgress = () => {
+  if (!isClient) {
+    return { accepted: [], completed: [] };
+  }
+
+  try {
+    const acceptedChallenges = [];
+    const completedChallenges = [];
+
+    const months = [
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December",
+    ];
+
+    // Check each month for accepted/completed challenges
+    months.forEach((month) => {
+      const isAccepted = localStorage.getItem(`accepted-challenge-${month}`);
+      const isCompleted = localStorage.getItem(`completed-challenge-${month}`);
+
+      if (isAccepted === "true") {
+        acceptedChallenges.push(month);
+      }
+
+      if (isCompleted === "true") {
+        completedChallenges.push(month);
+      }
+    });
+
+    return {
+      accepted: acceptedChallenges,
+      completed: completedChallenges,
+    };
+  } catch (error) {
+    logger.error("Error getting challenge progress", {
+      component: "SustainabilityStore",
+      error: error.message,
+    });
+    return { accepted: [], completed: [] };
+  }
+};
+
+// Add points for completed challenges and update user sustainability stats
+export const completeChallenge = (month, sdgIds = []) => {
+  if (!isClient) return null;
+
+  try {
+    const userProgress = getUserProgress();
+
+    // Save completion status
+    localStorage.setItem(`completed-challenge-${month}`, "true");
+
+    // Add points for challenge completion
+    userProgress.score += 15;
+
+    // Update SDG scores based on the challenge's SDGs
+    if (sdgIds && sdgIds.length > 0) {
+      sdgIds.forEach((sdgId) => {
+        if (
+          userProgress.sdgScores &&
+          userProgress.sdgScores[sdgId] !== undefined
+        ) {
+          userProgress.sdgScores[sdgId] += 10;
+        }
+      });
+    }
+
+    saveUserProgress(userProgress);
+    return userProgress;
+  } catch (error) {
+    logger.error("Error completing challenge", {
+      component: "SustainabilityStore",
+      month,
+      error: error.message,
+    });
+    return null;
+  }
+};

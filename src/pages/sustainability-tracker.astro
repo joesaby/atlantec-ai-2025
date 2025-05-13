@@ -8,8 +8,8 @@ import SeasonalSustainabilityTips from '../components/sustainability/SeasonalSus
 import SustainabilityAchievements from '../components/sustainability/SustainabilityAchievements';
 import CarbonFootprintCalculator from '../components/sustainability/CarbonFootprintCalculator';
 import BiodiversityImpact from '../components/sustainability/BiodiversityImpact';
+import BiodiversityTracker from '../components/sustainability/BiodiversityTracker';
 import WaterUsageInsights from '../components/sustainability/WaterUsageInsights';
-import CommunityImpact from '../components/sustainability/CommunityImpact';
 import SustainabilityEducation from '../components/sustainability/SustainabilityEducation';
 import FoodSustainabilityComparison from '../components/sustainability/FoodSustainabilityComparison';
 ---
@@ -27,7 +27,6 @@ import FoodSustainabilityComparison from '../components/sustainability/FoodSusta
       <a class="tab tab-active" data-tab="dashboard">Dashboard</a>
       <a class="tab" data-tab="resources">Resource Usage</a>
       <a class="tab" data-tab="biodiversity">Biodiversity</a>
-      <a class="tab" data-tab="community">Community</a>
       <a class="tab" data-tab="practices">Your Practices</a>
       <a class="tab" data-tab="education">Learn More</a>
     </div>
@@ -67,16 +66,13 @@ import FoodSustainabilityComparison from '../components/sustainability/FoodSusta
     <div id="biodiversity-section" class="tab-content hidden mb-16">
       <h2 class="text-2xl font-bold mb-6 text-center">Biodiversity Impact</h2>
       
-      <!-- Biodiversity Impact -->
-      <BiodiversityImpact client:load />
-    </div>
-    
-    <!-- Community Section -->
-    <div id="community-section" class="tab-content hidden mb-16">
-      <h2 class="text-2xl font-bold mb-6 text-center">Community & Sharing</h2>
+      <!-- Advanced Biodiversity Tracking -->
+      <BiodiversityTracker client:load />
       
-      <!-- Community Impact -->
-      <CommunityImpact client:load />
+      <!-- Biodiversity Impact Overview -->
+      <div class="mt-8">
+        <BiodiversityImpact client:load />
+      </div>
     </div>
     
     <!-- Practices Section -->
@@ -122,6 +118,24 @@ import FoodSustainabilityComparison from '../components/sustainability/FoodSusta
     
     .tab-content.active {
       display: block;
+    }
+    
+    /* Enhanced styles for biodiversity tracker */
+    .radial-progress {
+      transition: value 1s ease-in-out;
+    }
+    
+    .badge {
+      transition: all 0.3s ease;
+    }
+    
+    .badge:hover {
+      transform: scale(1.05);
+    }
+    
+    #biodiversity-section .bg-base-100:hover {
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+      transition: all 0.3s ease;
     }
   </style>
   

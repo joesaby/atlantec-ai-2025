@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { getAllUserProgress } from "../../utils/sustainability-store";
+import {
+  getAllUserProgress,
+  completeChallenge,
+} from "../../utils/sustainability-store";
 
 const SeasonalSustainabilityTips = () => {
   const [currentMonth, setCurrentMonth] = useState("");
@@ -185,11 +188,12 @@ const SeasonalSustainabilityTips = () => {
     return sdgInfo[sdgId];
   };
 
-  // Track challenge acceptance
+  // Track challenge acceptance and completion
   const [isChallengeAccepted, setIsChallengeAccepted] = useState(false);
+  const [isChallengeCompleted, setIsChallengeCompleted] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
 
-  // Check if challenge is already accepted
+  // Check if challenge is already accepted or completed
   useEffect(() => {
     if (typeof window !== "undefined" && window.localStorage) {
       const savedStatus = localStorage.getItem(
@@ -197,6 +201,13 @@ const SeasonalSustainabilityTips = () => {
       );
       if (savedStatus === "true") {
         setIsChallengeAccepted(true);
+      }
+
+      const completedStatus = localStorage.getItem(
+        "completed-challenge-" + currentMonth
+      );
+      if (completedStatus === "true") {
+        setIsChallengeCompleted(true);
       }
     }
   }, [currentMonth]);
@@ -220,6 +231,29 @@ const SeasonalSustainabilityTips = () => {
         getAllUserProgress();
       } catch (e) {
         console.log("Error updating user progress:", e);
+      }
+    }
+  };
+
+  // Complete challenge handler
+  const handleCompleteChallenge = () => {
+    setIsChallengeCompleted(true);
+    setShowConfetti(true);
+
+    // Hide confetti after 3 seconds
+    setTimeout(() => {
+      setShowConfetti(false);
+    }, 3000);
+
+    try {
+      // Call the completeChallenge function with the current month and SDG IDs
+      completeChallenge(currentMonth, challenge.sdgs || []);
+    } catch (e) {
+      console.log("Error updating user progress:", e);
+
+      // Fallback to direct localStorage if the function fails
+      if (typeof window !== "undefined" && window.localStorage) {
+        localStorage.setItem("completed-challenge-" + currentMonth, "true");
       }
     }
   };
@@ -293,10 +327,16 @@ const SeasonalSustainabilityTips = () => {
           </h4>
           <div
             className={`bg-base-200 p-4 rounded-lg relative ${
-              isChallengeAccepted ? "border-2 border-success" : ""
+              isChallengeAccepted && !isChallengeCompleted
+                ? "border-2 border-success"
+                : ""
+            } ${
+              isChallengeCompleted
+                ? "border-2 border-warning bg-success bg-opacity-10"
+                : ""
             }`}
           >
-            {isChallengeAccepted && (
+            {isChallengeAccepted && !isChallengeCompleted && (
               <div className="absolute -top-3 -right-3 bg-success text-white rounded-full p-2">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -310,6 +350,24 @@ const SeasonalSustainabilityTips = () => {
                     strokeLinejoin="round"
                     strokeWidth={2}
                     d="M5 13l4 4L19 7"
+                  />
+                </svg>
+              </div>
+            )}
+            {isChallengeCompleted && (
+              <div className="absolute -top-3 -right-3 bg-warning text-white rounded-full p-2">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-4 w-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
                   />
                 </svg>
               </div>
@@ -354,16 +412,44 @@ const SeasonalSustainabilityTips = () => {
             </div>
 
             <div className="mt-4">
-              {!isChallengeAccepted ? (
+              {!isChallengeAccepted && !isChallengeCompleted ? (
                 <button
                   onClick={handleAcceptChallenge}
                   className="btn btn-sm btn-primary w-full"
                 >
                   Accept Challenge
                 </button>
+              ) : isChallengeAccepted && !isChallengeCompleted ? (
+                <div className="space-y-2">
+                  <div className="text-center text-success font-medium">
+                    Challenge Accepted! ✓
+                  </div>
+                  <button
+                    onClick={handleCompleteChallenge}
+                    className="btn btn-sm btn-success w-full"
+                  >
+                    Mark as Complete
+                  </button>
+                </div>
               ) : (
-                <div className="text-center text-success font-medium">
-                  Challenge Accepted! ✓
+                <div className="space-y-2">
+                  <div className="text-center text-success font-medium">
+                    Challenge Completed! 🏆
+                  </div>
+                  <div className="text-xs text-center opacity-70">
+                    +15 sustainability points earned
+                  </div>
+                  <div className="flex flex-wrap gap-1 justify-center">
+                    {challenge.sdgs &&
+                      challenge.sdgs.map((sdg) => (
+                        <div
+                          key={sdg}
+                          className="badge badge-sm badge-outline badge-success"
+                        >
+                          +10 {sdg}
+                        </div>
+                      ))}
+                  </div>
                 </div>
               )}
             </div>
@@ -397,6 +483,10 @@ const SeasonalSustainabilityTips = () => {
           0% {
             transform: translateY(-10px) rotate(0deg);
             opacity: 1;
+          }
+          50% {
+            transform: translateY(300px) rotate(180deg);
+            opacity: 0.8;
           }
           100% {
             transform: translateY(600px) rotate(360deg);
