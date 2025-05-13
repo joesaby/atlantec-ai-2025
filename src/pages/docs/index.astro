@@ -1,0 +1,66 @@
+---
+import { getCollection } from 'astro:content';
+import DocsLayout from '../../layouts/DocsLayout.astro';
+
+export const prerender = true;
+
+// Get all documentation entries
+const docs = await getCollection('docs');
+
+// Group docs by category
+const docsByCategory = docs.reduce((acc, doc) => {
+  const category = doc.data.category || 'general';
+  if (!acc[category]) {
+    acc[category] = [];
+  }
+  acc[category].push(doc);
+  return acc;
+}, {});
+
+// Sort the docs within each category by title
+Object.keys(docsByCategory).forEach(category => {
+  docsByCategory[category].sort((a, b) => 
+    a.data.title.localeCompare(b.data.title)
+  );
+});
+
+// Sort categories
+const sortedCategories = Object.keys(docsByCategory).sort();
+
+// Create frontmatter for the layout
+const frontmatter = {
+  title: "Documentation",
+  description: "Garden Assistant documentation and guides"
+};
+---
+
+<DocsLayout frontmatter={frontmatter}>
+  <div class="space-y-8">
+    <p class="text-lg">
+      Welcome to the Garden Assistant documentation. This documentation covers all aspects of the project,
+      from architecture to development phases and features.
+    </p>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {sortedCategories.map(category => (
+        <div class="card bg-base-100 shadow-xl">
+          <div class="card-body">
+            <h2 class="card-title text-xl font-bold capitalize">{category}</h2>
+            <ul class="mt-4 space-y-2">
+              {docsByCategory[category].map(doc => (
+                <li>
+                  <a 
+                    href={`/docs/${doc.slug}`} 
+                    class="link link-primary text-lg hover:link-hover"
+                  >
+                    {doc.data.title}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+</DocsLayout>
