@@ -17,7 +17,7 @@ const MonthlyTasks = ({ monthData, expanded = false }) => {
           onClick={() => setIsExpanded(!isExpanded)}
         >
           <h2 className="card-title text-lg">
-            {monthData.name || getMonthName(monthData.month)}
+            {monthData.name || (monthData.month ? getMonthName(monthData.month) : "Unknown Month")}
           </h2>
           <div className="badge badge-primary">
             {monthData.tasks && Array.isArray(monthData.tasks)

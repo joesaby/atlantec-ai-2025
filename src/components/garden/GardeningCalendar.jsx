@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import MonthlyTasks from "./MonthlyTasks";
 import { getTasksForUpcomingMonths } from "../../data/gardening-tasks";
-import { getCurrentMonth } from "../../utils/date-utils";
+import { getCurrentMonth, getMonthName } from "../../utils/date-utils";
 
 const GardeningCalendar = ({
   months = 3,
@@ -40,28 +40,52 @@ const GardeningCalendar = ({
       if (Array.isArray(taskData) && taskData.length > 0) {
         console.log("Received calendar data with", taskData.length, "months");
 
-        // Set the query tasks with the new data
-        setQueryTasks(taskData);
+        // Make sure task data is properly formatted with month names
+        const formattedTaskData = taskData.map(monthData => {
+          // If the month data already has a name, use it
+          if (monthData.name) {
+            return monthData;
+          }
+
+          // If it doesn't have a name but has a month number, generate the name
+          if (monthData.month) {
+            return {
+              ...monthData,
+              name: getMonthName(monthData.month)
+            };
+          }
+
+          // If it doesn't have either, use the current month
+          const currentMonth = new Date().getMonth() + 1;
+          return {
+            ...monthData,
+            month: currentMonth,
+            name: getMonthName(currentMonth)
+          };
+        });
+
+        // Set the query tasks with the formatted data
+        setQueryTasks(formattedTaskData);
         setShowQueryTasks(true);
 
         // Update the display mode based on the data
-        if (taskData.length === 1) {
-          setSelectedMonth(taskData[0].month);
+        if (formattedTaskData.length === 1) {
+          setSelectedMonth(formattedTaskData[0].month);
           setDisplayMonths(1);
           setCurrentDisplayMode("single-month");
-        } else if (taskData.length > 1) {
+        } else if (formattedTaskData.length > 1) {
           // If we have multiple months, use the first one as the start month
-          setSelectedMonth(taskData[0].month);
-          setDisplayMonths(taskData.length);
+          setSelectedMonth(formattedTaskData[0].month);
+          setDisplayMonths(formattedTaskData.length);
           setCurrentDisplayMode("multiple-months");
         }
 
         console.log(
           "Calendar updated with",
-          taskData.length,
+          formattedTaskData.length,
           "month(s) of tasks",
           "starting with",
-          taskData[0].name
+          formattedTaskData[0].name
         );
       }
     };
@@ -94,13 +118,41 @@ const GardeningCalendar = ({
     }
   }, [queryTasks]);
 
-  // Filter tasks by category
-  const filteredTasks = React.useMemo(() => {
-    if (categoryFilter === "all") {
-      return showQueryTasks ? queryTasks : upcomingTasks;
-    }
+  // Pre-process queryTasks if needed
+  useEffect(() => {
+    // If we receive task cards with type/data format, transform them
+    if (queryTasks?.length > 0 && queryTasks[0]?.type === "task") {
+      console.log("Pre-processing task cards for calendar:", queryTasks.length);
 
-    const tasksToFilter = showQueryTasks ? queryTasks : upcomingTasks;
+      // Group tasks by month
+      const currentMonth = new Date().getMonth() + 1; // 1-indexed month
+      const transformedTasks = [{
+        month: currentMonth,
+        name: getMonthName(currentMonth),
+        tasks: queryTasks.map(card => card.data)
+      }];
+
+      console.log("Transformed task data:", transformedTasks);
+      setQueryTasks(transformedTasks);
+      setShowQueryTasks(true);
+    }
+  }, [queryTasks]);
+
+  // Filter tasks by category and structure month data properly
+  const filteredTasks = React.useMemo(() => {
+    console.log("Filtering calendar tasks:", {
+      showQueryTasks,
+      queryTasksLength: queryTasks?.length || 0,
+      upcomingTasksLength: upcomingTasks?.length || 0
+    });
+
+    // Start with raw data from either source
+    let tasksToFilter = showQueryTasks ? queryTasks : upcomingTasks;
+
+    // Now apply category filtering
+    if (categoryFilter === "all") {
+      return tasksToFilter;
+    }
 
     return tasksToFilter
       .map((monthData) => ({

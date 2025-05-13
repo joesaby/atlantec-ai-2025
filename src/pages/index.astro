@@ -1,5 +1,6 @@
 ---
 import Layout from '../layouts/Layout.astro';
+import ChatWithBloom from '../components/common/ChatWithBloom';
 
 const description = "Your personal guide to successful gardening in Ireland. Get weather updates, soil information, and expert advice tailored to your location.";
 
@@ -137,5 +138,8 @@ const description = "Your personal guide to successful gardening in Ireland. Get
 				</div>
 			</div>
 		</div>
+
+		<!-- Bloom Chat Component -->
+		<ChatWithBloom client:idle />
 	</main>
 </Layout>
