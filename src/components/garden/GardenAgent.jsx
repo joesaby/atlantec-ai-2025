@@ -36,6 +36,13 @@ const GardenAgent = () => {
   const messagesEndRef = useRef(null);
   const calendarOverlayRef = useRef(null);
 
+  // GraphRAG mode state
+  const [isGraphRAGMode, setIsGraphRAGMode] = useState(false);
+  const [sourceFacts, setSourceFacts] = useState([]);
+  const [showSourceFacts, setShowSourceFacts] = useState(false);
+  const [generatedQuery, setGeneratedQuery] = useState("");
+  const [showGeneratedQuery, setShowGeneratedQuery] = useState(false);
+
   // Prevent drawer from closing when clicking expanded content
   useEffect(() => {
     // Force drawer to stay open if content is expanded
@@ -77,10 +84,53 @@ const GardenAgent = () => {
     soilInfoExpanded,
     taskInfoExpanded,
     sustainabilityExpanded,
+    showSourceFacts,
+    showGeneratedQuery,
   ]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  // Handle GraphRAG query
+  const handleGraphRAGQuery = async (userInput, conversationHistory) => {
+    try {
+      // Call the GraphRAG API endpoint
+      const response = await fetch("/api/gardening-question/stochastic", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          question: userInput,
+          conversationHistory,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(
+          "GraphRAG API response error:",
+          response.status,
+          errorText
+        );
+        throw new Error(
+          `Failed to get response from GraphRAG assistant: ${response.status}`
+        );
+      }
+
+      const data = await response.json();
+      console.log("GraphRAG API response:", data);
+
+      return {
+        content: data.answer,
+        sourceFacts: data.sourceFacts || [],
+        generatedQuery: data.generatedQuery || "",
+      };
+    } catch (error) {
+      console.error("Error processing GraphRAG query:", error);
+      throw error;
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -92,6 +142,8 @@ const GardenAgent = () => {
     if (taskInfoExpanded) setTaskInfoExpanded(false);
     if (sustainabilityExpanded) setSustainabilityExpanded(false);
     if (plantsExpanded) setPlantsExpanded(false);
+    if (showSourceFacts) setShowSourceFacts(false);
+    if (showGeneratedQuery) setShowGeneratedQuery(false);
 
     // Add user message
     const userMessage = {
@@ -116,53 +168,74 @@ const GardenAgent = () => {
         content: msg.content,
       }));
 
-      // Call the API endpoint instead of using Vertex AI directly
-      const requestBody = JSON.stringify({
-        query: input,
-        conversationHistory,
-      });
-
-      console.log("Sending request to garden API:", requestBody);
-
-      const response = await fetch("/api/garden", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: requestBody,
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("API response error:", response.status, errorText);
-        throw new Error(
-          `Failed to get response from garden assistant: ${response.status}`
-        );
-      }
-
-      const responseText = await response.text();
-      console.log("API response text:", responseText);
-
       let aiResponse;
-      try {
-        aiResponse = JSON.parse(responseText);
-        // Log the LLM response to the console
-        console.log("LLM Response:", aiResponse);
-      } catch (error) {
-        console.error("Error parsing API response:", error);
-        throw new Error("Invalid response format from garden assistant");
+
+      if (isGraphRAGMode) {
+        // Use GraphRAG system for the query
+        const graphRAGResponse = await handleGraphRAGQuery(
+          input,
+          conversationHistory
+        );
+
+        aiResponse = {
+          content: graphRAGResponse.content,
+          sourceFacts: graphRAGResponse.sourceFacts,
+          generatedQuery: graphRAGResponse.generatedQuery,
+        };
+
+        // Store GraphRAG-specific data
+        setSourceFacts(graphRAGResponse.sourceFacts || []);
+        setGeneratedQuery(graphRAGResponse.generatedQuery || "");
+      } else {
+        // Use regular Vertex AI system
+        const requestBody = JSON.stringify({
+          query: input,
+          conversationHistory,
+        });
+
+        console.log("Sending request to garden API:", requestBody);
+
+        const response = await fetch("/api/garden", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: requestBody,
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error("API response error:", response.status, errorText);
+          throw new Error(
+            `Failed to get response from garden assistant: ${response.status}`
+          );
+        }
+
+        const responseText = await response.text();
+        console.log("API response text:", responseText);
+
+        try {
+          aiResponse = JSON.parse(responseText);
+          // Log the LLM response to the console
+          console.log("LLM Response:", aiResponse);
+        } catch (error) {
+          console.error("Error parsing API response:", error);
+          throw new Error("Invalid response format from garden assistant");
+        }
       }
 
-      // Check if this is a soil-related query
-      const isSoilRelated = isSoilQuery(input);
+      // Check if this is a soil-related query (for regular mode)
+      const isSoilRelated = !isGraphRAGMode && isSoilQuery(input);
 
       // Extract county if present in the query
       const county = isSoilRelated ? extractCountyFromQuery(input) : null;
 
       console.log("Soil related query:", isSoilRelated, "County:", county);
 
-      // Select appropriate cards to display based on the response
-      const cards = selectCardsForResponse(input, aiResponse);
+      // Select appropriate cards to display based on the response (for regular mode only)
+      const cards = !isGraphRAGMode
+        ? selectCardsForResponse(input, aiResponse)
+        : [];
       console.log("Selected cards:", cards);
       console.log("Card count:", cards.length);
 
@@ -173,18 +246,25 @@ const GardenAgent = () => {
         timestamp: new Date(),
       };
 
-      // Add cards if they were selected
-      if (cards && cards.length > 0) {
-        responseObj.cards = cards;
-      }
+      // Add GraphRAG specific fields if in GraphRAG mode
+      if (isGraphRAGMode) {
+        responseObj.isGraphRAG = true;
+        responseObj.sourceFacts = aiResponse.sourceFacts || [];
+        responseObj.generatedQuery = aiResponse.generatedQuery || "";
+      } else {
+        // Add cards if they were selected (regular mode only)
+        if (cards && cards.length > 0) {
+          responseObj.cards = cards;
+        }
 
-      // Add soil info if it's a soil-related query
-      if (isSoilRelated) {
-        responseObj.soilInfo = {
-          showSoilInfo: true,
-          county: county || "Dublin", // Default to Dublin if no county specified
-        };
-        console.log("Adding soil info to response:", responseObj.soilInfo);
+        // Add soil info if it's a soil-related query (regular mode only)
+        if (isSoilRelated) {
+          responseObj.soilInfo = {
+            showSoilInfo: true,
+            county: county || "Dublin", // Default to Dublin if no county specified
+          };
+          console.log("Adding soil info to response:", responseObj.soilInfo);
+        }
       }
 
       setMessages((prevMessages) => [...prevMessages, responseObj]);
@@ -260,6 +340,31 @@ const GardenAgent = () => {
     }
   }, [messages]);
 
+  // Toggle between regular mode and GraphRAG mode
+  const toggleGraphRAGMode = () => {
+    // Reset any expanded states
+    setSoilInfoExpanded(false);
+    setTaskInfoExpanded(false);
+    setSustainabilityExpanded(false);
+    setPlantsExpanded(false);
+    setShowSourceFacts(false);
+    setShowGeneratedQuery(false);
+
+    // Toggle the mode
+    setIsGraphRAGMode(!isGraphRAGMode);
+
+    // Add a system message about the mode change
+    const systemMessage = {
+      role: "assistant",
+      content: !isGraphRAGMode
+        ? "I've switched to GraphRAG mode. This uses a knowledge graph of Irish plants, soil types, and gardening practices to provide more detailed and interconnected recommendations. Ask me anything about Irish gardening!"
+        : "I've switched back to standard mode. I'll continue to help with your Irish gardening questions.",
+      timestamp: new Date(),
+    };
+
+    setMessages((prevMessages) => [...prevMessages, systemMessage]);
+  };
+
   // Clear chat history
   const clearChat = () => {
     setMessages([
@@ -271,6 +376,12 @@ const GardenAgent = () => {
       },
     ]);
     setDrawerOpen(false);
+
+    // Reset GraphRAG state
+    setSourceFacts([]);
+    setGeneratedQuery("");
+    setShowSourceFacts(false);
+    setShowGeneratedQuery(false);
   };
 
   // Format timestamp - Use the utility function
@@ -292,6 +403,20 @@ const GardenAgent = () => {
       }
     }
     return null;
+  };
+
+  // Toggle showing source facts for GraphRAG responses
+  const toggleSourceFacts = (messageIndex) => {
+    if (messages[messageIndex] && messages[messageIndex].isGraphRAG) {
+      setShowSourceFacts(!showSourceFacts);
+    }
+  };
+
+  // Toggle showing generated query for GraphRAG responses
+  const toggleGeneratedQuery = (messageIndex) => {
+    if (messages[messageIndex] && messages[messageIndex].isGraphRAG) {
+      setShowGeneratedQuery(!showGeneratedQuery);
+    }
   };
 
   return (
@@ -335,26 +460,59 @@ const GardenAgent = () => {
           {/* Page content */}
           <div className="w-full mb-6">
             <div className="bg-primary text-primary-content p-4 rounded-t-box">
-              <h2 className="text-xl font-bold flex items-center gap-2">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-6 w-6"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
-                  />
-                </svg>
-                Garden Assistant Chat
-                <span className="text-xs font-normal opacity-70 ml-2">
-                  Powered by Google Vertex AI ({providerInfo.model})
-                </span>
-              </h2>
+              <div className="flex justify-between items-center">
+                <h2 className="text-xl font-bold flex items-center gap-2">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-6 w-6"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
+                    />
+                  </svg>
+                  Garden Assistant Chat
+                  <span className="text-xs font-normal opacity-70 ml-2">
+                    {isGraphRAGMode
+                      ? "GraphRAG Mode"
+                      : `Powered by Google Vertex AI (${providerInfo.model})`}
+                  </span>
+                </h2>
+                <div className="flex gap-2 items-center">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-medium">Standard</span>
+                    <label className="swap swap-flip">
+                      <input
+                        type="checkbox"
+                        checked={isGraphRAGMode}
+                        onChange={toggleGraphRAGMode}
+                      />
+                      <div className="swap-off">
+                        <div className="w-10 h-5 bg-base-100 rounded-full flex items-center p-0.5">
+                          <div className="w-4 h-4 rounded-full bg-accent transform translate-x-0"></div>
+                        </div>
+                      </div>
+                      <div className="swap-on">
+                        <div className="w-10 h-5 bg-accent rounded-full flex items-center justify-end p-0.5">
+                          <div className="w-4 h-4 rounded-full bg-base-100 transform translate-x-0"></div>
+                        </div>
+                      </div>
+                    </label>
+                    <span className="text-xs font-medium">GraphRAG</span>
+                  </div>
+                  <button
+                    onClick={clearChat}
+                    className="btn btn-sm btn-outline"
+                  >
+                    Clear Chat
+                  </button>
+                </div>
+              </div>
             </div>
 
             {/* Display all messages in the main chat area */}
@@ -389,7 +547,11 @@ const GardenAgent = () => {
                       <div>
                         {/* Chat bubble message content */}
                         <div
-                          className="chat-bubble bg-emerald-800 text-white mb-2 overflow-hidden break-words whitespace-pre-wrap"
+                          className={`chat-bubble ${
+                            message.isGraphRAG
+                              ? "bg-emerald-700"
+                              : "bg-emerald-800"
+                          } text-white mb-2 overflow-hidden break-words whitespace-pre-wrap`}
                           style={{
                             maxWidth: "90vw",
                             overflowWrap: "break-word",
@@ -398,7 +560,106 @@ const GardenAgent = () => {
                           {message.content}
                         </div>
 
-                        {/* Card container (if applicable) */}
+                        {/* GraphRAG specific UI */}
+                        {message.isGraphRAG && (
+                          <div className="graph-rag-container my-2">
+                            {/* Source facts toggle and display */}
+                            {message.sourceFacts &&
+                              message.sourceFacts.length > 0 && (
+                                <div className="mt-2">
+                                  <button
+                                    onClick={() => toggleSourceFacts(index)}
+                                    className="btn btn-xs btn-outline btn-success flex items-center gap-1"
+                                  >
+                                    <svg
+                                      className={`w-4 h-4 ${
+                                        showSourceFacts ? "rotate-90" : ""
+                                      } transition-transform`}
+                                      fill="none"
+                                      stroke="currentColor"
+                                      viewBox="0 0 24 24"
+                                      xmlns="http://www.w3.org/2000/svg"
+                                    >
+                                      <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth="2"
+                                        d="M9 5l7 7-7 7"
+                                      ></path>
+                                    </svg>
+                                    {showSourceFacts
+                                      ? "Hide Knowledge Source"
+                                      : "Show Knowledge Source"}
+                                  </button>
+
+                                  {showSourceFacts && (
+                                    <div className="mt-2 p-3 bg-base-100 rounded-box shadow-sm">
+                                      <p className="text-xs text-base-content/70 mb-2">
+                                        This answer was generated using these
+                                        facts from our gardening knowledge
+                                        graph:
+                                      </p>
+                                      <ul className="text-sm list-disc pl-5 space-y-1">
+                                        {message.sourceFacts.map((fact, i) => (
+                                          <li
+                                            key={i}
+                                            className="text-base-content/80"
+                                          >
+                                            {fact}
+                                          </li>
+                                        ))}
+                                      </ul>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+
+                            {/* Generated query toggle and display */}
+                            {message.generatedQuery && (
+                              <div className="mt-2">
+                                <button
+                                  onClick={() => toggleGeneratedQuery(index)}
+                                  className="btn btn-xs btn-outline btn-info flex items-center gap-1"
+                                >
+                                  <svg
+                                    className={`w-4 h-4 ${
+                                      showGeneratedQuery ? "rotate-90" : ""
+                                    } transition-transform`}
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth="2"
+                                      d="M9 5l7 7-7 7"
+                                    ></path>
+                                  </svg>
+                                  {showGeneratedQuery
+                                    ? "Hide Generated Query"
+                                    : "Show Generated Query"}
+                                </button>
+
+                                {showGeneratedQuery && (
+                                  <div className="mt-2 p-3 bg-base-100 rounded-box shadow-sm">
+                                    <p className="text-xs text-base-content/70 mb-2">
+                                      This Cypher query was generated to
+                                      retrieve information from our graph
+                                      database:
+                                    </p>
+                                    <pre className="text-sm text-base-content/80 bg-base-200 p-2 rounded overflow-x-auto">
+                                      {message.generatedQuery}
+                                    </pre>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Card container (if applicable) - for regular mode */}
                         {(message.cards?.length > 0 || message.soilInfo) && (
                           <div className="card-container">
                             {/* Use the CardContainer component for all card types */}
@@ -490,8 +751,18 @@ const GardenAgent = () => {
                 </button>
               </div>
               <div className="text-xs text-base-content/50 mt-2">
-                Try asking about "plant recommendations", "sustainability of
-                potatoes", or "carbon footprint of growing vegetables"
+                {isGraphRAGMode ? (
+                  <>
+                    GraphRAG Mode: Try asking about "plant relationships",
+                    "county-specific recommendations", or "companion plants for
+                    potatoes"
+                  </>
+                ) : (
+                  <>
+                    Try asking about "plant recommendations", "sustainability of
+                    potatoes", or "carbon footprint of growing vegetables"
+                  </>
+                )}
               </div>
             </form>
           </div>

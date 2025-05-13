@@ -18,7 +18,6 @@
     "daisyui": "^5.0.35",
     "dotenv": "^16.5.0",
     "google-auth-library": "^9.15.1",
-    "langchain": "^0.3.24",
     "neo4j-driver": "^5.28.1",
     "node-domexception": "^1.0.0",
     "node-fetch": "^3.3.2",
@@ -27,11 +26,10 @@
     "react-dom": "^19.1.0",
     "react-markdown": "^10.1.0",
     "remark-gfm": "^4.0.1",
-    "sparql-http-client": "^3.0.1",
     "tailwindcss": "^4.1.5"
   },
   "devDependencies": {
-    "@types/react": "18.2.0",
-    "@types/react-dom": "18.2.0"
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.0"
   }
 }
