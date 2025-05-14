@@ -1,6 +1,6 @@
 # Build a green thumb in a sprint
 
-A sustainable Irish gardening assistant can be built in one week using Astro's island architecture and Irish-specific data sources. This guide outlines the complete technical implementation process, focusing on practical, achievable approaches for rapid development while maintaining sustainability principles.
+A sustainable Bloom can be built in one week using Astro's island architecture and Irish-specific data sources. This guide outlines the complete technical implementation process, focusing on practical, achievable approaches for rapid development while maintaining sustainability principles.
 
 ## Bottom line up front
 
@@ -874,7 +874,7 @@ const { title } = Astro.props;
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>{title} | Irish Gardening Assistant</title>
+    <title>{title} | Bloom</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   </head>
   <body class="min-h-screen bg-green-50">

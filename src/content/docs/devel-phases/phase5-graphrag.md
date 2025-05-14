@@ -4,7 +4,7 @@ description: "Phase 5: GraphRAG Integration for Advanced Plant Recommendations d
 category: "devel-phases"
 ---
 
-This phase enhances the Irish gardening assistant with a GraphRAG (Graph-based Retrieval Augmented Generation) system to provide more sophisticated plant recommendations and gardening advice using graph databases and open-source LLMs.
+This phase enhances Bloom with a GraphRAG (Graph-based Retrieval Augmented Generation) system to provide more sophisticated plant recommendations and gardening advice using graph databases and open-source LLMs.
 
 ## Objectives
 
@@ -1291,7 +1291,7 @@ const GardeningAssistant = ({ userCounty = 'Dublin' }) => {
   return (
     <div className="card w-full bg-base-100 shadow-xl">
       <div className="card-body">
-        <h2 className="card-title text-primary mb-2">Irish Gardening Assistant</h2>
+        <h2 className="card-title text-primary mb-2">Bloom</h2>
         <p className="text-sm mb-4">Ask any gardening question specific to Irish conditions, and our AI assistant will provide personalized advice.</p>
         
         <form id="question-form" onSubmit={handleSubmit} className="mb-6">
@@ -1559,7 +1559,7 @@ const AIPlantingPlan = ({ userCounty = 'Dublin' }) => {
           <div>
             {error && (
               <div className="alert alert-error mb-4">
-                <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 <span>{error}</span>
@@ -1750,9 +1750,9 @@ import EnhancedPlantDetail from '../components/plants/EnhancedPlantDetail';
     
     <div id="plant-guide-container">
       <div class="card w-full bg-base-100 shadow-xl">
-        <div class="card-body items-center text-center">
-          <h2 class="card-title">Loading Plant Guide...</h2>
-          <span class="loading loading-spinner loading-lg text-primary"></span>
+        <div className="card-body items-center text-center">
+          <h2 className="card-title">Loading Plant Guide...</h2>
+          <span className="loading loading-spinner loading-lg text-primary"></span>
         </div>
       </div>
     </div>
@@ -1963,7 +1963,7 @@ When deploying to Netlify, you have several database options for implementing gr
 
 ## Conclusion
 
-The GraphRAG integration adds powerful new capabilities to the Irish gardening assistant:
+The GraphRAG integration adds powerful new capabilities to Bloom:
 
 1. **Deeper Insights**: By modeling the complex relationships between plants, soils, counties, and gardening practices in a knowledge graph, we can provide more nuanced recommendations and advice.
 

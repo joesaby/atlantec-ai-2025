@@ -18,7 +18,7 @@ const GardenAgent = () => {
     {
       role: "assistant",
       content:
-        "Hello there! I'm Bloom, your Irish gardening assistant. How can I help with your garden today? Whether you need plant recommendations, seasonal tasks, or growing tips for our unique Irish climate, I'm here to help you create a thriving garden.",
+        "Hello there! I'm Bloom, your gardening assistant. How can I help with your garden today? Whether you need plant recommendations, seasonal tasks, or growing tips for our unique Irish climate, I'm here to help you create a thriving garden.",
       timestamp: new Date(),
     },
   ]);
@@ -373,7 +373,7 @@ const GardenAgent = () => {
       {
         role: "assistant",
         content:
-          "Hello there! I'm Bloom, your Irish gardening assistant. How can I help with your garden today? Whether you need plant recommendations, seasonal tasks, or growing tips for our unique Irish climate, I'm here to help you create a thriving garden.",
+          "Hello there! I'm Bloom, your gardening assistant. How can I help with your garden today? Whether you need plant recommendations, seasonal tasks, or growing tips for our unique Irish climate, I'm here to help you create a thriving garden.",
         timestamp: new Date(),
       },
     ]);

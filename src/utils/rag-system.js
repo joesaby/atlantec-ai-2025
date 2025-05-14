@@ -1,5 +1,5 @@
 /**
- * RAG (Retrieval-Augmented Generation) system for Irish Garden Assistant
+ * RAG (Retrieval-Augmented Generation) system for Bloom
  * Combines knowledge retrieval from Neo4j with Vertex AI generation
  */
 
@@ -440,7 +440,7 @@ export async function getSeasonalRecommendations(month, context = {}) {
     ${context.county ? `- County: ${context.county}` : ""}
     `;
 
-    const tipPrompt = `You are an expert Irish gardening assistant. 
+    const tipPrompt = `You are an expert Bloom. 
     
     Please provide a short, practical gardening tip for Irish gardeners during ${month} (${season}) that is about 2-3 sentences long.
     

@@ -6,7 +6,7 @@ category: "devel-phases"
 
 ## Overview
 
-In this phase, we'll build an interactive chat interface for the Irish Gardening Assistant application. Users will be able to ask gardening-related questions and receive responses that include both text and dynamically generated cards (such as plant recommendations, gardening tasks, etc.). This feature provides a more conversational way for users to interact with the application.
+In this phase, we'll build an interactive chat interface for the Bloom application. Users will be able to ask gardening-related questions and receive responses that include both text and dynamically generated cards (such as plant recommendations, gardening tasks, etc.). This feature provides a more conversational way for users to interact with the application.
 
 ## Features
 

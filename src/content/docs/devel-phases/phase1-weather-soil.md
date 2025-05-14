@@ -4,7 +4,7 @@ description: "Phase 1: Weather & Soil Data Integration documentation"
 category: "devel-phases"
 ---
 
-This phase implements the weather and soil data components for the Irish gardening assistant. We'll create reusable daisyUI components that display current weather conditions and soil information for Irish counties.
+This phase implements the weather and soil data components for Bloom. We'll create reusable daisyUI components that display current weather conditions and soil information for Irish counties.
 
 ## Implementation Steps
 

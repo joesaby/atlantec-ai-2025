@@ -6,7 +6,7 @@ category: "devel-phases"
 
 ## Objective
 
-Set up the foundation for the Irish gardening assistant by integrating with Irish-specific data sources like Teagasc soil data and Met.ie weather information.
+Set up the foundation for Bloom by integrating with Irish-specific data sources like Teagasc soil data and Met.ie weather information.
 
 ## Steps
 
