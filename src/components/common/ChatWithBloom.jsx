@@ -58,7 +58,7 @@ const ChatWithBloom = () => {
     <div className={`fixed bottom-5 right-5 z-50 transition-all duration-300 ease-in-out ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10 pointer-events-none'}`}>
       <div className="chat chat-end">
         <div 
-          className="chat-bubble chat-bubble-primary shadow-xl flex items-center gap-3 cursor-pointer hover:brightness-105 transition-all" 
+          className="chat-bubble chat-bubble-bloom flex items-center gap-3 cursor-pointer transition-all" 
           onClick={handleClick}
         >
           <div>

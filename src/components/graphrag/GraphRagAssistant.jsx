@@ -216,9 +216,7 @@ export default function GraphRagAssistant() {
 
   return (
     <div className="graph-rag-assistant w-full max-w-4xl mx-auto p-6 bg-white rounded-lg shadow-md">
-      <h2 className="text-2xl font-bold text-emerald-700 mb-6">
-        Irish Gardening RAG Assistant
-      </h2>
+      <h2 className="text-2xl font-bold text-emerald-700 mb-6">Bloom</h2>
 
       {/* Mode toggle buttons */}
       <div className="mb-6 flex justify-center">
@@ -475,8 +473,8 @@ export default function GraphRagAssistant() {
 
       <div className="mt-8 text-sm text-gray-500">
         <p className="mb-1">
-          The Irish Gardening Assistant uses GraphRAG technology to provide
-          intelligent recommendations:
+          The Bloom uses GraphRAG technology to provide intelligent
+          recommendations:
         </p>
         <ul className="list-disc pl-5 space-y-1">
           <li>Graph of Irish plants, soil types, and counties</li>

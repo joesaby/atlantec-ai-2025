@@ -4,7 +4,7 @@ description: "Phase 5: GraphRAG Integration for Advanced Plant Recommendations d
 category: "devel-phases"
 ---
 
-This phase enhances the Irish gardening assistant with a GraphRAG (Graph-based Retrieval Augmented Generation) system to provide more sophisticated plant recommendations and gardening advice using graph databases and open-source LLMs.
+This phase enhances Bloom with a GraphRAG (Graph-based Retrieval Augmented Generation) system to provide more sophisticated plant recommendations and gardening advice using graph databases and open-source LLMs.
 
 ## Objectives
 
@@ -40,7 +40,7 @@ First, we'll implement a graph database using Neo4j to model our gardening domai
  * - PollinatorType: Types of pollinators (bees, butterflies, etc.)
  * - PlantDisease: Common plant diseases in Ireland
  * - PlantPest: Common garden pests in Ireland
- * 
+ *
  * Relationship Types:
  * - GROWS_WELL_IN: Plant grows well in a specific soil type
  * - HAS_DOMINANT_SOIL: County has a dominant soil type
@@ -60,16 +60,16 @@ First, we'll implement a graph database using Neo4j to model our gardening domai
 // Example Cypher queries for creating our schema
 const schemaQueries = [
   // Create constraints
-  'CREATE CONSTRAINT plant_name IF NOT EXISTS FOR (p:Plant) REQUIRE p.name IS UNIQUE',
-  'CREATE CONSTRAINT soil_type IF NOT EXISTS FOR (s:SoilType) REQUIRE s.name IS UNIQUE',
-  'CREATE CONSTRAINT county_name IF NOT EXISTS FOR (c:County) REQUIRE c.name IS UNIQUE',
-  'CREATE CONSTRAINT month_name IF NOT EXISTS FOR (m:Month) REQUIRE m.name IS UNIQUE',
-  
+  "CREATE CONSTRAINT plant_name IF NOT EXISTS FOR (p:Plant) REQUIRE p.name IS UNIQUE",
+  "CREATE CONSTRAINT soil_type IF NOT EXISTS FOR (s:SoilType) REQUIRE s.name IS UNIQUE",
+  "CREATE CONSTRAINT county_name IF NOT EXISTS FOR (c:County) REQUIRE c.name IS UNIQUE",
+  "CREATE CONSTRAINT month_name IF NOT EXISTS FOR (m:Month) REQUIRE m.name IS UNIQUE",
+
   // Create indexes
-  'CREATE INDEX plant_native IF NOT EXISTS FOR (p:Plant) ON (p.nativeToIreland)',
-  'CREATE INDEX plant_perennial IF NOT EXISTS FOR (p:Plant) ON (p.isPerennial)',
-  'CREATE INDEX plant_water IF NOT EXISTS FOR (p:Plant) ON (p.waterNeeds)',
-  'CREATE INDEX plant_sun IF NOT EXISTS FOR (p:Plant) ON (p.sunNeeds)',
+  "CREATE INDEX plant_native IF NOT EXISTS FOR (p:Plant) ON (p.nativeToIreland)",
+  "CREATE INDEX plant_perennial IF NOT EXISTS FOR (p:Plant) ON (p.isPerennial)",
+  "CREATE INDEX plant_water IF NOT EXISTS FOR (p:Plant) ON (p.waterNeeds)",
+  "CREATE INDEX plant_sun IF NOT EXISTS FOR (p:Plant) ON (p.sunNeeds)",
 ];
 
 // Export the schema queries
@@ -83,32 +83,42 @@ Create a script to migrate existing data to the graph database:
 ```javascript
 // src/database/graph-migration.js
 
-import { plants } from '../data/plants';
-import { gardeningTasks } from '../data/gardening-tasks';
-import { sustainablePractices } from '../data/sustainability-metrics';
-import { COUNTY_SOIL_MAPPING, IRISH_SOIL_TYPES } from '../utils/soil-client';
-import { neo4jDriver } from './neo4j-client';
+import { plants } from "../data/plants";
+import { gardeningTasks } from "../data/gardening-tasks";
+import { sustainablePractices } from "../data/sustainability-metrics";
+import { COUNTY_SOIL_MAPPING, IRISH_SOIL_TYPES } from "../utils/soil-client";
+import { neo4jDriver } from "./neo4j-client";
 
 /**
  * Migrate existing data to Neo4j graph database
  */
 export async function migrateDataToGraph() {
   const session = neo4jDriver.session();
-  
+
   try {
     // Create months
     const months = [
-      'January', 'February', 'March', 'April', 'May', 'June', 
-      'July', 'August', 'September', 'October', 'November', 'December'
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December",
     ];
-    
+
     for (const [index, month] of months.entries()) {
-      await session.run(
-        `MERGE (m:Month {name: $name, number: $number})`,
-        { name: month, number: index + 1 }
-      );
+      await session.run(`MERGE (m:Month {name: $name, number: $number})`, {
+        name: month,
+        number: index + 1,
+      });
     }
-    
+
     // Create soil types
     for (const [code, soilData] of Object.entries(IRISH_SOIL_TYPES)) {
       await session.run(
@@ -130,11 +140,11 @@ export async function migrateDataToGraph() {
           phMax: soilData.ph.max,
           texture: soilData.texture,
           nutrients: soilData.nutrients,
-          drainage: soilData.drainage
+          drainage: soilData.drainage,
         }
       );
     }
-    
+
     // Create counties and link to soil types
     for (const [county, soilType] of Object.entries(COUNTY_SOIL_MAPPING)) {
       await session.run(
@@ -145,7 +155,7 @@ export async function migrateDataToGraph() {
         { county: county.charAt(0).toUpperCase() + county.slice(1), soilType }
       );
     }
-    
+
     // Migrate plants
     for (const plant of plants) {
       // Create plant node
@@ -175,13 +185,13 @@ export async function migrateDataToGraph() {
           soilPreference: plant.soilPreference,
           nativeToIreland: plant.nativeToIreland,
           isPerennial: plant.isPerennial,
-          imageUrl: plant.imageUrl || '',
+          imageUrl: plant.imageUrl || "",
           sustainabilityRating: plant.sustainabilityRating,
           waterConservationRating: plant.waterConservationRating,
-          biodiversityValue: plant.biodiversityValue
+          biodiversityValue: plant.biodiversityValue,
         }
       );
-      
+
       // Connect plants to soil types
       for (const soilType of plant.suitableSoilTypes) {
         await session.run(
@@ -191,7 +201,7 @@ export async function migrateDataToGraph() {
           { plantId: plant.id.toString(), soilType }
         );
       }
-      
+
       // Add harvest or flowering season
       if (plant.harvestSeason) {
         await session.run(
@@ -200,7 +210,7 @@ export async function migrateDataToGraph() {
           { plantId: plant.id.toString(), season: plant.harvestSeason }
         );
       }
-      
+
       if (plant.floweringSeason) {
         await session.run(
           `MATCH (p:Plant {id: $plantId})
@@ -209,12 +219,15 @@ export async function migrateDataToGraph() {
         );
       }
     }
-    
+
     // Migrate gardening tasks
     for (const monthData of gardeningTasks) {
       const monthNumber = monthData.month;
-      const monthName = new Date(2000, monthNumber - 1, 1).toLocaleString('en-IE', { month: 'long' });
-      
+      const monthName = new Date(2000, monthNumber - 1, 1).toLocaleString(
+        "en-IE",
+        { month: "long" }
+      );
+
       for (const task of monthData.tasks) {
         // Create task node
         await session.run(
@@ -230,10 +243,10 @@ export async function migrateDataToGraph() {
             title: task.title,
             description: task.description,
             category: task.category,
-            priority: task.priority
+            priority: task.priority,
           }
         );
-        
+
         // Connect task to month
         await session.run(
           `MATCH (t:GardeningTask {id: $taskId})
@@ -243,16 +256,41 @@ export async function migrateDataToGraph() {
         );
       }
     }
-    
+
     // Add companion planting relationships (example data)
     const companionPlantings = [
-      { plant1: 'Potato', plant2: 'Cabbage', relationship: 'ANTAGONISTIC_TO', notes: 'Potatoes and cabbage compete for nutrients' },
-      { plant1: 'Potato', plant2: 'Marigold', relationship: 'COMPANION_TO', notes: 'Marigolds repel nematodes that attack potatoes' },
-      { plant1: 'Cabbage', plant2: 'Onion', relationship: 'COMPANION_TO', notes: 'Onions repel cabbage worms and loopers' },
-      { plant1: 'Carrot', plant2: 'Leek', relationship: 'COMPANION_TO', notes: 'Leeks repel carrot flies, carrots repel leek moths' },
-      { plant1: 'Kale', plant2: 'Potato', relationship: 'ANTAGONISTIC_TO', notes: 'Both are heavy feeders and compete for nutrients' }
+      {
+        plant1: "Potato",
+        plant2: "Cabbage",
+        relationship: "ANTAGONISTIC_TO",
+        notes: "Potatoes and cabbage compete for nutrients",
+      },
+      {
+        plant1: "Potato",
+        plant2: "Marigold",
+        relationship: "COMPANION_TO",
+        notes: "Marigolds repel nematodes that attack potatoes",
+      },
+      {
+        plant1: "Cabbage",
+        plant2: "Onion",
+        relationship: "COMPANION_TO",
+        notes: "Onions repel cabbage worms and loopers",
+      },
+      {
+        plant1: "Carrot",
+        plant2: "Leek",
+        relationship: "COMPANION_TO",
+        notes: "Leeks repel carrot flies, carrots repel leek moths",
+      },
+      {
+        plant1: "Kale",
+        plant2: "Potato",
+        relationship: "ANTAGONISTIC_TO",
+        notes: "Both are heavy feeders and compete for nutrients",
+      },
     ];
-    
+
     for (const cp of companionPlantings) {
       await session.run(
         `MATCH (p1:Plant) WHERE p1.name = $plant1
@@ -261,24 +299,35 @@ export async function migrateDataToGraph() {
         { plant1: cp.plant1, plant2: cp.plant2, notes: cp.notes }
       );
     }
-    
+
     // Create pollinator types and relationships
-    const pollinators = ['Bees', 'Butterflies', 'Hoverflies', 'Moths', 'Beetles'];
-    const pollinatorAttractions = [
-      { plant: 'Irish Wildflower Mix', pollinators: ['Bees', 'Butterflies', 'Hoverflies'] },
-      { plant: 'Irish Primrose', pollinators: ['Bees', 'Butterflies'] },
-      { plant: 'Hawthorn', pollinators: ['Bees', 'Butterflies', 'Moths'] },
-      { plant: 'Apple Tree (Irish Varieties)', pollinators: ['Bees', 'Hoverflies'] }
+    const pollinators = [
+      "Bees",
+      "Butterflies",
+      "Hoverflies",
+      "Moths",
+      "Beetles",
     ];
-    
+    const pollinatorAttractions = [
+      {
+        plant: "Irish Wildflower Mix",
+        pollinators: ["Bees", "Butterflies", "Hoverflies"],
+      },
+      { plant: "Irish Primrose", pollinators: ["Bees", "Butterflies"] },
+      { plant: "Hawthorn", pollinators: ["Bees", "Butterflies", "Moths"] },
+      {
+        plant: "Apple Tree (Irish Varieties)",
+        pollinators: ["Bees", "Hoverflies"],
+      },
+    ];
+
     // Create pollinator nodes
     for (const pollinator of pollinators) {
-      await session.run(
-        `MERGE (p:PollinatorType {name: $name})`,
-        { name: pollinator }
-      );
+      await session.run(`MERGE (p:PollinatorType {name: $name})`, {
+        name: pollinator,
+      });
     }
-    
+
     // Create ATTRACTS relationships
     for (const attraction of pollinatorAttractions) {
       for (const pollinator of attraction.pollinators) {
@@ -290,11 +339,11 @@ export async function migrateDataToGraph() {
         );
       }
     }
-    
-    console.log('Data migration completed successfully');
+
+    console.log("Data migration completed successfully");
     return { success: true };
   } catch (error) {
-    console.error('Error during data migration:', error);
+    console.error("Error during data migration:", error);
     return { success: false, error: error.message };
   } finally {
     await session.close();
@@ -309,12 +358,12 @@ Create a client for connecting to the Neo4j database:
 ```javascript
 // src/database/neo4j-client.js
 
-import neo4j from 'neo4j-driver';
+import neo4j from "neo4j-driver";
 
 // Configuration (should be moved to environment variables)
-const NEO4J_URI = process.env.NEO4J_URI || 'neo4j://localhost:7687';
-const NEO4J_USER = process.env.NEO4J_USER || 'neo4j';
-const NEO4J_PASSWORD = process.env.NEO4J_PASSWORD || 'password';
+const NEO4J_URI = process.env.NEO4J_URI || "neo4j://localhost:7687";
+const NEO4J_USER = process.env.NEO4J_USER || "neo4j";
+const NEO4J_PASSWORD = process.env.NEO4J_PASSWORD || "password";
 
 // Create a driver instance
 export const neo4jDriver = neo4j.driver(
@@ -324,7 +373,7 @@ export const neo4jDriver = neo4j.driver(
     maxConnectionLifetime: 3 * 60 * 60 * 1000, // 3 hours
     maxConnectionPoolSize: 50,
     connectionAcquisitionTimeout: 2 * 60 * 1000, // 2 minutes
-    disableLosslessIntegers: true
+    disableLosslessIntegers: true,
   }
 );
 
@@ -334,7 +383,7 @@ export async function verifyConnectivity() {
     await neo4jDriver.verifyConnectivity();
     return { connected: true };
   } catch (error) {
-    console.error('Neo4j connection error:', error);
+    console.error("Neo4j connection error:", error);
     return { connected: false, error: error.message };
   }
 }
@@ -344,7 +393,7 @@ export async function runQuery(query, params = {}) {
   const session = neo4jDriver.session();
   try {
     const result = await session.run(query, params);
-    return result.records.map(record => {
+    return result.records.map((record) => {
       return record.keys.reduce((obj, key) => {
         const value = record.get(key);
         // Handle Neo4j node objects
@@ -357,7 +406,7 @@ export async function runQuery(query, params = {}) {
       }, {});
     });
   } catch (error) {
-    console.error('Query error:', error);
+    console.error("Query error:", error);
     throw error;
   } finally {
     await session.close();
@@ -377,7 +426,7 @@ Implement a new recommendation engine using graph queries:
 ```javascript
 // src/utils/graph-recommender.js
 
-import { runQuery } from '../database/neo4j-client';
+import { runQuery } from "../database/neo4j-client";
 
 /**
  * Get plant recommendations using graph traversal
@@ -396,33 +445,38 @@ export async function getGraphPlantRecommendations(conditions) {
       MATCH (plant:Plant)-[:GROWS_WELL_IN]->(soil)
       WHERE plant.sunNeeds CONTAINS $sunExposure
     `;
-    
+
     // Additional filters based on conditions
     if (conditions.nativeOnly) {
       matchClause += ` AND plant.nativeToIreland = true`;
     }
-    
+
     // Filter by plant type
     if (conditions.plantType && conditions.plantType.length > 0) {
       const plantTypeConditions = [];
-      
-      if (conditions.plantType.includes('vegetable') || conditions.plantType.includes('fruit')) {
+
+      if (
+        conditions.plantType.includes("vegetable") ||
+        conditions.plantType.includes("fruit")
+      ) {
         plantTypeConditions.push(`plant.harvestSeason IS NOT NULL`);
       }
-      
-      if (conditions.plantType.includes('flower')) {
+
+      if (conditions.plantType.includes("flower")) {
         plantTypeConditions.push(`plant.floweringSeason IS NOT NULL`);
       }
-      
-      if (conditions.plantType.includes('tree')) {
-        plantTypeConditions.push(`(plant.isPerennial = true AND plant.name CONTAINS 'Tree')`);
+
+      if (conditions.plantType.includes("tree")) {
+        plantTypeConditions.push(
+          `(plant.isPerennial = true AND plant.name CONTAINS 'Tree')`
+        );
       }
-      
+
       if (plantTypeConditions.length > 0) {
-        matchClause += ` AND (${plantTypeConditions.join(' OR ')})`;
+        matchClause += ` AND (${plantTypeConditions.join(" OR ")})`;
       }
     }
-    
+
     // Complete the query with return statement and ordering
     const query = `
       ${matchClause}
@@ -450,17 +504,17 @@ export async function getGraphPlantRecommendations(conditions) {
       ORDER BY score DESC
       LIMIT 8
     `;
-    
+
     const result = await runQuery(query, {
       county: conditions.county,
-      sunExposure: conditions.sunExposure
+      sunExposure: conditions.sunExposure,
     });
-    
+
     // Transform Neo4j results to match the existing application structure
-    return result.map(record => {
+    return result.map((record) => {
       const plant = record.plant;
       const score = record.score;
-      
+
       return {
         id: parseInt(plant.id),
         commonName: plant.name,
@@ -477,18 +531,20 @@ export async function getGraphPlantRecommendations(conditions) {
         sustainabilityRating: plant.sustainabilityRating,
         waterConservationRating: plant.waterConservationRating,
         biodiversityValue: plant.biodiversityValue,
-        
+
         // New graph-specific properties
         score,
         matchPercentage: Math.min(Math.round((score / 80) * 100), 100),
-        pollinators: record.pollinators.filter(p => p !== null),
-        plantRelationships: record.plantRelationships.filter(r => r.type !== null),
-        pollinatorCount: record.pollinatorCount
+        pollinators: record.pollinators.filter((p) => p !== null),
+        plantRelationships: record.plantRelationships.filter(
+          (r) => r.type !== null
+        ),
+        pollinatorCount: record.pollinatorCount,
       };
     });
   } catch (error) {
-    console.error('Graph recommendation error:', error);
-    throw new Error('Failed to generate graph-based plant recommendations');
+    console.error("Graph recommendation error:", error);
+    throw new Error("Failed to generate graph-based plant recommendations");
   }
 }
 
@@ -498,19 +554,22 @@ export async function getGraphPlantRecommendations(conditions) {
  * @param {string} relationshipType - The type of relationship ('COMPANION_TO' or 'ANTAGONISTIC_TO')
  * @returns {Promise<Array>} Array of related plants
  */
-export async function getRelatedPlants(plantName, relationshipType = 'COMPANION_TO') {
+export async function getRelatedPlants(
+  plantName,
+  relationshipType = "COMPANION_TO"
+) {
   try {
     const query = `
       MATCH (plant:Plant {name: $plantName})-[:${relationshipType}]->(related:Plant)
       RETURN related
     `;
-    
+
     const result = await runQuery(query, { plantName });
-    
-    return result.map(record => record.related);
+
+    return result.map((record) => record.related);
   } catch (error) {
-    console.error('Related plants query error:', error);
-    throw new Error('Failed to find related plants');
+    console.error("Related plants query error:", error);
+    throw new Error("Failed to find related plants");
   }
 }
 
@@ -527,16 +586,16 @@ export async function getPlantsForPollinators(pollinatorTypes) {
       RETURN plant, collect(DISTINCT pollinator.name) AS attractedPollinators
       ORDER BY size(attractedPollinators) DESC
     `;
-    
+
     const result = await runQuery(query, { pollinatorTypes });
-    
-    return result.map(record => ({
+
+    return result.map((record) => ({
       ...record.plant,
-      pollinators: record.attractedPollinators
+      pollinators: record.attractedPollinators,
     }));
   } catch (error) {
-    console.error('Pollinator plants query error:', error);
-    throw new Error('Failed to find plants for pollinators');
+    console.error("Pollinator plants query error:", error);
+    throw new Error("Failed to find plants for pollinators");
   }
 }
 ```
@@ -555,8 +614,9 @@ Set up an integration with an open-source LLM using Ollama:
  */
 
 // Configuration
-const OLLAMA_ENDPOINT = process.env.OLLAMA_ENDPOINT || 'http://localhost:11434/api/generate';
-const DEFAULT_MODEL = process.env.DEFAULT_LLM || 'mistral';
+const OLLAMA_ENDPOINT =
+  process.env.OLLAMA_ENDPOINT || "http://localhost:11434/api/generate";
+const DEFAULT_MODEL = process.env.DEFAULT_LLM || "mistral";
 const MAX_TOKENS = 1024;
 
 /**
@@ -572,12 +632,12 @@ export async function generateText(prompt, options = {}) {
   const model = options.model || DEFAULT_MODEL;
   const temperature = options.temperature || 0.7;
   const maxTokens = options.maxTokens || MAX_TOKENS;
-  
+
   try {
     const response = await fetch(OLLAMA_ENDPOINT, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
         model,
@@ -587,16 +647,16 @@ export async function generateText(prompt, options = {}) {
         stream: false,
       }),
     });
-    
+
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
-    
+
     const data = await response.json();
     return data.response;
   } catch (error) {
-    console.error('LLM generation error:', error);
-    throw new Error('Failed to generate LLM response');
+    console.error("LLM generation error:", error);
+    throw new Error("Failed to generate LLM response");
   }
 }
 
@@ -609,17 +669,17 @@ export async function checkLLMHealth() {
     // Simple prompt to verify the LLM service is responding
     const response = await generateText('Say "LLM is working"', {
       maxTokens: 20,
-      temperature: 0.1
+      temperature: 0.1,
     });
-    
+
     return {
-      healthy: response.includes('LLM is working'),
-      model: DEFAULT_MODEL
+      healthy: response.includes("LLM is working"),
+      model: DEFAULT_MODEL,
     };
   } catch (error) {
     return {
       healthy: false,
-      error: error.message
+      error: error.message,
     };
   }
 }
@@ -632,8 +692,8 @@ Create the RAG (Retrieval Augmented Generation) system:
 ```javascript
 // src/utils/rag-system.js
 
-import { runQuery } from '../database/neo4j-client';
-import { generateText } from './llm-client';
+import { runQuery } from "../database/neo4j-client";
+import { generateText } from "./llm-client";
 
 /**
  * Generate a gardening guide for a plant using RAG
@@ -656,15 +716,15 @@ export async function generatePlantGuide(plantName) {
         collect(DISTINCT companion.name) AS companions,
         collect(DISTINCT antagonist.name) AS antagonists
     `;
-    
+
     const plantResults = await runQuery(plantQuery, { plantName });
-    
+
     if (plantResults.length === 0) {
       throw new Error(`Plant not found: ${plantName}`);
     }
-    
+
     const plantData = plantResults[0];
-    
+
     // Get gardening tasks related to this type of plant
     const tasksQuery = `
       MATCH (task:GardeningTask)
@@ -673,23 +733,23 @@ export async function generatePlantGuide(plantName) {
       RETURN task, month.name AS monthName
       ORDER BY month.number
     `;
-    
+
     const taskResults = await runQuery(tasksQuery, { plantName });
-    
+
     // Construct context for the LLM prompt
     const context = {
       plant: plantData.plant,
-      suitableSoils: plantData.suitableSoils.filter(s => s !== null),
-      pollinators: plantData.pollinators.filter(p => p !== null),
-      companions: plantData.companions.filter(c => c !== null),
-      antagonists: plantData.antagonists.filter(a => a !== null),
-      tasks: taskResults.map(t => ({
+      suitableSoils: plantData.suitableSoils.filter((s) => s !== null),
+      pollinators: plantData.pollinators.filter((p) => p !== null),
+      companions: plantData.companions.filter((c) => c !== null),
+      antagonists: plantData.antagonists.filter((a) => a !== null),
+      tasks: taskResults.map((t) => ({
         title: t.task.title,
         month: t.monthName,
-        description: t.task.description
-      }))
+        description: t.task.description,
+      })),
     };
-    
+
     // Create the LLM prompt
     const prompt = `
       You are an Irish gardening expert. Create a comprehensive growing guide for ${plantName} in the Irish climate. 
@@ -709,21 +769,21 @@ export async function generatePlantGuide(plantName) {
       
       Format your response in markdown with clear sections. Keep the content factual, practical, and specifically tailored to Irish gardening conditions. The ideal length is 600-800 words.
     `;
-    
+
     // Generate the guide using the LLM
     const generatedGuide = await generateText(prompt, {
       temperature: 0.7,
-      maxTokens: 1500
+      maxTokens: 1500,
     });
-    
+
     return {
       plantName,
       guide: generatedGuide,
-      context: context
+      context: context,
     };
   } catch (error) {
-    console.error('Plant guide generation error:', error);
-    throw new Error('Failed to generate plant guide');
+    console.error("Plant guide generation error:", error);
+    throw new Error("Failed to generate plant guide");
   }
 }
 
@@ -737,15 +797,15 @@ export async function answerGardeningQuestion(question, userContext = {}) {
   try {
     // Extract potential entities from the question
     const entityTypes = [
-      { type: 'Plant', label: 'plants' },
-      { type: 'SoilType', label: 'soils' },
-      { type: 'PollinatorType', label: 'pollinators' },
-      { type: 'GardeningTask', label: 'tasks' },
-      { type: 'County', label: 'counties' }
+      { type: "Plant", label: "plants" },
+      { type: "SoilType", label: "soils" },
+      { type: "PollinatorType", label: "pollinators" },
+      { type: "GardeningTask", label: "tasks" },
+      { type: "County", label: "counties" },
     ];
-    
+
     // Retrieve context for entities mentioned in the question
-    const contextQueries = entityTypes.map(entityType => {
+    const contextQueries = entityTypes.map((entityType) => {
       return `
         MATCH (entity:${entityType.type})
         WHERE toLower($question) CONTAINS toLower(entity.name)
@@ -753,10 +813,10 @@ export async function answerGardeningQuestion(question, userContext = {}) {
         LIMIT 5
       `;
     });
-    
-    const combinedQuery = contextQueries.join(' UNION ');
+
+    const combinedQuery = contextQueries.join(" UNION ");
     const entityResults = await runQuery(combinedQuery, { question });
-    
+
     // Group entities by type
     const groupedEntities = entityResults.reduce((groups, result) => {
       const type = result.type;
@@ -766,7 +826,7 @@ export async function answerGardeningQuestion(question, userContext = {}) {
       groups[type].push(result.entity);
       return groups;
     }, {});
-    
+
     // If plant entities were found, get additional information
     let plantDetails = [];
     if (groupedEntities.plants && groupedEntities.plants.length > 0) {
@@ -776,19 +836,24 @@ export async function answerGardeningQuestion(question, userContext = {}) {
           OPTIONAL MATCH (plant)-[:GROWS_WELL_IN]->(soil:SoilType)
           RETURN plant, collect(soil.name) AS soils
         `;
-        const detailResults = await runQuery(plantQuery, { plantName: plant.name });
+        const detailResults = await runQuery(plantQuery, {
+          plantName: plant.name,
+        });
         if (detailResults.length > 0) {
           plantDetails.push({
             ...detailResults[0].plant,
-            soils: detailResults[0].soils.filter(s => s !== null)
+            soils: detailResults[0].soils.filter((s) => s !== null),
           });
         }
       }
     }
-    
+
     // County-specific information if relevant
     let countyInfo = null;
-    if (userContext.county || (groupedEntities.counties && groupedEntities.counties.length > 0)) {
+    if (
+      userContext.county ||
+      (groupedEntities.counties && groupedEntities.counties.length > 0)
+    ) {
       const countyName = userContext.county || groupedEntities.counties[0].name;
       const countyQuery = `
         MATCH (county:County {name: $countyName})-[:HAS_DOMINANT_SOIL]->(soil:SoilType)
@@ -799,15 +864,15 @@ export async function answerGardeningQuestion(question, userContext = {}) {
         countyInfo = countyResults[0];
       }
     }
-    
+
     // Build context for the LLM
     const context = {
       entities: groupedEntities,
       plantDetails,
       countyInfo,
-      userGarden: userContext
+      userGarden: userContext,
     };
-    
+
     // Create the LLM prompt
     const prompt = `
       You are an Irish gardening expert assistant. Answer the following gardening question with specific, accurate, and helpful information tailored to Irish growing conditions.
@@ -826,17 +891,17 @@ export async function answerGardeningQuestion(question, userContext = {}) {
       
       Your answer:
     `;
-    
+
     // Generate the answer using the LLM
     const answer = await generateText(prompt, {
       temperature: 0.7,
-      maxTokens: 800
+      maxTokens: 800,
     });
-    
+
     return answer;
   } catch (error) {
-    console.error('Question answering error:', error);
-    throw new Error('Failed to answer gardening question');
+    console.error("Question answering error:", error);
+    throw new Error("Failed to answer gardening question");
   }
 }
 
@@ -847,8 +912,13 @@ export async function answerGardeningQuestion(question, userContext = {}) {
  */
 export async function generatePlantingPlan(gardenConditions) {
   try {
-    const { county, sunExposure, spaceAvailable, goals = [] } = gardenConditions;
-    
+    const {
+      county,
+      sunExposure,
+      spaceAvailable,
+      goals = [],
+    } = gardenConditions;
+
     // Retrieve appropriate plants based on conditions
     const plantsQuery = `
       MATCH (county:County {name: $county})-[:HAS_DOMINANT_SOIL]->(soil:SoilType)
@@ -857,32 +927,32 @@ export async function generatePlantingPlan(gardenConditions) {
       RETURN plant
       LIMIT 20
     `;
-    
-    const plantResults = await runQuery(plantsQuery, { 
-      county, 
-      sunExposure 
+
+    const plantResults = await runQuery(plantsQuery, {
+      county,
+      sunExposure,
     });
-    
+
     // Get companion planting information
     const companionQuery = `
       MATCH (p1:Plant)-[r:COMPANION_TO|ANTAGONISTIC_TO]->(p2:Plant)
       WHERE p1.name IN $plantNames AND p2.name IN $plantNames
       RETURN p1.name AS plant1, type(r) AS relationship, p2.name AS plant2
     `;
-    
-    const plantNames = plantResults.map(result => result.plant.name);
+
+    const plantNames = plantResults.map((result) => result.plant.name);
     const companionResults = await runQuery(companionQuery, { plantNames });
-    
+
     // Build context for the LLM
     const context = {
       county,
       sunExposure,
       spaceAvailable,
       goals,
-      availablePlants: plantResults.map(result => result.plant),
-      companionships: companionResults
+      availablePlants: plantResults.map((result) => result.plant),
+      companionships: companionResults,
     };
-    
+
     // Create the LLM prompt
     const prompt = `
       You are an expert Irish garden designer. Create a personalized planting plan for a garden with the following conditions:
@@ -892,27 +962,27 @@ export async function generatePlantingPlan(gardenConditions) {
       Based on this information, create a detailed planting plan that:
       1. Selects appropriate plants from the available list
       2. Arranges them optimally considering companion planting relationships
-      3. Considers the garden goals: ${goals.join(', ')}
+      3. Considers the garden goals: ${goals.join(", ")}
       4. Accounts for the available space: ${spaceAvailable}
       5. Provides a planting schedule appropriate for Irish growing seasons
       6. Includes specific tips for success in ${county}'s conditions
       
       Format your response as a structured planting plan with clear sections. Include a visual layout representation using ASCII art if helpful.
     `;
-    
+
     // Generate the planting plan using the LLM
     const generatedPlan = await generateText(prompt, {
       temperature: 0.8,
-      maxTokens: 1500
+      maxTokens: 1500,
     });
-    
+
     return {
       conditions: gardenConditions,
-      plan: generatedPlan
+      plan: generatedPlan,
     };
   } catch (error) {
-    console.error('Planting plan generation error:', error);
-    throw new Error('Failed to generate planting plan');
+    console.error("Planting plan generation error:", error);
+    throw new Error("Failed to generate planting plan");
   }
 }
 ```
@@ -924,7 +994,7 @@ Create new API endpoints for the GraphRAG functionality:
 ```javascript
 // src/pages/api/graph-recommendations.js
 
-import { getGraphPlantRecommendations } from '../../utils/graph-recommender';
+import { getGraphPlantRecommendations } from "../../utils/graph-recommender";
 
 export async function POST({ request }) {
   try {
@@ -952,7 +1022,9 @@ export async function POST({ request }) {
     console.error("Error in graph-recommendations API:", error);
 
     return new Response(
-      JSON.stringify({ error: "Failed to generate graph-based recommendations" }),
+      JSON.stringify({
+        error: "Failed to generate graph-based recommendations",
+      }),
       {
         status: 500,
         headers: { "Content-Type": "application/json" },
@@ -965,12 +1037,12 @@ export async function POST({ request }) {
 ```javascript
 // src/pages/api/plant-guide.js
 
-import { generatePlantGuide } from '../../utils/rag-system';
+import { generatePlantGuide } from "../../utils/rag-system";
 
 export async function GET({ request }) {
   try {
     const url = new URL(request.url);
-    const plantName = url.searchParams.get('plant');
+    const plantName = url.searchParams.get("plant");
 
     if (!plantName) {
       return new Response(
@@ -1007,7 +1079,7 @@ export async function GET({ request }) {
 ```javascript
 // src/pages/api/gardening-question.js
 
-import { answerGardeningQuestion } from '../../utils/rag-system';
+import { answerGardeningQuestion } from "../../utils/rag-system";
 
 export async function POST({ request }) {
   try {
@@ -1049,7 +1121,7 @@ export async function POST({ request }) {
 ```javascript
 // src/pages/api/planting-plan.js
 
-import { generatePlantingPlan } from '../../utils/rag-system';
+import { generatePlantingPlan } from "../../utils/rag-system";
 
 export async function POST({ request }) {
   try {
@@ -1059,7 +1131,8 @@ export async function POST({ request }) {
     if (!county || !sunExposure || !spaceAvailable) {
       return new Response(
         JSON.stringify({
-          error: "Missing required fields: county, sunExposure, and spaceAvailable are required",
+          error:
+            "Missing required fields: county, sunExposure, and spaceAvailable are required",
         }),
         {
           status: 400,
@@ -1095,52 +1168,56 @@ Create a component that leverages the GraphRAG capabilities:
 ```jsx
 // src/components/plants/EnhancedPlantDetail.jsx
 
-import React, { useState, useEffect } from 'react';
-import ReactMarkdown from 'react-markdown';
+import React, { useState, useEffect } from "react";
+import ReactMarkdown from "react-markdown";
 
 const EnhancedPlantDetail = ({ plantName }) => {
   const [plantGuide, setPlantGuide] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  
+
   useEffect(() => {
     const fetchPlantGuide = async () => {
       try {
         setIsLoading(true);
-        const response = await fetch(`/api/plant-guide?plant=${encodeURIComponent(plantName)}`);
-        
+        const response = await fetch(
+          `/api/plant-guide?plant=${encodeURIComponent(plantName)}`
+        );
+
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
-        
+
         const data = await response.json();
         setPlantGuide(data);
         setError(null);
       } catch (err) {
-        console.error('Failed to fetch plant guide:', err);
-        setError('Could not load plant guide');
+        console.error("Failed to fetch plant guide:", err);
+        setError("Could not load plant guide");
       } finally {
         setIsLoading(false);
       }
     };
-    
+
     if (plantName) {
       fetchPlantGuide();
     }
   }, [plantName]);
-  
+
   if (isLoading) {
     return (
       <div className="card w-full bg-base-100 shadow-xl">
         <div className="card-body items-center text-center">
           <h2 className="card-title">Generating Plant Guide...</h2>
-          <p className="mb-4">Our AI is creating a detailed guide for {plantName}</p>
+          <p className="mb-4">
+            Our AI is creating a detailed guide for {plantName}
+          </p>
           <span className="loading loading-spinner loading-lg text-primary"></span>
         </div>
       </div>
     );
   }
-  
+
   if (error) {
     return (
       <div className="card w-full bg-base-100 shadow-xl">
@@ -1159,22 +1236,24 @@ const EnhancedPlantDetail = ({ plantName }) => {
       </div>
     );
   }
-  
+
   if (!plantGuide) {
     return null;
   }
-  
+
   return (
     <div className="card w-full bg-base-100 shadow-xl">
       <div className="card-body">
-        <h2 className="card-title text-primary">Complete Growing Guide: {plantName}</h2>
-        
+        <h2 className="card-title text-primary">
+          Complete Growing Guide: {plantName}
+        </h2>
+
         <div className="divider"></div>
-        
+
         <div className="prose max-w-none">
           <ReactMarkdown>{plantGuide.guide}</ReactMarkdown>
         </div>
-        
+
         <div className="mt-6">
           <div className="flex flex-wrap gap-2 mb-2">
             <h3 className="text-sm font-bold">Associated Plants:</h3>
@@ -1189,7 +1268,7 @@ const EnhancedPlantDetail = ({ plantName }) => {
               </div>
             ))}
           </div>
-          
+
           {plantGuide.context.pollinators.length > 0 && (
             <div className="flex flex-wrap gap-2 mb-2">
               <h3 className="text-sm font-bold">Attracts:</h3>
@@ -1200,12 +1279,26 @@ const EnhancedPlantDetail = ({ plantName }) => {
               ))}
             </div>
           )}
-          
+
           <div className="alert alert-info mt-4">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" className="stroke-current shrink-0 w-6 h-6">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              className="stroke-current shrink-0 w-6 h-6"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              ></path>
             </svg>
-            <span className="text-sm">This guide was generated by our AI assistant using knowledge from our Irish gardening database. If you notice any inaccuracies, please provide feedback!</span>
+            <span className="text-sm">
+              This guide was generated by our AI assistant using knowledge from
+              our Irish gardening database. If you notice any inaccuracies,
+              please provide feedback!
+            </span>
           </div>
         </div>
       </div>
@@ -1223,77 +1316,82 @@ Create a gardening assistant component using the RAG system:
 ```jsx
 // src/components/tools/GardeningAssistant.jsx
 
-import React, { useState } from 'react';
-import ReactMarkdown from 'react-markdown';
+import React, { useState } from "react";
+import ReactMarkdown from "react-markdown";
 
-const GardeningAssistant = ({ userCounty = 'Dublin' }) => {
-  const [question, setQuestion] = useState('');
+const GardeningAssistant = ({ userCounty = "Dublin" }) => {
+  const [question, setQuestion] = useState("");
   const [answer, setAnswer] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
-  
+
   const sampleQuestions = [
     "When should I plant potatoes in County Kerry?",
     "Which plants will help attract bees to my garden?",
     "How do I deal with slugs on my cabbage plants naturally?",
     "What are good companion plants for tomatoes?",
-    "How can I improve clay soil in my Dublin garden?"
+    "How can I improve clay soil in my Dublin garden?",
   ];
-  
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!question.trim()) {
       return;
     }
-    
+
     try {
       setIsLoading(true);
       setError(null);
-      
-      const response = await fetch('/api/gardening-question', {
-        method: 'POST',
+
+      const response = await fetch("/api/gardening-question", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           question,
           context: {
-            county: userCounty
-          }
+            county: userCounty,
+          },
         }),
       });
-      
+
       if (!response.ok) {
-        throw new Error('Failed to get answer');
+        throw new Error("Failed to get answer");
       }
-      
+
       const data = await response.json();
       setAnswer(data.answer);
     } catch (err) {
-      console.error('Error getting answer:', err);
-      setError('Failed to answer your question. Please try again.');
+      console.error("Error getting answer:", err);
+      setError("Failed to answer your question. Please try again.");
     } finally {
       setIsLoading(false);
     }
   };
-  
+
   const handleSampleQuestion = (q) => {
     setQuestion(q);
     // Auto-submit the sample question
     setTimeout(() => {
-      document.getElementById('question-form').dispatchEvent(
-        new Event('submit', { cancelable: true, bubbles: true })
-      );
+      document
+        .getElementById("question-form")
+        .dispatchEvent(
+          new Event("submit", { cancelable: true, bubbles: true })
+        );
     }, 100);
   };
-  
+
   return (
     <div className="card w-full bg-base-100 shadow-xl">
       <div className="card-body">
-        <h2 className="card-title text-primary mb-2">Irish Gardening Assistant</h2>
-        <p className="text-sm mb-4">Ask any gardening question specific to Irish conditions, and our AI assistant will provide personalized advice.</p>
-        
+        <h2 className="card-title text-primary mb-2">Bloom</h2>
+        <p className="text-sm mb-4">
+          Ask any gardening question specific to Irish conditions, and our AI
+          assistant will provide personalized advice.
+        </p>
+
         <form id="question-form" onSubmit={handleSubmit} className="mb-6">
           <div className="form-control">
             <div className="input-group">
@@ -1304,7 +1402,7 @@ const GardeningAssistant = ({ userCounty = 'Dublin' }) => {
                 value={question}
                 onChange={(e) => setQuestion(e.target.value)}
               />
-              <button 
+              <button
                 className="btn btn-primary"
                 type="submit"
                 disabled={isLoading || !question.trim()}
@@ -1314,21 +1412,33 @@ const GardeningAssistant = ({ userCounty = 'Dublin' }) => {
                     <span className="loading loading-spinner loading-xs"></span>
                     Thinking...
                   </>
-                ) : 'Ask'}
+                ) : (
+                  "Ask"
+                )}
               </button>
             </div>
           </div>
         </form>
-        
+
         {error && (
           <div className="alert alert-error mb-4">
-            <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="stroke-current shrink-0 h-6 w-6"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
             </svg>
             <span>{error}</span>
           </div>
         )}
-        
+
         {answer && (
           <div className="bg-base-200 rounded-box p-4 mt-2 mb-4">
             <h3 className="font-medium mb-2">Answer:</h3>
@@ -1337,9 +1447,9 @@ const GardeningAssistant = ({ userCounty = 'Dublin' }) => {
             </div>
           </div>
         )}
-        
+
         <div className="divider">Try These Questions</div>
-        
+
         <div className="flex flex-wrap gap-2">
           {sampleQuestions.map((q, index) => (
             <button
@@ -1351,12 +1461,25 @@ const GardeningAssistant = ({ userCounty = 'Dublin' }) => {
             </button>
           ))}
         </div>
-        
+
         <div className="alert alert-info mt-6">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" className="stroke-current shrink-0 w-6 h-6">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            className="stroke-current shrink-0 w-6 h-6"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+            ></path>
           </svg>
-          <span>Answers are generated using our Irish gardening knowledge graph and open-source AI. They're tailored to your location in {userCounty}.</span>
+          <span>
+            Answers are generated using our Irish gardening knowledge graph and
+            open-source AI. They're tailored to your location in {userCounty}.
+          </span>
         </div>
       </div>
     </div>
@@ -1373,25 +1496,25 @@ Create a component for generating AI planting plans:
 ```jsx
 // src/components/tools/AIPlantingPlan.jsx
 
-import React, { useState } from 'react';
-import ReactMarkdown from 'react-markdown';
+import React, { useState } from "react";
+import ReactMarkdown from "react-markdown";
 
-const AIPlantingPlan = ({ userCounty = 'Dublin' }) => {
+const AIPlantingPlan = ({ userCounty = "Dublin" }) => {
   const [formData, setFormData] = useState({
     county: userCounty,
-    sunExposure: 'Full Sun',
-    spaceAvailable: 'Medium (3-5 square meters)',
-    goals: []
+    sunExposure: "Full Sun",
+    spaceAvailable: "Medium (3-5 square meters)",
+    goals: [],
   });
-  
+
   const [plan, setPlan] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
-  
+
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
-    
-    if (type === 'checkbox') {
+
+    if (type === "checkbox") {
       const goalsCopy = [...formData.goals];
       if (checked) {
         goalsCopy.push(value);
@@ -1403,51 +1526,54 @@ const AIPlantingPlan = ({ userCounty = 'Dublin' }) => {
       }
       setFormData({
         ...formData,
-        goals: goalsCopy
+        goals: goalsCopy,
       });
     } else {
       setFormData({
         ...formData,
-        [name]: value
+        [name]: value,
       });
     }
   };
-  
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     try {
       setIsLoading(true);
       setError(null);
-      
-      const response = await fetch('/api/planting-plan', {
-        method: 'POST',
+
+      const response = await fetch("/api/planting-plan", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify(formData),
       });
-      
+
       if (!response.ok) {
-        throw new Error('Failed to generate planting plan');
+        throw new Error("Failed to generate planting plan");
       }
-      
+
       const data = await response.json();
       setPlan(data.plan);
     } catch (err) {
-      console.error('Error generating plan:', err);
-      setError('Failed to generate planting plan. Please try again.');
+      console.error("Error generating plan:", err);
+      setError("Failed to generate planting plan. Please try again.");
     } finally {
       setIsLoading(false);
     }
   };
-  
+
   return (
     <div className="card w-full bg-base-100 shadow-xl">
       <div className="card-body">
         <h2 className="card-title text-primary">AI Planting Plan Generator</h2>
-        <p className="text-sm mb-4">Create a custom planting plan for your Irish garden using our AI assistant.</p>
-        
+        <p className="text-sm mb-4">
+          Create a custom planting plan for your Irish garden using our AI
+          assistant.
+        </p>
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div>
             <form onSubmit={handleSubmit}>
@@ -1461,18 +1587,47 @@ const AIPlantingPlan = ({ userCounty = 'Dublin' }) => {
                   onChange={handleInputChange}
                   className="select select-bordered w-full"
                 >
-                  {['Antrim', 'Armagh', 'Carlow', 'Cavan', 'Clare', 'Cork', 'Derry', 'Donegal', 
-                    'Down', 'Dublin', 'Fermanagh', 'Galway', 'Kerry', 'Kildare', 'Kilkenny', 
-                    'Laois', 'Leitrim', 'Limerick', 'Longford', 'Louth', 'Mayo', 'Meath', 
-                    'Monaghan', 'Offaly', 'Roscommon', 'Sligo', 'Tipperary', 'Tyrone', 
-                    'Waterford', 'Westmeath', 'Wexford', 'Wicklow'].map((county) => (
+                  {[
+                    "Antrim",
+                    "Armagh",
+                    "Carlow",
+                    "Cavan",
+                    "Clare",
+                    "Cork",
+                    "Derry",
+                    "Donegal",
+                    "Down",
+                    "Dublin",
+                    "Fermanagh",
+                    "Galway",
+                    "Kerry",
+                    "Kildare",
+                    "Kilkenny",
+                    "Laois",
+                    "Leitrim",
+                    "Limerick",
+                    "Longford",
+                    "Louth",
+                    "Mayo",
+                    "Meath",
+                    "Monaghan",
+                    "Offaly",
+                    "Roscommon",
+                    "Sligo",
+                    "Tipperary",
+                    "Tyrone",
+                    "Waterford",
+                    "Westmeath",
+                    "Wexford",
+                    "Wicklow",
+                  ].map((county) => (
                     <option key={county} value={county}>
                       {county}
                     </option>
                   ))}
                 </select>
               </div>
-              
+
               <div className="form-control mb-4">
                 <label className="label">
                   <span className="label-text">Sunlight Exposure</span>
@@ -1484,11 +1639,15 @@ const AIPlantingPlan = ({ userCounty = 'Dublin' }) => {
                   className="select select-bordered w-full"
                 >
                   <option value="Full Sun">Full Sun (6+ hours)</option>
-                  <option value="Partial Shade">Partial Shade (3-6 hours)</option>
-                  <option value="Full Shade">Full Shade (less than 3 hours)</option>
+                  <option value="Partial Shade">
+                    Partial Shade (3-6 hours)
+                  </option>
+                  <option value="Full Shade">
+                    Full Shade (less than 3 hours)
+                  </option>
                 </select>
               </div>
-              
+
               <div className="form-control mb-4">
                 <label className="label">
                   <span className="label-text">Available Space</span>
@@ -1499,30 +1658,52 @@ const AIPlantingPlan = ({ userCounty = 'Dublin' }) => {
                   onChange={handleInputChange}
                   className="select select-bordered w-full"
                 >
-                  <option value="Small (1-2 square meters)">Small (1-2 square meters)</option>
-                  <option value="Medium (3-5 square meters)">Medium (3-5 square meters)</option>
-                  <option value="Large (6-10 square meters)">Large (6-10 square meters)</option>
-                  <option value="Very Large (10+ square meters)">Very Large (10+ square meters)</option>
+                  <option value="Small (1-2 square meters)">
+                    Small (1-2 square meters)
+                  </option>
+                  <option value="Medium (3-5 square meters)">
+                    Medium (3-5 square meters)
+                  </option>
+                  <option value="Large (6-10 square meters)">
+                    Large (6-10 square meters)
+                  </option>
+                  <option value="Very Large (10+ square meters)">
+                    Very Large (10+ square meters)
+                  </option>
                 </select>
               </div>
-              
+
               <div className="form-control mb-4">
                 <label className="label">
-                  <span className="label-text">Garden Goals (select all that apply)</span>
+                  <span className="label-text">
+                    Garden Goals (select all that apply)
+                  </span>
                 </label>
-                
+
                 <div className="grid grid-cols-2 gap-2">
                   {[
-                    { value: 'Growing Food', label: 'Growing Food' },
-                    { value: 'Attracting Wildlife', label: 'Attracting Wildlife' },
-                    { value: 'Low Maintenance', label: 'Low Maintenance' },
-                    { value: 'Colorful Display', label: 'Colorful Display' },
-                    { value: 'Child Friendly', label: 'Child Friendly' },
-                    { value: 'Sustainability', label: 'Sustainability' },
-                    { value: 'Year-round Interest', label: 'Year-round Interest' },
-                    { value: 'Irish Native Plants', label: 'Irish Native Plants' }
+                    { value: "Growing Food", label: "Growing Food" },
+                    {
+                      value: "Attracting Wildlife",
+                      label: "Attracting Wildlife",
+                    },
+                    { value: "Low Maintenance", label: "Low Maintenance" },
+                    { value: "Colorful Display", label: "Colorful Display" },
+                    { value: "Child Friendly", label: "Child Friendly" },
+                    { value: "Sustainability", label: "Sustainability" },
+                    {
+                      value: "Year-round Interest",
+                      label: "Year-round Interest",
+                    },
+                    {
+                      value: "Irish Native Plants",
+                      label: "Irish Native Plants",
+                    },
                   ].map((goal) => (
-                    <label key={goal.value} className="label cursor-pointer justify-start gap-2">
+                    <label
+                      key={goal.value}
+                      className="label cursor-pointer justify-start gap-2"
+                    >
                       <input
                         type="checkbox"
                         name="goals"
@@ -1536,7 +1717,7 @@ const AIPlantingPlan = ({ userCounty = 'Dublin' }) => {
                   ))}
                 </div>
               </div>
-              
+
               <div className="form-control mt-6">
                 <button
                   type="submit"
@@ -1549,23 +1730,34 @@ const AIPlantingPlan = ({ userCounty = 'Dublin' }) => {
                       Generating Plan...
                     </>
                   ) : (
-                    'Generate Planting Plan'
+                    "Generate Planting Plan"
                   )}
                 </button>
               </div>
             </form>
           </div>
-          
+
           <div>
             {error && (
               <div className="alert alert-error mb-4">
-                <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="stroke-current shrink-0 h-6 w-6"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
                 </svg>
                 <span>{error}</span>
               </div>
             )}
-            
+
             {plan ? (
               <div className="bg-base-200 rounded-box p-4 h-full overflow-auto">
                 <h3 className="font-medium mb-2">Your Custom Planting Plan:</h3>
@@ -1576,13 +1768,27 @@ const AIPlantingPlan = ({ userCounty = 'Dublin' }) => {
             ) : (
               <div className="card bg-base-100 shadow-sm h-full flex items-center justify-center text-center p-6">
                 <div className="mb-4">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 opacity-20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-16 w-16 opacity-20"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
+                    />
                   </svg>
                 </div>
-                <h3 className="font-medium text-lg mb-2">Your Planting Plan Will Appear Here</h3>
+                <h3 className="font-medium text-lg mb-2">
+                  Your Planting Plan Will Appear Here
+                </h3>
                 <p className="text-sm opacity-70">
-                  Fill out the form and submit to generate a custom planting plan tailored to your garden's conditions and your goals.
+                  Fill out the form and submit to generate a custom planting
+                  plan tailored to your garden's conditions and your goals.
                 </p>
               </div>
             )}
@@ -1616,7 +1822,7 @@ import CountySelector from '../components/common/CountySelector';
     <p class="text-center text-base-content/70 mb-8 max-w-2xl mx-auto">
       Experience our advanced gardening assistant powered by knowledge graphs and AI to provide personalized, intelligent gardening advice for Irish conditions.
     </p>
-    
+
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
       <div class="card bg-primary text-primary-content p-6">
         <h2 class="text-xl font-bold mb-2">What is GraphRAG?</h2>
@@ -1628,7 +1834,7 @@ import CountySelector from '../components/common/CountySelector';
           <li>Generates detailed growing guides using structured knowledge</li>
         </ul>
       </div>
-      
+
       <div class="card bg-base-200 p-6">
         <h2 class="text-xl font-bold mb-2">How It Works</h2>
         <div class="overflow-x-auto">
@@ -1642,33 +1848,33 @@ import CountySelector from '../components/common/CountySelector';
         </div>
       </div>
     </div>
-    
+
     <div class="card bg-base-100 shadow-xl mb-8">
       <div class="card-body">
         <h2 class="card-title">Select Your County</h2>
         <p class="text-sm mb-4">Choose your county to get personalized gardening advice and recommendations.</p>
-        
+
         <div id="county-selector-container"></div>
       </div>
     </div>
-    
+
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
       <GardeningAssistant client:load county="Dublin" />
       <AIPlantingPlan client:load county="Dublin" />
     </div>
-    
+
     <div class="mb-8">
       <EnhancedPlantDetail client:load plantName="Potato" />
     </div>
-    
+
     <div class="card bg-base-100 shadow-xl mb-8">
       <div class="card-body">
         <h2 class="card-title text-primary">Explore More Plants with Enhanced Guides</h2>
         <p class="text-sm mb-4">Select a plant to see its AI-generated growing guide based on our knowledge graph.</p>
-        
+
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
           {['Cabbage', 'Irish Wildflower Mix', 'Kale', 'Blackberry', 'Hawthorn', 'Irish Primrose', 'Rhubarb', 'Apple Tree (Irish Varieties)'].map((plantName) => (
-            <button 
+            <button
               class="btn btn-outline"
               onclick={`window.location.href = '/plant-guide?plant=${encodeURIComponent(plantName)}'`}
             >
@@ -1695,18 +1901,18 @@ import CountySelector from '../components/common/CountySelector';
 
     function handleCountyChange(county) {
       selectedCounty = county;
-      
+
       // Update components that depend on county
       const gardeningAssistantContainer = document.querySelector('gardening-assistant');
       const planningToolContainer = document.querySelector('ai-planting-plan');
-      
+
       if (gardeningAssistantContainer) {
         ReactDOM.render(
           React.createElement(GardeningAssistant, { county: selectedCounty }),
           gardeningAssistantContainer
         );
       }
-      
+
       if (planningToolContainer) {
         ReactDOM.render(
           React.createElement(AIPlantingPlan, { county: selectedCounty }),
@@ -1747,12 +1953,12 @@ import EnhancedPlantDetail from '../components/plants/EnhancedPlantDetail';
         <li>Growing Guide</li>
       </ul>
     </div>
-    
+
     <div id="plant-guide-container">
       <div class="card w-full bg-base-100 shadow-xl">
-        <div class="card-body items-center text-center">
-          <h2 class="card-title">Loading Plant Guide...</h2>
-          <span class="loading loading-spinner loading-lg text-primary"></span>
+        <div className="card-body items-center text-center">
+          <h2 className="card-title">Loading Plant Guide...</h2>
+          <span className="loading loading-spinner loading-lg text-primary"></span>
         </div>
       </div>
     </div>
@@ -1767,14 +1973,14 @@ import EnhancedPlantDetail from '../components/plants/EnhancedPlantDetail';
 
   document.addEventListener('DOMContentLoaded', () => {
     const plantGuideContainer = document.getElementById('plant-guide-container');
-    
+
     // Get plant name from URL parameter
     const urlParams = new URLSearchParams(window.location.search);
     const plantName = urlParams.get('plant') || 'Potato';
-    
+
     // Update page title
     document.title = `${plantName} Growing Guide | Irish Garden Assistant`;
-    
+
     // Render the plant guide component
     ReactDOM.render(
       React.createElement(EnhancedPlantDetail, { plantName }),
@@ -1838,60 +2044,65 @@ Create tests to verify the GraphRAG functionality:
 ```javascript
 // tests/graph-rag.test.js
 
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { verifyConnectivity, closeDriver } from '../src/database/neo4j-client';
-import { getGraphPlantRecommendations } from '../src/utils/graph-recommender';
-import { generatePlantGuide, answerGardeningQuestion } from '../src/utils/rag-system';
-import { checkLLMHealth } from '../src/utils/llm-client';
+import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { verifyConnectivity, closeDriver } from "../src/database/neo4j-client";
+import { getGraphPlantRecommendations } from "../src/utils/graph-recommender";
+import {
+  generatePlantGuide,
+  answerGardeningQuestion,
+} from "../src/utils/rag-system";
+import { checkLLMHealth } from "../src/utils/llm-client";
 
-describe('GraphRAG System Tests', () => {
+describe("GraphRAG System Tests", () => {
   // Set timeout for long-running tests
   beforeAll(async () => {
     // Verify Neo4j connection
     const neo4jConnection = await verifyConnectivity();
     expect(neo4jConnection.connected).toBe(true);
-    
+
     // Verify LLM service
     const llmHealth = await checkLLMHealth();
     expect(llmHealth.healthy).toBe(true);
   }, 10000);
-  
+
   afterAll(async () => {
     await closeDriver();
   });
-  
-  it('should get graph-based plant recommendations', async () => {
+
+  it("should get graph-based plant recommendations", async () => {
     const conditions = {
-      county: 'Dublin',
-      sunExposure: 'Full Sun',
-      plantType: ['vegetable'],
-      nativeOnly: false
+      county: "Dublin",
+      sunExposure: "Full Sun",
+      plantType: ["vegetable"],
+      nativeOnly: false,
     };
-    
+
     const recommendations = await getGraphPlantRecommendations(conditions);
-    
+
     expect(recommendations).toBeInstanceOf(Array);
     expect(recommendations.length).toBeGreaterThan(0);
-    expect(recommendations[0]).toHaveProperty('matchPercentage');
-    expect(recommendations[0]).toHaveProperty('pollinators');
+    expect(recommendations[0]).toHaveProperty("matchPercentage");
+    expect(recommendations[0]).toHaveProperty("pollinators");
   }, 15000);
-  
-  it('should generate a plant guide using RAG', async () => {
-    const plantName = 'Potato';
-    
+
+  it("should generate a plant guide using RAG", async () => {
+    const plantName = "Potato";
+
     const guideData = await generatePlantGuide(plantName);
-    
-    expect(guideData).toHaveProperty('plantName', plantName);
-    expect(guideData).toHaveProperty('guide');
-    expect(guideData).toHaveProperty('context');
+
+    expect(guideData).toHaveProperty("plantName", plantName);
+    expect(guideData).toHaveProperty("guide");
+    expect(guideData).toHaveProperty("context");
     expect(guideData.guide.length).toBeGreaterThan(100);
   }, 20000);
-  
-  it('should answer a gardening question using RAG', async () => {
-    const question = 'When should I plant potatoes in Ireland?';
-    
-    const answer = await answerGardeningQuestion(question, { county: 'Dublin' });
-    
+
+  it("should answer a gardening question using RAG", async () => {
+    const question = "When should I plant potatoes in Ireland?";
+
+    const answer = await answerGardeningQuestion(question, {
+      county: "Dublin",
+    });
+
     expect(answer).toBeTruthy();
     expect(answer.length).toBeGreaterThan(50);
   }, 20000);
@@ -1905,6 +2116,7 @@ describe('GraphRAG System Tests', () => {
 When deploying to Netlify, you have several database options for implementing graph-based functionality:
 
 1. **SQLite (Recommended for Netlify)**:
+
    - File-based database that works well with Netlify's deployment model
    - Store in your repository for read-only data
    - For write operations, use Netlify Functions with temporary storage
@@ -1913,6 +2125,7 @@ When deploying to Netlify, you have several database options for implementing gr
    - Limited concurrent write capabilities
 
 2. **Neo4j AuraDB Cloud Service**:
+
    - Neo4j's fully managed cloud database service
    - Connect from Netlify via environment variables
    - Offloads database management complexity
@@ -1920,16 +2133,19 @@ When deploying to Netlify, you have several database options for implementing gr
    - Full graph capabilities but requires external service
 
 3. **Alternative Graph Solutions**:
+
    - Use MongoDB Atlas with graph-like querying
    - Firebase with carefully structured collections
    - Other graph-as-a-service providers
 
 4. **Implementation Architecture**:
+
    - Frontend: Deployed on Netlify
    - API Layer: Netlify Functions (serverless)
    - Database: External service or SQLite
 
 5. **Environment Variables**:
+
    - For Neo4j: `NEO4J_URI`, `NEO4J_USER`, `NEO4J_PASSWORD`
    - For SQLite: Typically packaged with application
    - For Ollama or other LLMs: `OLLAMA_ENDPOINT`, `DEFAULT_LLM`
@@ -1942,18 +2158,22 @@ When deploying to Netlify, you have several database options for implementing gr
 ## Future Enhancements
 
 1. **User Feedback Loop**:
+
    - Implement a feedback system for plant guides and answers
    - Use feedback to improve recommendations
 
 2. **Additional LLM Models**:
+
    - Add support for more LLM models like Llama 3, Phi-3
    - Allow users to choose their preferred model
 
 3. **Visual Graph Explorer**:
+
    - Add a visual interface to explore the garden knowledge graph
    - Allow users to see relationships between plants, soils, and other entities
 
 4. **Seasonal Data Integration**:
+
    - Enhance the knowledge graph with more detailed seasonal information
    - Generate month-specific gardening plans
 
@@ -1963,7 +2183,7 @@ When deploying to Netlify, you have several database options for implementing gr
 
 ## Conclusion
 
-The GraphRAG integration adds powerful new capabilities to the Irish gardening assistant:
+The GraphRAG integration adds powerful new capabilities to Bloom:
 
 1. **Deeper Insights**: By modeling the complex relationships between plants, soils, counties, and gardening practices in a knowledge graph, we can provide more nuanced recommendations and advice.
 
