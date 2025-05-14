@@ -124,15 +124,99 @@ const GardenAgent = () => {
       const data = await response.json();
       console.log("GraphRAG API response:", data);
 
+      // Determine if we need to create cards based on the query and response
+      const cardType = determineCardTypeFromQuery(userInput, data.answer);
+      let cards = [];
+
+      if (cardType) {
+        // Generate appropriate cards based on the identified type
+        cards = generateCardsForGraphRAG(userInput, data, cardType);
+        console.log(
+          `Generated ${cards.length} ${cardType} cards for GraphRAG mode`
+        );
+      }
+
       return {
         content: data.answer,
         sourceFacts: data.sourceFacts || [],
         generatedQuery: data.generatedQuery || "",
+        cardType: cardType,
+        cards: cards,
       };
     } catch (error) {
       console.error("Error processing GraphRAG query:", error);
       throw error;
     }
+  };
+
+  // Helper function to determine card type from query and response
+  const determineCardTypeFromQuery = (query, response) => {
+    const combinedText = (query + " " + response).toLowerCase();
+
+    // Check for plant-related content
+    if (
+      (combinedText.includes("plant") &&
+        (combinedText.includes("recommend") ||
+          combinedText.includes("grow"))) ||
+      combinedText.includes("what vegetable") ||
+      combinedText.includes("what flowers") ||
+      combinedText.includes("what plants") ||
+      combinedText.includes("companion plant")
+    ) {
+      return CARD_TYPES.PLANT;
+    }
+
+    // Check for task-related content
+    if (
+      (combinedText.includes("task") ||
+        combinedText.includes("job") ||
+        combinedText.includes("what to do") ||
+        combinedText.includes("garden chore")) &&
+      (combinedText.includes("month") ||
+        combinedText.includes("season") ||
+        combinedText.includes("spring") ||
+        combinedText.includes("summer") ||
+        combinedText.includes("autumn") ||
+        combinedText.includes("winter"))
+    ) {
+      return CARD_TYPES.TASK;
+    }
+
+    // Check for soil-related content
+    if (
+      combinedText.includes("soil") &&
+      (combinedText.includes("county") || combinedText.includes("type"))
+    ) {
+      return CARD_TYPES.SOIL;
+    }
+
+    // Check for sustainability-related content
+    if (
+      combinedText.includes("sustain") ||
+      combinedText.includes("environment") ||
+      combinedText.includes("carbon") ||
+      combinedText.includes("footprint") ||
+      combinedText.includes("eco")
+    ) {
+      return CARD_TYPES.SUSTAINABILITY;
+    }
+
+    return null;
+  };
+
+  // Generate appropriate cards for GraphRAG mode
+  const generateCardsForGraphRAG = (query, data, cardType) => {
+    // Use the existing selectCardsForResponse function with our data
+    const { answer, sourceFacts, entities } = data;
+
+    // Create a compatible response object for the card selection function
+    const compatibleResponse = {
+      content: answer,
+      cardType: cardType,
+    };
+
+    // Use the existing card selection logic
+    return selectCardsForResponse(query, compatibleResponse);
   };
 
   const handleSubmit = async (e) => {
@@ -183,6 +267,7 @@ const GardenAgent = () => {
           content: graphRAGResponse.content,
           sourceFacts: graphRAGResponse.sourceFacts,
           generatedQuery: graphRAGResponse.generatedQuery,
+          cards: graphRAGResponse.cards || [],
         };
 
         // Store GraphRAG-specific data
@@ -237,7 +322,7 @@ const GardenAgent = () => {
       // Select appropriate cards to display based on the response (for regular mode only)
       const cards = !isGraphRAGMode
         ? selectCardsForResponse(input, aiResponse)
-        : [];
+        : aiResponse.cards || [];
       console.log("Selected cards:", cards);
       console.log("Card count:", cards.length);
 
@@ -253,6 +338,11 @@ const GardenAgent = () => {
         responseObj.isGraphRAG = true;
         responseObj.sourceFacts = aiResponse.sourceFacts || [];
         responseObj.generatedQuery = aiResponse.generatedQuery || "";
+
+        // Add cards to GraphRAG responses if available
+        if (aiResponse.cards && aiResponse.cards.length > 0) {
+          responseObj.cards = aiResponse.cards;
+        }
       } else {
         // Add cards if they were selected (regular mode only)
         if (cards && cards.length > 0) {
@@ -660,6 +750,38 @@ const GardenAgent = () => {
                                     </pre>
                                   </div>
                                 )}
+                              </div>
+                            )}
+
+                            {/* Card container for GraphRAG mode */}
+                            {message.cards && message.cards.length > 0 && (
+                              <div className="graph-rag-cards mt-4">
+                                <CardContainer
+                                  message={message}
+                                  index={index}
+                                  messagesLength={messages.length}
+                                  type={getCardType(message)}
+                                  isExpanded={
+                                    getCardType(message) === "soil"
+                                      ? soilInfoExpanded
+                                      : getCardType(message) === "task"
+                                      ? taskInfoExpanded
+                                      : getCardType(message) ===
+                                        "sustainability"
+                                      ? sustainabilityExpanded
+                                      : plantsExpanded
+                                  }
+                                  setExpanded={
+                                    getCardType(message) === "soil"
+                                      ? setSoilInfoExpanded
+                                      : getCardType(message) === "task"
+                                      ? setTaskInfoExpanded
+                                      : getCardType(message) ===
+                                        "sustainability"
+                                      ? setSustainabilityExpanded
+                                      : setPlantsExpanded
+                                  }
+                                />
                               </div>
                             )}
                           </div>

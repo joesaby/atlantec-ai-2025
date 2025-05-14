@@ -1,6 +1,7 @@
 // Import directly from the src directory using Node.js-style paths
 import { neo4jDriver } from "../../../database/neo4j-client.js";
 import { generateText } from "../../../utils/vertex-client.js";
+import { determineCardTypeFromQuery } from "../../../utils/rag-system.js";
 
 // Mark this endpoint as server-rendered
 export const prerender = false;
@@ -35,7 +36,7 @@ function cleanCypherQuery(query) {
 export async function POST({ request }) {
   console.log("Starting stochastic endpoint processing...");
   try {
-    const { question } = await request.json();
+    const { question, conversationHistory } = await request.json();
     console.log(`Received question: "${question}"`);
 
     // Step 1: Check if the query is gardening-related with a mini-prompt
@@ -260,6 +261,8 @@ Format as a helpful guide using Markdown with appropriate headings and structure
         generatedQuery: rawGeneratedQuery, // Return the original query for debugging
         cleanedQuery: generatedQuery, // Also return the cleaned query
         hasKnowledgeGraphData: hasSufficientData, // Flag indicating if answer came from knowledge graph
+        cardType, // Include detected card type for card generation
+        contextData: contextData, // Include raw Neo4j results for richer card data
       }),
       {
         status: 200,

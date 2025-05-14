@@ -162,6 +162,56 @@ Answer with ONLY "GARDENING: YES" or "GARDENING: NO" and nothing else.`;
     // Generate natural language response using the structured data
     let answer;
 
+    const GARDENING_STRICT_GUIDELINES = `You are an expert Irish gardening assistant focused EXCLUSIVELY on gardening topics.
+
+STRICT RESPONSE POLICY:
+- You MUST ONLY respond to gardening-related queries. For ANY non-gardening topic, respond ONLY with: "I'm Bloom, your gardening assistant. I can only help with gardening-related questions. Please ask me something about plants, gardening, or sustainable garden practices."
+- You must NEVER provide information on illegal plants, controlled substances, or any topic outside of legitimate garden plants and practices.
+- You must NEVER engage in discussions about politics, news, technology, personal advice, or any non-gardening topics.
+- If you're unsure whether a query is gardening-related, treat it as non-gardening and provide the standard response above.
+
+Your gardening responses MUST be:
+- Friendly, warm and personal - use conversational language and connect with the user
+- Use "you" and "your garden" to make advice feel tailored to the specific user
+- Brief and to the point (especially for task-related queries)
+- Helpful and specific to Irish growing conditions
+- Tailored to Irish climate zones, weather patterns, and native plants
+- Informed by Irish soil types and local pest management strategies
+
+Focus on delivering practical gardening advice:
+- Use bullet points for lists instead of paragraphs
+- Provide specific gardening actions rather than general information
+- Skip introductory phrases like "As an Irish gardening assistant..."
+- Avoid repetition of the user's question
+- Address the user directly and conversationally
+- Add occasional Irish expressions or terminology when appropriate
+
+SUSTAINABILITY GUIDANCE:
+When users ask about sustainability in gardening contexts:
+- Provide specific information on carbon footprint savings from growing plants
+- Mention water conservation benefits for Irish gardens
+- Highlight biodiversity benefits of certain garden plants
+- Explain gardening practices that align with UN Sustainable Development Goals
+- Offer practical sustainable gardening tips specific to Irish conditions
+- Be encouraging and positive about the environmental benefits of home gardening
+- Indicate SHOWING_SUSTAINABILITY_CARDS in your response for sustainability queries
+
+For plant recommendations:
+- Provide a very brief introduction (1 sentence)
+- Mention that you're showing plant cards
+- Indicate SHOWING_PLANT_CARDS in your response
+
+For gardening tasks:
+- Keep responses to 1-2 short sentences
+- Direct users to the calendar view: "Check the calendar view to see your monthly tasks."
+- Indicate SHOWING_TASK_CARDS in your response
+
+For soil information:
+- Provide 1-2 sentences about the soil type
+- Direct users to view detailed information: "View soil details for more information."
+
+Format your response as plain text with one of these indicators at the very end if appropriate: SHOWING_PLANT_CARDS, SHOWING_TASK_CARDS, or SHOWING_SUSTAINABILITY_CARDS.`;
+
     if (formattedResults.length > 0) {
       // Limit to a reasonable number of results
       const limitedResults = formattedResults.slice(0, 5);
@@ -172,31 +222,30 @@ Answer with ONLY "GARDENING: YES" or "GARDENING: NO" and nothing else.`;
 
       // Improved prompt with system instruction - more detailed but still efficient
       const promptTemplate = userQuestion
-        ? `${GRAPHRAG_SYSTEM_INSTRUCTION}
+        ? `${GARDENING_STRICT_GUIDELINES}
 
-Question: "${userQuestion}"
-About: ${plantType} plants in ${countyName} with ${soilType} soil during ${season} season
-Focus: ${growingProperty.replace(/([A-Z])/g, " $1").toLowerCase()}
+User question: "${userQuestion}"
 
-Data:
+Context information from Irish gardening knowledge graph about ${plantType.toLowerCase()} plants in ${countyName} 
+county with ${soilType} soil during the ${season} season:
 ${context}
 
-Provide a comprehensive answer with specific advice for Irish gardening conditions.
-Include plant names in italic and use descriptive examples that reference the data.
-Format with Markdown using appropriate headings, lists, and structured sections.`
-        : `${GRAPHRAG_SYSTEM_INSTRUCTION}
+Answer the user's question using ONLY the information in the context above.
+Remember to follow all the guidelines above for formatting and tone.
+Include SHOWING_PLANT_CARDS at the end of your response.`
+        : `${GARDENING_STRICT_GUIDELINES}
 
-Create a guide about ${plantType} plants in ${countyName} with ${soilType} soil during ${season} season
-Focus on ${growingProperty
+Please provide information about ${plantType.toLowerCase()} plants that grow well in ${countyName} 
+county with ${soilType} soil during the ${season} season, focusing on their ${growingProperty
             .replace(/([A-Z])/g, " $1")
-            .toLowerCase()} requirements
+            .toLowerCase()} requirements.
 
-Data:
+Context information from Irish gardening knowledge graph:
 ${context}
 
-Provide comprehensive information with specific examples from the data.
-Include growing techniques, seasonal considerations, and care instructions.
-Format using Markdown with clear headings, lists, and organized sections.`;
+Provide information using ONLY the data in the context above.
+Remember to follow all the guidelines above for formatting and tone.
+Include SHOWING_PLANT_CARDS at the end of your response.`;
 
       answer = await generateText(promptTemplate, {
         maxTokens: 768, // Increased from 512 to allow more detailed responses
@@ -213,31 +262,37 @@ Format using Markdown with clear headings, lists, and organized sections.`;
 
       // Improved fallback prompt - more balanced
       const promptTemplate = userQuestion
-        ? `${GRAPHRAG_SYSTEM_INSTRUCTION}
+        ? `${GARDENING_STRICT_GUIDELINES}
 
-Question: "${userQuestion}"
-No specific data found for ${plantType} plants in ${countyName} with ${soilType} soil during ${season} season
-Focus area: ${growingProperty.replace(/([A-Z])/g, " $1").toLowerCase()}
+User question: "${userQuestion}"
 
-Provide informative general gardening advice for Irish conditions.
-Include practical tips on soil preparation, planting techniques, and seasonal considerations.
-Suggest similar plants that might work well in these conditions.
-Format with Markdown using appropriate structure and organization.`
-        : `${GRAPHRAG_SYSTEM_INSTRUCTION}
-
-No specific data found for ${plantType} plants in ${countyName} with ${soilType} soil during ${season} season
-
-Provide general guidance on:
-- Growing similar plants in Irish conditions
-- Working with ${soilType} soil in ${countyName}
-- ${growingProperty
+The user was specifically interested in ${plantType.toLowerCase()} plants in ${countyName} county 
+with ${soilType} soil during the ${season} season, focusing on ${growingProperty
             .replace(/([A-Z])/g, " $1")
             .toLowerCase()} considerations during ${season}
 - Alternative plants that might thrive in these conditions
 
-Include practical advice and format using Markdown with clear sections.`;
+We don't have specific data matching these exact criteria in our knowledge graph.
+Please provide general gardening advice about growing ${plantType.toLowerCase()} plants in Irish conditions similar to ${countyName}.
+Focus on ${soilType} soil information and ${season} season gardening tips for Ireland.
 
-      // Send to LLM despite not having specific matches with adjusted token count
+Remember to follow all the guidelines above for formatting and tone.
+Include SHOWING_PLANT_CARDS at the end of your response if appropriate.`
+        : `${GARDENING_STRICT_GUIDELINES}
+
+Request for information about ${plantType.toLowerCase()} plants that grow well in ${countyName} 
+county with ${soilType} soil during the ${season} season, focusing on their ${growingProperty
+            .replace(/([A-Z])/g, " $1")
+            .toLowerCase()} requirements.
+
+We don't have specific data matching these exact criteria in our knowledge graph.
+Please provide general gardening advice about growing ${plantType.toLowerCase()} plants in Irish conditions similar to ${countyName}.
+Focus on ${soilType} soil information and ${season} season gardening tips for Ireland.
+
+Remember to follow all the guidelines above for formatting and tone.
+Include SHOWING_PLANT_CARDS at the end of your response if appropriate.`;
+
+      // Send to LLM despite not having specific matches
       answer = await generateText(promptTemplate, {
         maxTokens: 640, // Increased from 1024 to allow more complete responses
         temperature: 0.7,
