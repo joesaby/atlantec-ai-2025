@@ -75,12 +75,25 @@ export async function getCurrentWeather(county) {
       coordinates: coordinates,
     });
 
-    // Use the new API proxy route
-    const proxyUrl = `/api/weather-proxy?lat=${coordinates.lat}&lon=${
-      coordinates.lon
-    }&county=${encodeURIComponent(county)}`;
-
-    const response = await fetch(proxyUrl); // NEW PROXY FETCH
+    // Determine whether we're running in browser or server-side
+    const isServer = typeof window === 'undefined';
+    
+    let response;
+    if (isServer) {
+      // When running on the server, directly access Met.ie API
+      logger.info(`Server-side context detected, directly accessing Met.ie API for ${county}`, {
+        component: "WeatherClient",
+        isServer
+      });
+      const metApiUrl = `http://openaccess.pf.api.met.ie/metno-wdb2ts/locationforecast?lat=${coordinates.lat}&long=${coordinates.lon}`;
+      response = await fetch(metApiUrl);
+    } else {
+      // When running in the browser, use the proxy API route
+      const proxyUrl = `/api/weather-proxy?lat=${coordinates.lat}&lon=${
+        coordinates.lon
+      }&county=${encodeURIComponent(county)}`;
+      response = await fetch(proxyUrl);
+    }
 
     if (!response.ok) {
       const errorBody = await response.text(); // Get more details from proxy error
@@ -307,8 +320,10 @@ export async function getCurrentWeather(county) {
       stack: error.stack, // Log stack for better debugging
     });
 
-    logger.info(`Falling back to mock weather data for ${county}`, {
+    logger.info(`Falling back to mock weather data for ${county} due to error: ${error.message}`, {
       component: "WeatherClient",
+      error: error.message,
+      errorType: error.name
     });
     return getMockWeatherData(county);
   }

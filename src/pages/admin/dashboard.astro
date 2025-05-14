@@ -4,11 +4,12 @@ import Layout from '../../layouts/Layout.astro';
 
 <Layout title="Bloom - Logs Dashboard">
   <div class="container mx-auto p-4">
-    <h1 class="text-2xl font-bold mb-4">Logs Dashboard</h1>
+    <h1 class="text-2xl font-bold mb-4">Admin Dashboard</h1>
     
     <div class="tabs mb-4">
       <button id="tab-logs" class="tab tab-bordered tab-active">Logs Viewer</button>
       <button id="tab-diagnostic" class="tab tab-bordered">Diagnostics</button>
+      <button id="tab-test-suite" class="tab tab-bordered">Test Suite</button>
     </div>
 
     <!-- Logs Viewer Section -->
@@ -108,6 +109,38 @@ import Layout from '../../layouts/Layout.astro';
         <pre id="diagnostic-output" class="bg-base-300 rounded-box p-4 text-xs h-[60vh] overflow-auto">Select a diagnostic test above to view results.</pre>
       </div>
     </div>
+    
+    <!-- Test Suite Section -->
+    <div id="test-suite-view" class="hidden">
+      <div class="bg-base-200 rounded-box p-4 mb-4">
+        <p class="mb-4">Run and view the results of system tests.</p>
+        
+        <div class="tabs tabs-boxed mb-4">
+          <button id="tab-neodb" class="tab">Neo4j Database</button>
+          <button id="tab-graphrag" class="tab">GraphRAG</button>
+          <button id="tab-plants" class="tab">Plant Recommendations</button>
+          <button id="tab-stochastic" class="tab">Stochastic RAG</button>
+          <button id="tab-vertex" class="tab">Vertex AI</button>
+          <button id="tab-weather" class="tab">Weather Client</button>
+        </div>
+        
+        <div class="flex flex-wrap gap-2 mb-4">
+          <button id="run-selected-test" class="btn btn-primary">
+            Run Selected Test
+          </button>
+        </div>
+      </div>
+
+      <div id="test-results-container" class="mb-4">
+        <div class="flex justify-between items-center mb-2">
+          <h2 class="text-xl font-bold">Test Results</h2>
+          <div id="test-status" class="hidden">
+            <span id="test-status-badge" class="badge badge-lg"></span>
+          </div>
+        </div>
+        <pre id="test-output" class="bg-base-300 rounded-box p-4 text-xs h-[60vh] overflow-auto">Select a test to run.</pre>
+      </div>
+    </div>
 
     <div id="error-container" class="hidden mt-4">
       <div class="alert alert-error">
@@ -122,6 +155,7 @@ import Layout from '../../layouts/Layout.astro';
   let apiKey = '';
   let currentLogContent = '';
   let currentEnvironment = '';
+  let selectedTest = '';
   const fallbackKey = 'password'; // Fallback key for testing
 
   document.addEventListener('DOMContentLoaded', () => {
@@ -130,14 +164,22 @@ import Layout from '../../layouts/Layout.astro';
     const tabParam = urlParams.get('tab');
     const urlApiKey = urlParams.get('key');
     const storedApiKey = localStorage.getItem('logs_api_key');
+    const testParam = urlParams.get('test');
 
-    // Switch to diagnostic tab if requested
+    // Switch to requested tab if provided
     if (tabParam === 'diagnostic') {
       showMainTab('diagnostic');
+    } else if (tabParam === 'test-suite') {
+      showMainTab('test-suite');
+      if (testParam) {
+        selectTestTab(testParam);
+      }
     }
+    
     // Main tab navigation
     document.getElementById('tab-logs').addEventListener('click', () => showMainTab('logs'));
     document.getElementById('tab-diagnostic').addEventListener('click', () => showMainTab('diagnostic'));
+    document.getElementById('tab-test-suite').addEventListener('click', () => showMainTab('test-suite'));
 
     if (urlApiKey) {
       document.getElementById('api-key').value = urlApiKey;
@@ -167,6 +209,20 @@ import Layout from '../../layouts/Layout.astro';
     // Event listeners for diagnostic view
     document.getElementById('check-env').addEventListener('click', checkEnvironment);
     document.getElementById('test-auth').addEventListener('click', testDirectAuth);
+    
+    // Event listeners for test suite view
+    document.getElementById('tab-neodb').addEventListener('click', () => selectTestTab('neodb'));
+    document.getElementById('tab-graphrag').addEventListener('click', () => selectTestTab('graphrag'));
+    document.getElementById('tab-plants').addEventListener('click', () => selectTestTab('plants'));
+    document.getElementById('tab-stochastic').addEventListener('click', () => selectTestTab('stochastic'));
+    document.getElementById('tab-vertex').addEventListener('click', () => selectTestTab('vertex'));
+    document.getElementById('tab-weather').addEventListener('click', () => selectTestTab('weather'));
+    document.getElementById('run-selected-test').addEventListener('click', runSelectedTest);
+    
+    // Set a default selected test
+    if (!testParam) {
+      selectTestTab('neodb');
+    }
   });
 
   // Main tab navigation
@@ -174,10 +230,12 @@ import Layout from '../../layouts/Layout.astro';
     // Hide all tabs first
     document.getElementById('logs-view').classList.add('hidden');
     document.getElementById('diagnostic-view').classList.add('hidden');
+    document.getElementById('test-suite-view').classList.add('hidden');
     
     // Reset all tab buttons
     document.getElementById('tab-logs').classList.remove('tab-active');
     document.getElementById('tab-diagnostic').classList.remove('tab-active');
+    document.getElementById('tab-test-suite').classList.remove('tab-active');
     
     // Show selected tab
     if (tab === 'logs') {
@@ -186,6 +244,9 @@ import Layout from '../../layouts/Layout.astro';
     } else if (tab === 'diagnostic') {
       document.getElementById('diagnostic-view').classList.remove('hidden');
       document.getElementById('tab-diagnostic').classList.add('tab-active');
+    } else if (tab === 'test-suite') {
+      document.getElementById('test-suite-view').classList.remove('hidden');
+      document.getElementById('tab-test-suite').classList.add('tab-active');
     }
   }
 
@@ -204,6 +265,36 @@ import Layout from '../../layouts/Layout.astro';
         document.getElementById('raw-logs-view').classList.add('hidden');
       }
     };
+  }
+  
+  // Test tab navigation
+  function selectTestTab(test) {
+    // Reset all test tab buttons
+    const tabElements = document.querySelectorAll('.tabs-boxed .tab');
+    tabElements.forEach(el => {
+      el.classList.remove('tab-active');
+    });
+    
+    // Set the selected test
+    selectedTest = test;
+    
+    // Highlight the selected tab
+    const tabMap = {
+      'neodb': 'tab-neodb',
+      'graphrag': 'tab-graphrag',
+      'plants': 'tab-plants',
+      'stochastic': 'tab-stochastic',
+      'vertex': 'tab-vertex',
+      'weather': 'tab-weather'
+    };
+    
+    const tabId = tabMap[test];
+    if (tabId) {
+      document.getElementById(tabId).classList.add('tab-active');
+    }
+    
+    // Clear previous test status
+    document.getElementById('test-status').classList.add('hidden');
   }
 
   function fetchLogs() {
@@ -485,36 +576,6 @@ import Layout from '../../layouts/Layout.astro';
       });
   }
   
-  function testVertexAuth() {
-    document.getElementById('diagnostic-output').textContent = 'Testing Vertex AI authentication...';
-    hideAuthBadges();
-    
-    fetch('/api/vertex-auth-test')
-      .then(response => response.json())
-      .then(data => {
-        if (!data.success) {
-          showAuthErrorBadge();
-          document.getElementById('diagnostic-output').textContent = 
-            `❌ Authentication failed!\n\n` +
-            `Error: ${data.error || data.details?.message || 'Unknown error'}\n` +
-            `Error type: ${data.errorType || data.details?.name || 'Unknown'}\n` +
-            `Stack trace:\n${data.details?.stack || 'No stack trace available'}`;
-        } else {
-          showAuthSuccessBadge();
-          document.getElementById('diagnostic-output').textContent = 
-            `✅ Vertex AI authentication successful!\n\n` +
-            `Project ID: ${data.details.projectId}\n` +
-            `Location: ${data.details.location}\n` +
-            `Model: ${data.details.model}\n\n` +
-            `Environment: ${data.details.environment}`;
-        }
-      })
-      .catch(error => {
-        showAuthErrorBadge();
-        document.getElementById('diagnostic-output').textContent = `Error making auth test request: ${error.message}`;
-      });
-  }
-  
   function testDirectAuth() {
     document.getElementById('diagnostic-output').textContent = 'Testing advanced authentication methods...';
     hideAuthBadges();
@@ -557,5 +618,85 @@ import Layout from '../../layouts/Layout.astro';
   function showAuthErrorBadge() {
     document.getElementById('auth-success-badge').classList.add('hidden');
     document.getElementById('auth-error-badge').classList.remove('hidden');
+  }
+  
+  function runSelectedTest() {
+    if (!selectedTest) {
+      return;
+    }
+    
+    // Show loading state and hide previous test status
+    document.getElementById('test-output').textContent = `Running ${selectedTest} test...`;
+    document.getElementById('test-status').classList.add('hidden');
+    
+    // Map selected test to API endpoint
+    const endpointMap = {
+      'neodb': '/api/diagnostics/neo4j-connection',
+      'neodb-queries': '/api/diagnostics/neo4j-check-queries',
+      'graphrag': '/api/diagnostics/graphrag-test',
+      'plants': '/api/diagnostics/plant-recommendations-test',
+      'stochastic': '/api/diagnostics/stochastic-rag-test',
+      'vertex': '/api/diagnostics/vertex-auth-test',
+      'weather': '/api/diagnostics/weather-client-test'
+    };
+    
+    const endpoint = endpointMap[selectedTest];
+    if (!endpoint) {
+      document.getElementById('test-output').textContent = `Error: Invalid test selection "${selectedTest}"`;
+      return;
+    }
+    
+    // Run the test
+    fetch(endpoint)
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`Error ${response.status}: ${response.statusText}`);
+        }
+        return response.json();
+      })
+      .then(data => {
+        // Format and display the results
+        document.getElementById('test-output').textContent = JSON.stringify(data, null, 2);
+        
+        // Display test status
+        const statusElement = document.getElementById('test-status');
+        const badgeElement = document.getElementById('test-status-badge');
+        statusElement.classList.remove('hidden');
+        
+        // Determine test status
+        let passed = false;
+        if (data.status === 'success') {
+          passed = true;
+        } else if (data.summary && data.summary.allPassed) {
+          passed = true;
+        } else if (data.dbStatus && data.dbStatus.connected) {
+          // For Neo4j connections, consider it passing if connected
+          passed = true;
+        } else if (data.status && data.status.healthy) {
+          // For Vertex AI, consider it passing if health check passes
+          passed = true;
+        }
+        
+        if (passed) {
+          badgeElement.textContent = 'PASSED';
+          badgeElement.classList.remove('badge-error');
+          badgeElement.classList.add('badge-success');
+        } else {
+          badgeElement.textContent = 'FAILED';
+          badgeElement.classList.remove('badge-success');
+          badgeElement.classList.add('badge-error');
+        }
+      })
+      .catch(error => {
+        document.getElementById('test-output').textContent = `Error running test: ${error.message}`;
+        
+        // Display error status
+        const statusElement = document.getElementById('test-status');
+        const badgeElement = document.getElementById('test-status-badge');
+        statusElement.classList.remove('hidden');
+        badgeElement.textContent = 'ERROR';
+        badgeElement.classList.remove('badge-success');
+        badgeElement.classList.add('badge-error');
+      });
   }
 </script>

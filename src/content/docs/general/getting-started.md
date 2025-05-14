@@ -77,6 +77,7 @@ Bloom follows a specific project structure:
 │   ├── layouts/       # Page layouts
 │   ├── pages/         # Pages and API routes
 │   │   ├── api/       # API endpoints
+│   │   │   └── diagnostics/ # System test and diagnostic endpoints
 │   │   ├── admin/     # Admin dashboard pages
 │   │   └── ...        # User-facing pages
 │   └── utils/         # Utility functions
@@ -124,7 +125,13 @@ http://localhost:4321/admin/dashboard
 For the logs dashboard:
 
 ```
-http://localhost:4321/admin/logs-dashboard?key=YOUR_LOGS_API_KEY
+http://localhost:4321/admin/dashboard?tab=logs&key=YOUR_LOGS_API_KEY
+```
+
+For the diagnostics and testing:
+
+```
+http://localhost:4321/admin/dashboard?tab=test-suite
 ```
 
 Replace `YOUR_LOGS_API_KEY` with the value from your `.env` file.
@@ -133,21 +140,34 @@ Replace `YOUR_LOGS_API_KEY` with the value from your `.env` file.
 
 The admin dashboard provides:
 
-1. **System Status**: View the status of all system components
-2. **Logs Viewer**: Real-time access to application logs
-3. **AI Usage Metrics**: Track API calls and token usage
-4. **Database Explorer**: Browse and query the knowledge graph
+1. **Logs Viewer**: Real-time access to application logs
+2. **Diagnostics**: Tools for diagnosing system issues
+3. **Test Suite**: Comprehensive tests for system components
+4. **Environment Info**: View and validate environment settings
 
-## Testing the GraphRAG System
+See the [System Diagnostics & Testing](/docs/general/diagnostics) guide for more details on the diagnostic features.
 
-To test the graph-based recommendation system:
+## Testing the System
 
-1. Ensure Neo4j is running (locally or via cloud service)
-2. Configure the Neo4j connection in your `.env` file
-3. Run the test script:
+Bloom includes comprehensive test endpoints that can be accessed via the admin dashboard or directly via API calls.
+
+### Running Tests via Dashboard
+
+1. Navigate to the Test Suite tab in the admin dashboard
+2. Select the test category you want to run
+3. Click "Run Selected Test" to execute the test
+4. View results in the Test Results panel
+
+### Running Tests Programmatically
+
+All tests are also available as API endpoints:
 
 ```bash
-node src/test-graphrag.js
+# Example: Testing Neo4j connection
+curl http://localhost:4321/api/diagnostics/neo4j-connection
+
+# Example: Testing plant recommendations
+curl http://localhost:4321/api/diagnostics/plant-recommendations-test
 ```
 
 ## Working with Netlify
@@ -185,6 +205,15 @@ To deploy to Netlify:
 2. **Neo4j Connection Errors**: Verify Neo4j is running and credentials are correct
 3. **Build Failures**: Check for missing dependencies with `npm install`
 4. **Netlify Function Errors**: Check Netlify logs for serverless function errors
+
+### Using Diagnostics for Troubleshooting
+
+The diagnostic tools can help identify and fix issues:
+
+1. Use the Neo4j connection test to verify database connectivity
+2. Check Vertex AI authentication with the Vertex auth test
+3. Verify weather API functionality with the weather client test
+4. Test the GraphRAG system with the GraphRAG test
 
 ### Getting Help
 
