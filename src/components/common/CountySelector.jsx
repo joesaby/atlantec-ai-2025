@@ -62,14 +62,12 @@ const CountySelector = ({
     const countyParam = urlParams.get("county");
     if (countyParam && counties.includes(countyParam)) {
       setSelectedCounty(countyParam);
-      // Dispatch the county change event
       dispatchCountyChangeEvent(countyParam);
     } else if (defaultCounty) {
       setSelectedCounty(defaultCounty);
-      // Dispatch the county change event for default county
       dispatchCountyChangeEvent(defaultCounty);
     }
-  }, [counties, defaultCounty]);
+  }, []);
 
   const handleCountyChange = (e) => {
     const county = e.target.value;
