@@ -1,6 +1,6 @@
 # Build a green thumb in a sprint
 
-A sustainable Irish gardening assistant can be built in one week using Astro's island architecture and Irish-specific data sources. This guide outlines the complete technical implementation process, focusing on practical, achievable approaches for rapid development while maintaining sustainability principles.
+A sustainable Bloom can be built in one week using Astro's island architecture and Irish-specific data sources. This guide outlines the complete technical implementation process, focusing on practical, achievable approaches for rapid development while maintaining sustainability principles.
 
 ## Bottom line up front
 
@@ -37,27 +37,28 @@ gardening-assistant/
 
 ```typescript
 // astro.config.mjs
-import { defineConfig } from 'astro/config';
-import tailwind from '@astrojs/tailwind';
-import react from '@astrojs/react';
-import db from '@astrojs/db';
+import { defineConfig } from "astro/config";
+import tailwind from "@astrojs/tailwind";
+import react from "@astrojs/react";
+import db from "@astrojs/db";
 
 export default defineConfig({
-  output: 'hybrid', // Static generation with dynamic endpoints
+  output: "hybrid", // Static generation with dynamic endpoints
   integrations: [
     tailwind(),
     react(), // For interactive components
-    db() // For Astro DB integration
+    db(), // For Astro DB integration
   ],
   vite: {
     ssr: {
-      noExternal: ['chart.js', '@radix-ui/*'],
+      noExternal: ["chart.js", "@radix-ui/*"],
     },
-  }
+  },
 });
 ```
 
 This configuration enables:
+
 - Hybrid rendering (static content with dynamic API endpoints)
 - Tailwind for styling
 - React for interactive components
@@ -69,17 +70,17 @@ This configuration enables:
 
 ```typescript
 // src/utils/teagasc-client.js
-const SOIL_API_BASE = 'http://soils.teagasc.ie/api';
+const SOIL_API_BASE = "http://soils.teagasc.ie/api";
 
 export async function getSoilDataByLocation(lat, lng) {
   const response = await fetch(
     `${SOIL_API_BASE}/soildata?lat=${lat}&lng=${lng}`
   );
-  
+
   if (!response.ok) {
-    throw new Error('Failed to fetch soil data');
+    throw new Error("Failed to fetch soil data");
   }
-  
+
   return await response.json();
 }
 
@@ -88,15 +89,13 @@ export async function getSoilTypeInformation(soilCode) {
   if (soilTypeCache[soilCode]) {
     return soilTypeCache[soilCode];
   }
-  
-  const response = await fetch(
-    `${SOIL_API_BASE}/soiltypes/${soilCode}`
-  );
-  
+
+  const response = await fetch(`${SOIL_API_BASE}/soiltypes/${soilCode}`);
+
   if (!response.ok) {
-    throw new Error('Failed to fetch soil type information');
+    throw new Error("Failed to fetch soil type information");
   }
-  
+
   const data = await response.json();
   soilTypeCache[soilCode] = data;
   return data;
@@ -110,24 +109,28 @@ const soilTypeCache = {};
 
 ```typescript
 // src/utils/weather-client.js
-import { db } from 'astro:db';
-import { WeatherData } from '../database/schema';
+import { db } from "astro:db";
+import { WeatherData } from "../database/schema";
 
-const WEATHER_API_BASE = 'https://weather.apis.ie/graphql';
+const WEATHER_API_BASE = "https://weather.apis.ie/graphql";
 
 export async function getCurrentWeather(county) {
   // Check cache first
-  const cachedData = await db.select().from(WeatherData)
+  const cachedData = await db
+    .select()
+    .from(WeatherData)
     .where(eq(WeatherData.location, county))
     .orderBy(desc(WeatherData.created_at))
     .limit(1);
-    
+
   // If data exists and is less than 1 hour old, use it
-  if (cachedData.length > 0 && 
-      (new Date().getTime() - cachedData[0].created_at.getTime()) < 3600000) {
+  if (
+    cachedData.length > 0 &&
+    new Date().getTime() - cachedData[0].created_at.getTime() < 3600000
+  ) {
     return cachedData[0];
   }
-  
+
   // Otherwise fetch new data via GraphQL API
   const query = `
     {
@@ -152,19 +155,19 @@ export async function getCurrentWeather(county) {
       }
     }
   `;
-  
+
   const response = await fetch(WEATHER_API_BASE, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ query })
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ query }),
   });
-  
+
   if (!response.ok) {
-    throw new Error('Failed to fetch weather data');
+    throw new Error("Failed to fetch weather data");
   }
-  
+
   const data = await response.json();
-  
+
   // Store in database for caching
   await db.insert(WeatherData).values({
     location: county,
@@ -176,9 +179,9 @@ export async function getCurrentWeather(county) {
     humidity: data.data.forecast.today.humidity,
     weatherDescription: data.data.forecast.today.description,
     forecast: JSON.stringify(data.data.forecast.fiveDay),
-    source: "Met.ie GraphQL API"
+    source: "Met.ie GraphQL API",
   });
-  
+
   return data.data.forecast;
 }
 ```
@@ -191,12 +194,12 @@ For our one-week sprint, we'll implement a lightweight GraphRAG system using SQL
 
 ```typescript
 // src/database/knowledge-graph.js
-import Database from 'better-sqlite3';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
+import Database from "better-sqlite3";
+import { fileURLToPath } from "url";
+import { dirname, join } from "path";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const db = new Database(join(__dirname, '../../garden-knowledge.sqlite'));
+const db = new Database(join(__dirname, "../../garden-knowledge.sqlite"));
 
 // Initialize database schema
 db.exec(`
@@ -226,40 +229,40 @@ export const graphDb = {
   // Add a node to the knowledge graph
   addNode(id, type, properties) {
     const stmt = db.prepare(
-      'INSERT OR REPLACE INTO nodes (id, type, properties) VALUES (?, ?, ?)'
+      "INSERT OR REPLACE INTO nodes (id, type, properties) VALUES (?, ?, ?)"
     );
     stmt.run(id, type, JSON.stringify(properties));
   },
-  
+
   // Add an edge between nodes
   addEdge(source, target, type, properties = {}) {
     const id = `${source}-${type}-${target}`;
     const stmt = db.prepare(
-      'INSERT OR REPLACE INTO edges (id, source, target, type, properties) VALUES (?, ?, ?, ?, ?)'
+      "INSERT OR REPLACE INTO edges (id, source, target, type, properties) VALUES (?, ?, ?, ?, ?)"
     );
     stmt.run(id, source, target, type, JSON.stringify(properties));
   },
-  
+
   // Get node by ID
   getNode(id) {
-    const stmt = db.prepare('SELECT * FROM nodes WHERE id = ?');
+    const stmt = db.prepare("SELECT * FROM nodes WHERE id = ?");
     const node = stmt.get(id);
     if (node) {
       node.properties = JSON.parse(node.properties);
     }
     return node;
   },
-  
+
   // Get nodes by type
   getNodesByType(type) {
-    const stmt = db.prepare('SELECT * FROM nodes WHERE type = ?');
+    const stmt = db.prepare("SELECT * FROM nodes WHERE type = ?");
     const nodes = stmt.all(type);
-    return nodes.map(node => ({
+    return nodes.map((node) => ({
       ...node,
-      properties: JSON.parse(node.properties)
+      properties: JSON.parse(node.properties),
     }));
   },
-  
+
   // Get connected nodes (1-hop neighbors)
   getConnectedNodes(nodeId) {
     const stmt = db.prepare(`
@@ -269,26 +272,26 @@ export const graphDb = {
       WHERE e.source = ?
     `);
     const nodes = stmt.all(nodeId);
-    return nodes.map(node => ({
+    return nodes.map((node) => ({
       ...node,
       properties: JSON.parse(node.properties),
-      edge_properties: JSON.parse(node.edge_properties)
+      edge_properties: JSON.parse(node.edge_properties),
     }));
   },
-  
+
   // Query for plants suitable for specific conditions
   findPlantsBySuitability(conditions) {
     const { soilType, sunExposure, season } = conditions;
-    
+
     // Build query based on provided conditions
     let query = `
       SELECT DISTINCT p.id, p.properties
       FROM nodes p
       WHERE p.type = 'Plant'
     `;
-    
+
     const params = [];
-    
+
     if (soilType) {
       query += `
         AND EXISTS (
@@ -302,7 +305,7 @@ export const graphDb = {
       `;
       params.push(soilType);
     }
-    
+
     if (sunExposure) {
       query += `
         AND EXISTS (
@@ -316,7 +319,7 @@ export const graphDb = {
       `;
       params.push(sunExposure);
     }
-    
+
     if (season) {
       query += `
         AND EXISTS (
@@ -330,14 +333,14 @@ export const graphDb = {
       `;
       params.push(season);
     }
-    
+
     const stmt = db.prepare(query);
     const plants = stmt.all(...params);
-    return plants.map(plant => ({
+    return plants.map((plant) => ({
       id: plant.id,
-      properties: JSON.parse(plant.properties)
+      properties: JSON.parse(plant.properties),
     }));
-  }
+  },
 };
 ```
 
@@ -345,94 +348,82 @@ export const graphDb = {
 
 ```typescript
 // src/database/seed-knowledge-graph.js
-import { graphDb } from './knowledge-graph.js';
-import irishPlantsData from '../data/irish-plants.json';
-import soilTypesData from '../data/soil-types.json';
-import seasonsData from '../data/irish-seasons.json';
+import { graphDb } from "./knowledge-graph.js";
+import irishPlantsData from "../data/irish-plants.json";
+import soilTypesData from "../data/soil-types.json";
+import seasonsData from "../data/irish-seasons.json";
 
 export async function seedKnowledgeGraph() {
-  console.log('Seeding knowledge graph...');
-  
+  console.log("Seeding knowledge graph...");
+
   // Add basic nodes
-  
+
   // Add seasons
-  seasonsData.forEach(season => {
-    graphDb.addNode(
-      season.id,
-      'Season',
-      {
-        name: season.name,
-        months: season.months,
-        temperatures: season.temperatures,
-        rainfall: season.rainfall
-      }
-    );
+  seasonsData.forEach((season) => {
+    graphDb.addNode(season.id, "Season", {
+      name: season.name,
+      months: season.months,
+      temperatures: season.temperatures,
+      rainfall: season.rainfall,
+    });
   });
-  
+
   // Add soil types
-  soilTypesData.forEach(soil => {
-    graphDb.addNode(
-      soil.id,
-      'SoilType',
-      {
-        name: soil.name,
-        description: soil.description,
-        ph: soil.ph,
-        texture: soil.texture,
-        nutrients: soil.nutrients,
-        drainage: soil.drainage
-      }
-    );
+  soilTypesData.forEach((soil) => {
+    graphDb.addNode(soil.id, "SoilType", {
+      name: soil.name,
+      description: soil.description,
+      ph: soil.ph,
+      texture: soil.texture,
+      nutrients: soil.nutrients,
+      drainage: soil.drainage,
+    });
   });
-  
+
   // Add sun exposure types
   const sunExposures = [
-    { id: 'full-sun', name: 'Full Sun', hoursOfSun: '6+ hours' },
-    { id: 'partial-shade', name: 'Partial Shade', hoursOfSun: '3-6 hours' },
-    { id: 'full-shade', name: 'Full Shade', hoursOfSun: 'Less than 3 hours' }
+    { id: "full-sun", name: "Full Sun", hoursOfSun: "6+ hours" },
+    { id: "partial-shade", name: "Partial Shade", hoursOfSun: "3-6 hours" },
+    { id: "full-shade", name: "Full Shade", hoursOfSun: "Less than 3 hours" },
   ];
-  
-  sunExposures.forEach(sun => {
-    graphDb.addNode(sun.id, 'SunExposure', sun);
+
+  sunExposures.forEach((sun) => {
+    graphDb.addNode(sun.id, "SunExposure", sun);
   });
-  
+
   // Add plants and their relationships
-  irishPlantsData.forEach(plant => {
+  irishPlantsData.forEach((plant) => {
     // Add plant node
-    graphDb.addNode(
-      plant.id,
-      'Plant',
-      {
-        name: plant.name,
-        latinName: plant.latinName,
-        description: plant.description,
-        waterNeeds: plant.waterNeeds,
-        imageUrl: plant.imageUrl,
-        nativeToIreland: plant.nativeToIreland,
-        sustainabilityRating: plant.sustainabilityRating
-      }
-    );
-    
+    graphDb.addNode(plant.id, "Plant", {
+      name: plant.name,
+      latinName: plant.latinName,
+      description: plant.description,
+      waterNeeds: plant.waterNeeds,
+      imageUrl: plant.imageUrl,
+      nativeToIreland: plant.nativeToIreland,
+      sustainabilityRating: plant.sustainabilityRating,
+    });
+
     // Add soil relationships
-    plant.suitableSoils.forEach(soilId => {
-      graphDb.addEdge(plant.id, soilId, 'THRIVES_IN');
+    plant.suitableSoils.forEach((soilId) => {
+      graphDb.addEdge(plant.id, soilId, "THRIVES_IN");
     });
-    
+
     // Add sun exposure relationship
-    graphDb.addEdge(plant.id, plant.sunNeeds, 'NEEDS');
-    
+    graphDb.addEdge(plant.id, plant.sunNeeds, "NEEDS");
+
     // Add growing season relationships
-    plant.growingSeasons.forEach(seasonId => {
-      graphDb.addEdge(plant.id, seasonId, 'GROWS_BEST_IN');
+    plant.growingSeasons.forEach((seasonId) => {
+      graphDb.addEdge(plant.id, seasonId, "GROWS_BEST_IN");
     });
-    
+
     // Add companion planting relationships
-    plant.companionPlants?.forEach(companionId => {
-      graphDb.addEdge(plant.id, companionId, 'GROWS_WELL_WITH');
+    plant.companionPlants?.forEach((companionId) => {
+      graphDb.addEdge(plant.id, companionId, "GROWS_WELL_WITH");
     });
   });
-  
-  console.log('Knowledge graph seeding complete');
+
+  console.log("Knowledge graph seeding complete");
 }
 ```
 
@@ -440,10 +431,10 @@ export async function seedKnowledgeGraph() {
 
 ```typescript
 // src/utils/graph-query-generator.js
-import OpenAI from 'openai';
+import OpenAI from "openai";
 
 const openai = new OpenAI({
-  apiKey: import.meta.env.OPENAI_API_KEY
+  apiKey: import.meta.env.OPENAI_API_KEY,
 });
 
 export async function naturalLanguageToGraphQuery(question) {
@@ -461,23 +452,24 @@ Output a JSON object with extracted parameters. For example:
   }
 }
   `;
-  
+
   const response = await openai.chat.completions.create({
     model: "gpt-3.5-turbo",
     messages: [
       {
         role: "system",
-        content: "You convert natural language gardening questions to structured queries."
+        content:
+          "You convert natural language gardening questions to structured queries.",
       },
       {
         role: "user",
-        content: prompt
-      }
+        content: prompt,
+      },
     ],
     temperature: 0.3,
-    max_tokens: 150
+    max_tokens: 150,
   });
-  
+
   try {
     const result = JSON.parse(response.choices[0].message.content);
     return result;
@@ -485,7 +477,7 @@ Output a JSON object with extracted parameters. For example:
     console.error("Failed to parse query result:", error);
     return {
       queryType: "unknown",
-      parameters: {}
+      parameters: {},
     };
   }
 }
@@ -503,41 +495,41 @@ class DecisionTree {
   constructor() {
     // Pre-built decision tree structure optimized for Irish crops
     this.tree = {
-      attribute: 'soilPh',
+      attribute: "soilPh",
       threshold: 6.0,
       left: {
-        attribute: 'rainfall',
+        attribute: "rainfall",
         threshold: 1000,
-        left: ['potatoes', 'radishes', 'carrots'], // Lower rainfall, acidic soil
-        right: ['blueberries', 'rhubarb', 'strawberries'] // Higher rainfall, acidic soil
+        left: ["potatoes", "radishes", "carrots"], // Lower rainfall, acidic soil
+        right: ["blueberries", "rhubarb", "strawberries"], // Higher rainfall, acidic soil
       },
       right: {
-        attribute: 'sunExposure',
+        attribute: "sunExposure",
         threshold: 0.5, // 0 = full shade, 0.5 = partial, 1 = full sun
-        left: ['lettuce', 'spinach', 'kale'], // Less sun, neutral/alkaline soil
+        left: ["lettuce", "spinach", "kale"], // Less sun, neutral/alkaline soil
         right: {
-          attribute: 'temperature',
+          attribute: "temperature",
           threshold: 15,
-          left: ['cabbage', 'broccoli', 'brussels sprouts'], // Cooler, sunny, neutral soil
-          right: ['tomatoes', 'beans', 'courgettes'] // Warmer, sunny, neutral soil
-        }
-      }
+          left: ["cabbage", "broccoli", "brussels sprouts"], // Cooler, sunny, neutral soil
+          right: ["tomatoes", "beans", "courgettes"], // Warmer, sunny, neutral soil
+        },
+      },
     };
   }
-  
+
   // Helper function to navigate tree
   _traverseTree(node, sample) {
     if (Array.isArray(node)) {
       return node; // Leaf node with recommendations
     }
-    
+
     if (sample[node.attribute] < node.threshold) {
       return this._traverseTree(node.left, sample);
     } else {
       return this._traverseTree(node.right, sample);
     }
   }
-  
+
   // Get recommendations based on garden conditions
   getRecommendations(gardenData) {
     // Normalize inputs
@@ -545,25 +537,25 @@ class DecisionTree {
       soilPh: gardenData.soilPh,
       rainfall: gardenData.rainfall, // Annual average in mm
       temperature: gardenData.temperature, // Current average in celsius
-      sunExposure: this._convertSunExposure(gardenData.sunExposure)
+      sunExposure: this._convertSunExposure(gardenData.sunExposure),
     };
-    
+
     // Get crops from decision tree
     const recommendedCrops = this._traverseTree(this.tree, sample);
-    
+
     // Add confidence scores (simplified)
-    return recommendedCrops.map(crop => ({
+    return recommendedCrops.map((crop) => ({
       name: crop,
-      confidence: 0.85 // Fixed for this simple implementation
+      confidence: 0.85, // Fixed for this simple implementation
     }));
   }
-  
+
   // Convert text sun exposure to numeric value
   _convertSunExposure(exposure) {
     const mapping = {
-      'full-shade': 0,
-      'partial-shade': 0.5,
-      'full-sun': 1
+      "full-shade": 0,
+      "partial-shade": 0.5,
+      "full-sun": 1,
     };
     return mapping[exposure] || 0.5;
   }
@@ -574,58 +566,59 @@ export class IrishCropRecommender {
   constructor() {
     this.decisionTree = new DecisionTree();
     this.seasonalModifiers = {
-      'spring': ['lettuce', 'peas', 'radishes', 'spinach', 'onions'],
-      'summer': ['beans', 'courgettes', 'tomatoes', 'cucumber'],
-      'autumn': ['kale', 'leeks', 'broccoli', 'brussels sprouts'],
-      'winter': ['garlic', 'broad beans', 'winter cabbage']
+      spring: ["lettuce", "peas", "radishes", "spinach", "onions"],
+      summer: ["beans", "courgettes", "tomatoes", "cucumber"],
+      autumn: ["kale", "leeks", "broccoli", "brussels sprouts"],
+      winter: ["garlic", "broad beans", "winter cabbage"],
     };
   }
-  
+
   async getRecommendations(gardenData, county) {
     // Get base recommendations from decision tree
     let recommendations = this.decisionTree.getRecommendations(gardenData);
-    
+
     // Get current weather and season data
     const weather = await getCurrentWeather(county);
     const currentSeason = this._getCurrentSeason();
-    
+
     // Boost scores for season-appropriate plants
-    recommendations = recommendations.map(rec => {
+    recommendations = recommendations.map((rec) => {
       if (this.seasonalModifiers[currentSeason].includes(rec.name)) {
         return { ...rec, confidence: Math.min(rec.confidence + 0.1, 1.0) };
       }
       return rec;
     });
-    
+
     // Add additional seasonal recommendations if list is short
     if (recommendations.length < 5) {
       const additionalCrops = this.seasonalModifiers[currentSeason]
-        .filter(crop => !recommendations.find(r => r.name === crop))
-        .map(crop => ({ name: crop, confidence: 0.7 }));
-      
+        .filter((crop) => !recommendations.find((r) => r.name === crop))
+        .map((crop) => ({ name: crop, confidence: 0.7 }));
+
       recommendations = [...recommendations, ...additionalCrops].slice(0, 5);
     }
-    
+
     // Adjust for current weather conditions
-    if (weather.rainfall > 20) { // Heavy rain recently
-      recommendations = recommendations.map(rec => {
+    if (weather.rainfall > 20) {
+      // Heavy rain recently
+      recommendations = recommendations.map((rec) => {
         // Reduce confidence for rain-sensitive crops
-        if (['tomatoes', 'lettuce'].includes(rec.name)) {
+        if (["tomatoes", "lettuce"].includes(rec.name)) {
           return { ...rec, confidence: rec.confidence * 0.8 };
         }
         return rec;
       });
     }
-    
+
     return recommendations.sort((a, b) => b.confidence - a.confidence);
   }
-  
+
   _getCurrentSeason() {
     const month = new Date().getMonth();
-    if (month >= 2 && month <= 4) return 'spring';
-    if (month >= 5 && month <= 7) return 'summer';
-    if (month >= 8 && month <= 10) return 'autumn';
-    return 'winter';
+    if (month >= 2 && month <= 4) return "spring";
+    if (month >= 5 && month <= 7) return "summer";
+    if (month >= 8 && month <= 10) return "autumn";
+    return "winter";
   }
 }
 ```
@@ -638,7 +631,7 @@ We'll use Astro DB (built on SQLite) for our data layer, which provides excellen
 
 ```typescript
 // src/database/schema.js
-import { defineDb, defineTable, column, SQLiteAdapter } from 'astro:db';
+import { defineDb, defineTable, column, SQLiteAdapter } from "astro:db";
 
 export const Users = defineTable({
   columns: {
@@ -646,8 +639,8 @@ export const Users = defineTable({
     username: column.text({ unique: true }),
     email: column.text({ unique: true }),
     location: column.text(), // County/region in Ireland
-    created_at: column.date({ default: "CURRENT_TIMESTAMP" })
-  }
+    created_at: column.date({ default: "CURRENT_TIMESTAMP" }),
+  },
 });
 
 export const Gardens = defineTable({
@@ -661,8 +654,8 @@ export const Gardens = defineTable({
     soilType: column.text(), // Reference to common Irish soil types
     sunExposure: column.text(), // Full sun, partial shade, full shade
     created_at: column.date({ default: "CURRENT_TIMESTAMP" }),
-    updated_at: column.date({ default: "CURRENT_TIMESTAMP" })
-  }
+    updated_at: column.date({ default: "CURRENT_TIMESTAMP" }),
+  },
 });
 
 export const Plants = defineTable({
@@ -685,16 +678,16 @@ export const Plants = defineTable({
     imageUrl: column.text({ optional: true }),
     sustainabilityRating: column.number(), // 1-5 scale
     waterConservationRating: column.number(), // 1-5 scale
-    biodiversityValue: column.number() // 1-5 scale
-  }
+    biodiversityValue: column.number(), // 1-5 scale
+  },
 });
 
 export const PlantCategories = defineTable({
   columns: {
     id: column.number({ primaryKey: true }),
     name: column.text(),
-    type: column.text() // Vegetable, Fruit, Herb, Flower, Tree, Shrub, etc.
-  }
+    type: column.text(), // Vegetable, Fruit, Herb, Flower, Tree, Shrub, etc.
+  },
 });
 
 export const GardenPlants = defineTable({
@@ -706,8 +699,8 @@ export const GardenPlants = defineTable({
     plantingDate: column.date({ optional: true }),
     status: column.text(), // Planned, Planted, Harvested, Removed
     notes: column.text({ optional: true }),
-    lastWatered: column.date({ optional: true })
-  }
+    lastWatered: column.date({ optional: true }),
+  },
 });
 
 export const WeatherData = defineTable({
@@ -723,8 +716,8 @@ export const WeatherData = defineTable({
     weatherDescription: column.text(),
     forecast: column.text(), // JSON string of forecast data
     source: column.text(), // e.g., "Met.ie API"
-    created_at: column.date({ default: "CURRENT_TIMESTAMP" })
-  }
+    created_at: column.date({ default: "CURRENT_TIMESTAMP" }),
+  },
 });
 
 export const SustainabilityMetrics = defineTable({
@@ -737,8 +730,8 @@ export const SustainabilityMetrics = defineTable({
     pesticidesUsed: column.boolean({ default: false }),
     organicPractices: column.boolean({ default: true }),
     rainwaterHarvested: column.number({ optional: true }), // Liters
-    foodProduced: column.number({ optional: true }) // Kg
-  }
+    foodProduced: column.number({ optional: true }), // Kg
+  },
 });
 
 export const SeasonalTips = defineTable({
@@ -748,8 +741,8 @@ export const SeasonalTips = defineTable({
     region: column.text({ optional: true }), // Specific region in Ireland or "All"
     title: column.text(),
     description: column.text(),
-    priority: column.number({ default: 1 }) // 1-5 scale
-  }
+    priority: column.number({ default: 1 }), // 1-5 scale
+  },
 });
 
 // Define the database with all tables
@@ -762,9 +755,9 @@ export default defineDb({
     GardenPlants,
     WeatherData,
     SustainabilityMetrics,
-    SeasonalTips
+    SeasonalTips,
   },
-  adapter: new SQLiteAdapter('sqlite.db')
+  adapter: new SQLiteAdapter("sqlite.db"),
 });
 ```
 
@@ -815,9 +808,9 @@ export interface Plant {
   biodiversityValue: number;
 }
 
-export type WaterNeedsType = 'Low' | 'Medium' | 'High';
-export type SunNeedsType = 'Full Sun' | 'Partial Shade' | 'Full Shade';
-export type PlantStatusType = 'Planned' | 'Planted' | 'Harvested' | 'Removed';
+export type WaterNeedsType = "Low" | "Medium" | "High";
+export type SunNeedsType = "Full Sun" | "Partial Shade" | "Full Shade";
+export type PlantStatusType = "Planned" | "Planted" | "Harvested" | "Removed";
 
 export interface SustainabilityMetrics {
   id: number;
@@ -874,16 +867,16 @@ const { title } = Astro.props;
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>{title} | Irish Gardening Assistant</title>
+    <title>{title} | Bloom</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   </head>
   <body class="min-h-screen bg-green-50">
     <NavigationMenu client:load />
-    
+
     <main class="container mx-auto py-8 px-4">
       <slot />
     </main>
-    
+
     <Footer />
   </body>
 </html>
@@ -893,9 +886,16 @@ const { title } = Astro.props;
 
 ```jsx
 // src/components/plants/PlantCard.jsx
-import React from 'react';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '../ui/card';
-import { Badge } from '../ui/badge';
+import React from "react";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  CardFooter,
+} from "../ui/card";
+import { Badge } from "../ui/badge";
 
 const PlantCard = ({ plant, onSelect }) => {
   return (
@@ -904,57 +904,61 @@ const PlantCard = ({ plant, onSelect }) => {
         <div className="flex justify-between items-start">
           <div>
             <CardTitle>{plant.commonName}</CardTitle>
-            <CardDescription className="italic">{plant.latinName}</CardDescription>
+            <CardDescription className="italic">
+              {plant.latinName}
+            </CardDescription>
           </div>
           {plant.nativeToIreland && (
-            <Badge variant="outline" className="bg-green-100">Native</Badge>
+            <Badge variant="outline" className="bg-green-100">
+              Native
+            </Badge>
           )}
         </div>
       </CardHeader>
-      
+
       {plant.imageUrl && (
         <div className="px-6 pt-2">
-          <img 
-            src={plant.imageUrl} 
+          <img
+            src={plant.imageUrl}
             alt={plant.commonName}
-            className="w-full h-40 object-cover rounded-md" 
+            className="w-full h-40 object-cover rounded-md"
           />
         </div>
       )}
-      
+
       <CardContent className="pt-4">
         <p className="line-clamp-3">{plant.description}</p>
-        
+
         <div className="grid grid-cols-2 gap-2 mt-4 text-sm">
           <div className="flex items-center gap-2">
-            <span className="text-gray-500">Water:</span> 
+            <span className="text-gray-500">Water:</span>
             <span>{plant.waterNeeds}</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-gray-500">Sun:</span> 
+            <span className="text-gray-500">Sun:</span>
             <span>{plant.sunNeeds}</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-gray-500">Soil:</span> 
+            <span className="text-gray-500">Soil:</span>
             <span>{plant.soilPreference}</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-gray-500">Type:</span> 
-            <span>{plant.isPerennial ? 'Perennial' : 'Annual'}</span>
+            <span className="text-gray-500">Type:</span>
+            <span>{plant.isPerennial ? "Perennial" : "Annual"}</span>
           </div>
         </div>
-        
+
         <div className="mt-4">
           <div className="flex items-center gap-1">
             <span className="text-gray-500">Sustainability:</span>
             <div className="flex">
               {Array.from({ length: 5 }).map((_, i) => (
-                <span 
+                <span
                   key={i}
                   className={`w-4 h-4 rounded-full ${
-                    i < plant.sustainabilityRating 
-                      ? 'bg-green-500' 
-                      : 'bg-gray-200'
+                    i < plant.sustainabilityRating
+                      ? "bg-green-500"
+                      : "bg-gray-200"
                   }`}
                 />
               ))}
@@ -962,7 +966,7 @@ const PlantCard = ({ plant, onSelect }) => {
           </div>
         </div>
       </CardContent>
-      
+
       <CardFooter>
         <button
           onClick={() => onSelect(plant)}
@@ -982,33 +986,44 @@ export default PlantCard;
 
 ```jsx
 // src/components/weather/WeatherForecast.jsx
-import React from 'react';
-import { Card, CardHeader, CardTitle, CardContent } from '../ui/card';
-import { Bar } from 'react-chartjs-2';
-import { Chart, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from 'chart.js';
+import React from "react";
+import { Card, CardHeader, CardTitle, CardContent } from "../ui/card";
+import { Bar } from "react-chartjs-2";
+import {
+  Chart,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+} from "chart.js";
 
 // Register Chart.js components
 Chart.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
 const WeatherForecast = ({ weatherData }) => {
   // Parse forecast data if it's a string
-  const forecast = typeof weatherData.forecast === 'string' 
-    ? JSON.parse(weatherData.forecast) 
-    : weatherData.forecast;
+  const forecast =
+    typeof weatherData.forecast === "string"
+      ? JSON.parse(weatherData.forecast)
+      : weatherData.forecast;
 
   const chartData = {
-    labels: forecast.map(day => new Date(day.date).toLocaleDateString('en-IE', { weekday: 'short' })),
+    labels: forecast.map((day) =>
+      new Date(day.date).toLocaleDateString("en-IE", { weekday: "short" })
+    ),
     datasets: [
       {
-        label: 'Rainfall (mm)',
-        data: forecast.map(day => day.rainfall),
-        backgroundColor: 'rgba(53, 162, 235, 0.5)',
+        label: "Rainfall (mm)",
+        data: forecast.map((day) => day.rainfall),
+        backgroundColor: "rgba(53, 162, 235, 0.5)",
       },
       {
-        label: 'Temperature (°C)',
-        data: forecast.map(day => day.temperature.max),
-        backgroundColor: 'rgba(255, 99, 132, 0.5)',
-      }
+        label: "Temperature (°C)",
+        data: forecast.map((day) => day.temperature.max),
+        backgroundColor: "rgba(255, 99, 132, 0.5)",
+      },
     ],
   };
 
@@ -1016,7 +1031,7 @@ const WeatherForecast = ({ weatherData }) => {
     responsive: true,
     plugins: {
       legend: {
-        position: 'top',
+        position: "top",
       },
       title: {
         display: true,
@@ -1037,7 +1052,7 @@ const WeatherForecast = ({ weatherData }) => {
             {weatherData.weatherDescription}
           </div>
         </div>
-        
+
         <div className="grid grid-cols-2 gap-4 mb-6 text-sm">
           <div className="flex flex-col">
             <span className="text-gray-500">Humidity</span>
@@ -1045,7 +1060,9 @@ const WeatherForecast = ({ weatherData }) => {
           </div>
           <div className="flex flex-col">
             <span className="text-gray-500">Wind</span>
-            <span className="font-medium">{weatherData.windSpeed} km/h {weatherData.windDirection}</span>
+            <span className="font-medium">
+              {weatherData.windSpeed} km/h {weatherData.windDirection}
+            </span>
           </div>
           <div className="flex flex-col">
             <span className="text-gray-500">Rainfall</span>
@@ -1054,24 +1071,23 @@ const WeatherForecast = ({ weatherData }) => {
           <div className="flex flex-col">
             <span className="text-gray-500">Updated</span>
             <span className="font-medium">
-              {new Date(weatherData.created_at).toLocaleTimeString('en-IE')}
+              {new Date(weatherData.created_at).toLocaleTimeString("en-IE")}
             </span>
           </div>
         </div>
-        
+
         <div className="mt-8">
           <Bar data={chartData} options={chartOptions} />
         </div>
-        
+
         <div className="mt-6">
           <h3 className="font-medium mb-2">Gardening Advice</h3>
           <p className="text-sm">
-            {weatherData.rainfall > 5 
+            {weatherData.rainfall > 5
               ? "Avoid watering today as rainfall is sufficient. Good day for indoor seedling preparation."
               : weatherData.temperature > 20
-                ? "Water plants in the early morning or evening to minimize evaporation."
-                : "Moderate conditions today - ideal for general garden maintenance."
-            }
+              ? "Water plants in the early morning or evening to minimize evaporation."
+              : "Moderate conditions today - ideal for general garden maintenance."}
           </p>
         </div>
       </CardContent>
@@ -1086,98 +1102,114 @@ export default WeatherForecast;
 
 ```jsx
 // src/components/sustainability/SustainabilityTracker.jsx
-import React, { useState } from 'react';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
-import { Label } from '../ui/label';
-import { Input } from '../ui/input';
-import { Button } from '../ui/button';
-import { Doughnut } from 'react-chartjs-2';
-import { Chart, ArcElement, Tooltip, Legend } from 'chart.js';
+import React, { useState } from "react";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+} from "../ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
+import { Label } from "../ui/label";
+import { Input } from "../ui/input";
+import { Button } from "../ui/button";
+import { Doughnut } from "react-chartjs-2";
+import { Chart, ArcElement, Tooltip, Legend } from "chart.js";
 
 // Register Chart.js components
 Chart.register(ArcElement, Tooltip, Legend);
 
 const SustainabilityTracker = ({ gardenId, existingMetrics = [] }) => {
-  const [activeTab, setActiveTab] = useState('record');
+  const [activeTab, setActiveTab] = useState("record");
   const [formData, setFormData] = useState({
-    waterUsage: '',
-    compostAmount: '',
+    waterUsage: "",
+    compostAmount: "",
     pesticidesUsed: false,
     organicPractices: true,
-    rainwaterHarvested: '',
-    foodProduced: ''
+    rainwaterHarvested: "",
+    foodProduced: "",
   });
-  
+
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData({
       ...formData,
-      [name]: type === 'checkbox' ? checked : value
+      [name]: type === "checkbox" ? checked : value,
     });
   };
-  
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     try {
-      const response = await fetch('/api/sustainability', {
-        method: 'POST',
+      const response = await fetch("/api/sustainability", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json'
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           gardenId,
           recordDate: new Date(),
-          ...formData
-        })
+          ...formData,
+        }),
       });
-      
+
       if (response.ok) {
         // Show success message and reset form
         setFormData({
-          waterUsage: '',
-          compostAmount: '',
+          waterUsage: "",
+          compostAmount: "",
           pesticidesUsed: false,
           organicPractices: true,
-          rainwaterHarvested: '',
-          foodProduced: ''
+          rainwaterHarvested: "",
+          foodProduced: "",
         });
-        setActiveTab('view');
+        setActiveTab("view");
       }
     } catch (error) {
-      console.error('Failed to save metrics:', error);
+      console.error("Failed to save metrics:", error);
     }
   };
-  
+
   // Calculate summary metrics for charts
   const waterUsageData = {
-    labels: ['Harvested Rainwater', 'Municipal Water'],
-    datasets: [{
-      data: [
-        existingMetrics.reduce((sum, m) => sum + (m.rainwaterHarvested || 0), 0),
-        existingMetrics.reduce((sum, m) => sum + (m.waterUsage || 0), 0) - 
-        existingMetrics.reduce((sum, m) => sum + (m.rainwaterHarvested || 0), 0)
-      ],
-      backgroundColor: ['rgba(54, 162, 235, 0.5)', 'rgba(255, 99, 132, 0.5)'],
-      borderColor: ['rgb(54, 162, 235)', 'rgb(255, 99, 132)'],
-      borderWidth: 1
-    }]
+    labels: ["Harvested Rainwater", "Municipal Water"],
+    datasets: [
+      {
+        data: [
+          existingMetrics.reduce(
+            (sum, m) => sum + (m.rainwaterHarvested || 0),
+            0
+          ),
+          existingMetrics.reduce((sum, m) => sum + (m.waterUsage || 0), 0) -
+            existingMetrics.reduce(
+              (sum, m) => sum + (m.rainwaterHarvested || 0),
+              0
+            ),
+        ],
+        backgroundColor: ["rgba(54, 162, 235, 0.5)", "rgba(255, 99, 132, 0.5)"],
+        borderColor: ["rgb(54, 162, 235)", "rgb(255, 99, 132)"],
+        borderWidth: 1,
+      },
+    ],
   };
-  
+
   const practicesData = {
-    labels: ['Organic Practices', 'Pesticide Use'],
-    datasets: [{
-      data: [
-        existingMetrics.filter(m => m.organicPractices).length,
-        existingMetrics.filter(m => m.pesticidesUsed).length
-      ],
-      backgroundColor: ['rgba(75, 192, 192, 0.5)', 'rgba(255, 159, 64, 0.5)'],
-      borderColor: ['rgb(75, 192, 192)', 'rgb(255, 159, 64)'],
-      borderWidth: 1
-    }]
+    labels: ["Organic Practices", "Pesticide Use"],
+    datasets: [
+      {
+        data: [
+          existingMetrics.filter((m) => m.organicPractices).length,
+          existingMetrics.filter((m) => m.pesticidesUsed).length,
+        ],
+        backgroundColor: ["rgba(75, 192, 192, 0.5)", "rgba(255, 159, 64, 0.5)"],
+        borderColor: ["rgb(75, 192, 192)", "rgb(255, 159, 64)"],
+        borderWidth: 1,
+      },
+    ],
   };
-  
+
   return (
     <Card className="w-full">
       <CardHeader>
@@ -1189,16 +1221,20 @@ const SustainabilityTracker = ({ gardenId, existingMetrics = [] }) => {
       <CardContent>
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="w-full">
-            <TabsTrigger className="flex-1" value="record">Record Data</TabsTrigger>
-            <TabsTrigger className="flex-1" value="view">View Metrics</TabsTrigger>
+            <TabsTrigger className="flex-1" value="record">
+              Record Data
+            </TabsTrigger>
+            <TabsTrigger className="flex-1" value="view">
+              View Metrics
+            </TabsTrigger>
           </TabsList>
-          
+
           <TabsContent value="record">
             <form onSubmit={handleSubmit} className="space-y-4 pt-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="waterUsage">Water Used (liters)</Label>
-                  <Input 
+                  <Input
                     id="waterUsage"
                     name="waterUsage"
                     type="number"
@@ -1207,10 +1243,12 @@ const SustainabilityTracker = ({ gardenId, existingMetrics = [] }) => {
                     onChange={handleInputChange}
                   />
                 </div>
-                
+
                 <div className="space-y-2">
-                  <Label htmlFor="rainwaterHarvested">Rainwater Harvested (liters)</Label>
-                  <Input 
+                  <Label htmlFor="rainwaterHarvested">
+                    Rainwater Harvested (liters)
+                  </Label>
+                  <Input
                     id="rainwaterHarvested"
                     name="rainwaterHarvested"
                     type="number"
@@ -1219,10 +1257,10 @@ const SustainabilityTracker = ({ gardenId, existingMetrics = [] }) => {
                     onChange={handleInputChange}
                   />
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="compostAmount">Compost Used (kg)</Label>
-                  <Input 
+                  <Input
                     id="compostAmount"
                     name="compostAmount"
                     type="number"
@@ -1231,10 +1269,10 @@ const SustainabilityTracker = ({ gardenId, existingMetrics = [] }) => {
                     onChange={handleInputChange}
                   />
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="foodProduced">Food Produced (kg)</Label>
-                  <Input 
+                  <Input
                     id="foodProduced"
                     name="foodProduced"
                     type="number"
@@ -1244,7 +1282,7 @@ const SustainabilityTracker = ({ gardenId, existingMetrics = [] }) => {
                   />
                 </div>
               </div>
-              
+
               <div className="flex items-center space-x-8 pt-2">
                 <div className="flex items-center space-x-2">
                   <input
@@ -1257,7 +1295,7 @@ const SustainabilityTracker = ({ gardenId, existingMetrics = [] }) => {
                   />
                   <Label htmlFor="organicPractices">Organic Practices</Label>
                 </div>
-                
+
                 <div className="flex items-center space-x-2">
                   <input
                     id="pesticidesUsed"
@@ -1270,56 +1308,75 @@ const SustainabilityTracker = ({ gardenId, existingMetrics = [] }) => {
                   <Label htmlFor="pesticidesUsed">Pesticides Used</Label>
                 </div>
               </div>
-              
+
               <Button type="submit" className="w-full">
                 Save Metrics
               </Button>
             </form>
           </TabsContent>
-          
+
           <TabsContent value="view">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4">
               <div>
                 <h3 className="text-lg font-medium mb-4">Water Usage</h3>
-                <Doughnut 
+                <Doughnut
                   data={waterUsageData}
                   options={{
                     plugins: {
                       title: {
                         display: true,
-                        text: 'Water Sources'
-                      }
-                    }
-                  }}  
+                        text: "Water Sources",
+                      },
+                    },
+                  }}
                 />
               </div>
-              
+
               <div>
-                <h3 className="text-lg font-medium mb-4">Gardening Practices</h3>
-                <Doughnut 
+                <h3 className="text-lg font-medium mb-4">
+                  Gardening Practices
+                </h3>
+                <Doughnut
                   data={practicesData}
                   options={{
                     plugins: {
                       title: {
                         display: true,
-                        text: 'Sustainable Practices'
-                      }
-                    }
-                  }}  
+                        text: "Sustainable Practices",
+                      },
+                    },
+                  }}
                 />
               </div>
             </div>
-            
+
             <div className="mt-8">
               <h3 className="text-lg font-medium mb-4">Recent Metrics</h3>
               {existingMetrics.length > 0 ? (
                 <div className="space-y-4">
                   {existingMetrics.slice(0, 5).map((metric, index) => (
-                    <div key={index} className="border rounded p-4 grid grid-cols-2 gap-2 text-sm">
-                      <div><span className="font-medium">Date:</span> {new Date(metric.recordDate).toLocaleDateString('en-IE')}</div>
-                      <div><span className="font-medium">Water Used:</span> {metric.waterUsage || 0} L</div>
-                      <div><span className="font-medium">Rainwater:</span> {metric.rainwaterHarvested || 0} L</div>
-                      <div><span className="font-medium">Food Produced:</span> {metric.foodProduced || 0} kg</div>
+                    <div
+                      key={index}
+                      className="border rounded p-4 grid grid-cols-2 gap-2 text-sm"
+                    >
+                      <div>
+                        <span className="font-medium">Date:</span>{" "}
+                        {new Date(metric.recordDate).toLocaleDateString(
+                          "en-IE"
+                        )}
+                      </div>
+                      <div>
+                        <span className="font-medium">Water Used:</span>{" "}
+                        {metric.waterUsage || 0} L
+                      </div>
+                      <div>
+                        <span className="font-medium">Rainwater:</span>{" "}
+                        {metric.rainwaterHarvested || 0} L
+                      </div>
+                      <div>
+                        <span className="font-medium">Food Produced:</span>{" "}
+                        {metric.foodProduced || 0} kg
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -1362,7 +1419,7 @@ const seasonalTips = await db.select().from(SeasonalTips)
 // Get featured sustainable plants
 const sustainablePlants = await db.select().from(Plants)
   .where(
-    `sustainabilityRating >= 4 AND 
+    `sustainabilityRating >= 4 AND
      nativeToIreland = true`
   )
   .limit(4);
@@ -1379,7 +1436,7 @@ const weatherData = await getCurrentWeather('Dublin');
         Personalized gardening advice for Irish conditions, focusing on sustainability and local growing practices.
       </p>
     </section>
-    
+
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
       <div class="lg:col-span-2">
         <section class="mb-8">
@@ -1396,7 +1453,7 @@ const weatherData = await getCurrentWeather('Dublin');
             </div>
           </div>
         </section>
-        
+
         <section class="mb-8">
           <h2 class="text-2xl font-semibold mb-4 text-green-700">Sustainable Plant Selections</h2>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1404,8 +1461,8 @@ const weatherData = await getCurrentWeather('Dublin');
               <div class="bg-white rounded-lg shadow p-4">
                 <div class="flex gap-3">
                   {plant.imageUrl && (
-                    <img 
-                      src={plant.imageUrl} 
+                    <img
+                      src={plant.imageUrl}
                       alt={plant.commonName}
                       class="w-20 h-20 object-cover rounded"
                     />
@@ -1425,16 +1482,16 @@ const weatherData = await getCurrentWeather('Dublin');
           </div>
         </section>
       </div>
-      
+
       <div class="lg:col-span-1">
         <WeatherForecast weatherData={weatherData} client:load />
-        
+
         <div class="mt-8 bg-white rounded-lg shadow-md p-6">
           <h2 class="text-xl font-semibold mb-4">Quick Soil Guide</h2>
           <p class="mb-4 text-sm">
             Irish soils vary greatly across the country. Understanding your soil type is essential for sustainable gardening.
           </p>
-          
+
           <div class="space-y-3 text-sm">
             <div>
               <span class="font-medium block">Brown Earth</span>
@@ -1453,7 +1510,7 @@ const weatherData = await getCurrentWeather('Dublin');
               <span class="text-gray-600">Good agricultural soils in east and south</span>
             </div>
           </div>
-          
+
           <a href="/soil-guide" class="block mt-4 text-green-600 hover:text-green-800 font-medium text-sm">
             Complete Irish soil guide →
           </a>
@@ -1468,52 +1525,57 @@ const weatherData = await getCurrentWeather('Dublin');
 
 ```js
 // src/pages/api/recommendations.js
-import { db } from 'astro:db';
-import { Plants } from '../../database/schema';
-import { IrishCropRecommender } from '../../ml/crop-recommender';
+import { db } from "astro:db";
+import { Plants } from "../../database/schema";
+import { IrishCropRecommender } from "../../ml/crop-recommender";
 
 export async function POST({ request }) {
   try {
     const data = await request.json();
-    const { soilType, sunExposure, county, soilPh, temperature, rainfall } = data;
-    
+    const { soilType, sunExposure, county, soilPh, temperature, rainfall } =
+      data;
+
     // Initialize crop recommender
     const recommender = new IrishCropRecommender();
-    
+
     // Get recommendations
     const recommendations = await recommender.getRecommendations(
       { soilPh, temperature, rainfall, sunExposure },
       county
     );
-    
+
     // Get full plant details for recommendations
-    const plantNames = recommendations.map(rec => rec.name);
-    const plants = await db.select().from(Plants)
-      .where(`commonName IN (${plantNames.map(n => `'${n}'`).join(',')})`);
-      
+    const plantNames = recommendations.map((rec) => rec.name);
+    const plants = await db
+      .select()
+      .from(Plants)
+      .where(`commonName IN (${plantNames.map((n) => `'${n}'`).join(",")})`);
+
     // Merge recommendation data with plant details
-    const fullRecommendations = recommendations.map(rec => {
-      const plantDetails = plants.find(p => p.commonName.toLowerCase() === rec.name.toLowerCase());
+    const fullRecommendations = recommendations.map((rec) => {
+      const plantDetails = plants.find(
+        (p) => p.commonName.toLowerCase() === rec.name.toLowerCase()
+      );
       return {
         ...rec,
-        ...plantDetails
+        ...plantDetails,
       };
     });
-    
+
     return new Response(
       JSON.stringify({ recommendations: fullRecommendations }),
       {
         status: 200,
-        headers: { 'Content-Type': 'application/json' }
+        headers: { "Content-Type": "application/json" },
       }
     );
   } catch (error) {
-    console.error('Failed to generate recommendations:', error);
+    console.error("Failed to generate recommendations:", error);
     return new Response(
-      JSON.stringify({ error: 'Failed to generate recommendations' }),
+      JSON.stringify({ error: "Failed to generate recommendations" }),
       {
         status: 500,
-        headers: { 'Content-Type': 'application/json' }
+        headers: { "Content-Type": "application/json" },
       }
     );
   }
@@ -1523,36 +1585,43 @@ export async function POST({ request }) {
 ## One-week implementation steps
 
 Day 1:
+
 - Set up Astro project with TypeScript and required integrations
 - Create database schema and initial data models
 - Start building core UI components
 
 Day 2:
+
 - Implement Met.ie weather API integration
 - Build Teagasc soil data client
 - Create weather and soil visualization components
 
 Day 3:
+
 - Implement GraphRAG knowledge base with SQLite
 - Seed database with Irish plants and gardening information
 - Build plant browsing and search functionality
 
 Day 4:
+
 - Implement decision tree ML model for crop recommendations
 - Create recommendations API
 - Build recommendation UI components
 
 Day 5:
+
 - Implement sustainability tracking features
 - Create garden profile management
 - Build seasonal tips components
 
 Day 6:
+
 - Connect all components into cohesive flows
 - Implement caching for API calls
 - Optimize performance
 
 Day 7:
+
 - Final testing and bug fixes
 - Content refinement
 - Deployment to production

@@ -1,6 +1,6 @@
 /**
  * Test script for the RAG (Retrieval-Augmented Generation) system
- * This demonstrates how the Irish Garden Assistant uses graph-based knowledge retrieval
+ * This demonstrates how Bloom uses graph-based knowledge retrieval
  * combined with Vertex AI to answer gardening questions
  */
 
