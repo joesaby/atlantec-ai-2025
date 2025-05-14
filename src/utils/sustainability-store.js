@@ -1,5 +1,10 @@
 // Use localStorage to persist user data
 import logger from "./unified-logger.js";
+import {
+  emitPracticeAdded,
+  emitPracticeRemoved,
+  emitDataChanged,
+} from "./sustainability-events";
 
 const STORAGE_KEY = "irish-garden-sustainability";
 
@@ -156,6 +161,18 @@ export const addSustainablePractice = (
       practiceId,
       practicesCount: userProgress.activePractices.length,
     });
+
+    // Emit event when a practice is added (if in client mode)
+    if (isClient) {
+      // Use the imported emitPracticeAdded function
+      emitPracticeAdded(practiceId);
+
+      // Also emit a general data changed event
+      emitDataChanged("practice-added", {
+        practiceId,
+        timestamp: new Date().toISOString(),
+      });
+    }
   }
 
   return userProgress;
@@ -230,6 +247,19 @@ export const removeSustainablePractice = (practiceId) => {
     practiceId,
     practicesCount: userProgress.activePractices.length,
   });
+
+  // Emit event when a practice is removed (if in client mode)
+  if (isClient) {
+    // Use the imported emitPracticeRemoved function
+    emitPracticeRemoved(practiceId);
+
+    // Also emit a general data changed event
+    emitDataChanged("practice-removed", {
+      practiceId,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
   return userProgress;
 };
 
@@ -399,6 +429,15 @@ export const recalculateSDGScores = () => {
       practicesCount: userProgress.activePractices.length,
     });
     saveUserProgress(userProgress);
+
+    // Emit an event to notify that SDG scores have been recalculated
+    if (isClient) {
+      emitDataChanged("sdg-scores-recalculated", {
+        timestamp: new Date().toISOString(),
+        scoresUpdated: Object.keys(userProgress.sdgScores).length,
+      });
+    }
+
     return userProgress;
   } catch (error) {
     logger.error("Error recalculating SDG scores", {
