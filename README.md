@@ -3,6 +3,7 @@
 <img src="/public/images/bloom-logo.svg" alt="Bloom Logo" width="200" />
 
 Bloom is an interactive AI-powered gardening assistant designed specifically for Irish gardeners. It helps users select suitable plants, implement sustainable gardening practices, and access personalized advice based on their local conditions.
+
 Bloom is deployed on Netlify and available at:
 [https://irish-gardening.netlify.app/](https://irish-gardening.netlify.app/)
 
