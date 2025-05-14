@@ -748,15 +748,38 @@ const ResourceUsageTracker = () => {
     }
   };
 
-  // Get carbon impact metrics
+  // Get carbon impact metrics with enhanced details from carbon calculator
   const getCarbonImpactMetrics = () => {
-    // Calculate net carbon impact
+    // Calculate net carbon impact from explicit tracking
     const carbonImpact = calculateNetCarbonImpact();
 
+    // Calculate additional carbon savings that may not be explicitly tracked
+    const harvestLogs = userProgress.resourceUsage.harvest || [];
+
+    // Food miles savings (transportation emissions)
+    const foodMilesSavings = harvestLogs.length * 2; // Rough estimate: each harvest saves 2 kg CO2e in transport
+
+    // Plastic packaging savings
+    // Assume each kg of produce would use 25g of plastic, and each kg of plastic produces 6 kg CO2e
+    const plasticSavingsEstimate =
+      harvestLogs.reduce((total, log) => total + (log.amount || 0), 0) *
+      0.025 *
+      6;
+
+    // Enhanced calculations including implicit savings
+    const totalSavings =
+      carbonImpact.offsets + foodMilesSavings + plasticSavingsEstimate;
+
     return {
-      emissions: Math.round(carbonImpact.emissions * 10) / 10,
-      reductions: Math.round(carbonImpact.reductions * 10) / 10,
-      netImpact: Math.round(carbonImpact.netImpact * 10) / 10,
+      emissions: carbonImpact.emissions.toFixed(1),
+      reductions: totalSavings.toFixed(1),
+      netImpact: (carbonImpact.emissions - totalSavings).toFixed(1),
+      percentReduced:
+        carbonImpact.emissions > 0
+          ? Math.round((totalSavings / carbonImpact.emissions) * 100)
+          : 0,
+      foodMilesSavings: foodMilesSavings.toFixed(1),
+      plasticSavings: plasticSavingsEstimate.toFixed(1),
     };
   };
 
@@ -802,71 +825,105 @@ const ResourceUsageTracker = () => {
       )}
 
       {/* Carbon Impact Summary */}
-      {userProgress?.resourceUsage?.carbon?.length > 0 && (
-        <div className="bg-base-200 p-4 rounded-lg mb-6">
-          <h3 className="text-lg font-bold mb-2">Carbon Impact Summary</h3>
-          <div className="flex flex-wrap gap-4">
-            <div className="flex items-center">
-              <div className="bg-red-100 text-red-800 rounded-full p-2 mr-2">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
-                  />
-                </svg>
-              </div>
-              <div>
-                <div className="text-sm opacity-70">Emissions</div>
-                <div className="font-bold">
-                  {getCarbonImpactMetrics().emissions} kg CO₂e
-                </div>
+      <div className="bg-base-200 p-4 rounded-lg mb-6">
+        <h3 className="text-lg font-bold mb-2">Carbon Footprint Calculator</h3>
+        <div className="flex flex-wrap gap-4">
+          <div className="flex items-center">
+            <div className="bg-red-100 text-red-800 rounded-full p-2 mr-2">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
+                />
+              </svg>
+            </div>
+            <div>
+              <div className="text-sm opacity-70">Emissions</div>
+              <div className="font-bold">
+                {getCarbonImpactMetrics().emissions} kg CO₂e
               </div>
             </div>
+          </div>
 
-            <div className="flex items-center">
-              <div className="bg-green-100 text-green-800 rounded-full p-2 mr-2">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"
-                  />
-                </svg>
-              </div>
-              <div>
-                <div className="text-sm opacity-70">Reductions</div>
-                <div className="font-bold">
-                  {getCarbonImpactMetrics().reductions} kg CO₂e
-                </div>
+          <div className="flex items-center">
+            <div className="bg-green-100 text-green-800 rounded-full p-2 mr-2">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"
+                />
+              </svg>
+            </div>
+            <div>
+              <div className="text-sm opacity-70">Reductions</div>
+              <div className="font-bold">
+                {getCarbonImpactMetrics().reductions} kg CO₂e
               </div>
             </div>
+          </div>
 
-            <div className="flex items-center">
+          <div className="flex items-center">
+            <div
+              className={`rounded-full p-2 mr-2 ${
+                getCarbonImpactMetrics().netImpact <= 0
+                  ? "bg-green-100 text-green-800"
+                  : "bg-red-100 text-red-800"
+              }`}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M13 7l5 5m0 0l-5 5m5-5H6"
+                />
+              </svg>
+            </div>
+            <div>
+              <div className="text-sm opacity-70">Net Impact</div>
               <div
-                className={`rounded-full p-2 mr-2 ${
+                className={`font-bold ${
                   getCarbonImpactMetrics().netImpact <= 0
-                    ? "bg-green-100 text-green-800"
-                    : "bg-red-100 text-red-800"
+                    ? "text-success"
+                    : "text-error"
                 }`}
               >
+                {getCarbonImpactMetrics().netImpact} kg CO₂e
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Added section showing equivalent savings */}
+        {getCarbonImpactMetrics().reductions > 0 && (
+          <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="bg-base-100 p-3 rounded-md">
+              <div className="flex items-center">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5"
+                  className="w-6 h-6 text-success mr-2"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -875,31 +932,69 @@ const ResourceUsageTracker = () => {
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     strokeWidth={2}
-                    d="M13 7l5 5m0 0l-5 5m5-5H6"
+                    d="M13 10V3L4 14h7v7l9-11h-7z"
                   />
                 </svg>
+                <span>
+                  Equivalent to removing a car from the road for{" "}
+                  {Math.round(
+                    parseFloat(getCarbonImpactMetrics().reductions) / 0.2
+                  )}{" "}
+                  kilometers!
+                </span>
               </div>
-              <div>
-                <div className="text-sm opacity-70">Net Impact</div>
-                <div
-                  className={`font-bold ${
-                    getCarbonImpactMetrics().netImpact <= 0
-                      ? "text-success"
-                      : "text-error"
-                  }`}
+            </div>
+            <div className="bg-base-100 p-3 rounded-md">
+              <div className="flex items-center">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="w-6 h-6 text-success mr-2"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
                 >
-                  {getCarbonImpactMetrics().netImpact} kg CO₂e
-                </div>
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"
+                  />
+                </svg>
+                <span>
+                  Your garden's carbon savings equal the work of a tree for{" "}
+                  {Math.round(
+                    (parseFloat(getCarbonImpactMetrics().reductions) / 25) * 12
+                  )}{" "}
+                  months!
+                </span>
               </div>
             </div>
           </div>
-          <div className="text-xs mt-3 opacity-70">
-            {getCarbonImpactMetrics().netImpact <= 0
-              ? "Your gardening activities are providing a net positive impact on carbon emissions!"
-              : "Try implementing more carbon-reducing activities to improve your net carbon impact."}
+        )}
+
+        <div className="divider text-xs opacity-70">Detailed Breakdown</div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
+          <div className="flex items-center justify-between">
+            <span>Food Miles Saved:</span>
+            <span className="font-semibold">
+              {getCarbonImpactMetrics().foodMilesSavings} kg CO₂e
+            </span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span>Plastic Packaging Avoided:</span>
+            <span className="font-semibold">
+              {getCarbonImpactMetrics().plasticSavings} kg CO₂e
+            </span>
           </div>
         </div>
-      )}
+
+        <div className="text-xs mt-3 opacity-70">
+          {getCarbonImpactMetrics().netImpact <= 0
+            ? "Your gardening activities are providing a net positive impact on carbon emissions! Keep up the great work."
+            : "Try implementing more carbon-reducing activities such as composting, harvesting more food, and reducing garden waste to improve your net carbon impact."}
+        </div>
+      </div>
 
       <div className="grid md:grid-cols-2 gap-8">
         {/* Left column - Input Form */}
