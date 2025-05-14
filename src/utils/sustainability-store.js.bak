@@ -18,9 +18,6 @@ const defaultUserProgress = {
     water: [],
     compost: [],
     harvest: [],
-    carbon: [],
-    energy: [],
-    waste: [],
   },
   milestones: [],
   score: 0,
@@ -88,6 +85,55 @@ const saveUserProgress = (data) => {
       component: "SustainabilityStore",
       error: error.message,
     });
+  }
+};
+
+// Update sustainability score based on activity
+const updateSustainabilityScore = (userProgress, value) => {
+  // Only adjust score if it's within reasonable bounds
+  if (value > -100 && value < 100) {
+    userProgress.score += value;
+
+    // Ensure score doesn't go negative
+    userProgress.score = Math.max(0, userProgress.score);
+  }
+};
+
+// Update SDG scores based on resource usage
+const updateSDGScoreForResourceUsage = (userProgress, resourceType, amount) => {
+  if (!userProgress.sdgScores) {
+    userProgress.sdgScores = { ...defaultUserProgress.sdgScores };
+  }
+
+  // Default impact points - adjusted based on resource type and amount
+  let points = 0;
+
+  switch (resourceType) {
+    case "water":
+      // Water conservation impacts SDG 6 (Clean Water) and SDG 12 (Responsible Consumption)
+      points = 0.5; // Small positive impact for tracking water
+      userProgress.sdgScores.sdg6 += points;
+      userProgress.sdgScores.sdg12 += points;
+      break;
+
+    case "compost":
+      // Composting impacts SDG 12 (Responsible Consumption) and SDG 15 (Life on Land)
+      points = amount * 0.2; // Points scaled by amount composted
+      userProgress.sdgScores.sdg12 += points;
+      userProgress.sdgScores.sdg15 += points;
+      break;
+
+    case "carbon":
+      // Carbon tracking impacts SDG 13 (Climate Action)
+      // Negative amounts are carbon reductions (positive impact)
+      // Positive amounts are emissions tracked (small positive impact for awareness)
+      if (amount < 0) {
+        points = Math.abs(amount) * 0.3; // Stronger impact for carbon reductions
+      } else {
+        points = 0.2; // Small impact for tracking (awareness)
+      }
+      userProgress.sdgScores.sdg13 += points;
+      break;
   }
 };
 
@@ -281,7 +327,7 @@ export const updatePracticeNotes = (practiceId, notes) => {
   return userProgress;
 };
 
-// Record resource usage (water, compost, harvest, carbon, energy, waste)
+// Record resource usage (water, compost, harvest, carbon)
 export const recordResourceUsage = (
   resourceType,
   amount,
@@ -297,173 +343,27 @@ export const recordResourceUsage = (
   userProgress.resourceUsage[resourceType].push({
     date: date.toISOString(),
     amount: amount,
-    metadata: metadata,
+    metadata: metadata, // Store additional information like activity type
   });
 
-  // Update sustainability metrics based on this resource usage
-  updateSustainabilityMetricsFromResource(resourceType, amount, metadata);
-
-  saveUserProgress(userProgress);
-
-  // Emit data changed event
-  if (isClient) {
-    emitDataChanged("resource-usage-updated", {
-      resourceType,
-      amount,
-      timestamp: date.toISOString(),
-    });
+  // For carbon entries, update the user's carbon reduction score
+  if (resourceType === "carbon") {
+    // Carbon entries are reductions if negative, otherwise they're emissions to track
+    const impactValue = amount < 0 ? Math.abs(amount) : -amount * 0.1; // Negative impact for emissions with lower weight
+    updateSustainabilityScore(userProgress, impactValue);
   }
 
-  return userProgress;
-};
-
-// Update sustainability metrics based on resource usage
-export const updateSustainabilityMetricsFromResource = (
-  resourceType,
-  amount,
-  metadata = {}
-) => {
-  const userProgress = getUserProgress();
-
-  // Update relevant SDG scores based on resource type
-  switch (resourceType) {
-    case "water":
-      // SDG 6: Clean Water
-      // Negative impact if using more water, positive if conserving
-      if (amount < 0) {
-        // Water conservation (negative amount means saved water)
-        userProgress.sdgScores.sdg6 += Math.abs(amount) * 0.05;
-      } else {
-        // Water usage - small negative impact
-        userProgress.sdgScores.sdg6 -= amount * 0.01;
-      }
-      break;
-
-    case "compost":
-      // SDG 12: Responsible Consumption, SDG 15: Life on Land
-      userProgress.sdgScores.sdg12 += amount * 0.1;
-      userProgress.sdgScores.sdg15 += amount * 0.1;
-      break;
-
-    case "harvest":
-      // SDG 2: Zero Hunger, SDG 12: Responsible Consumption
-      userProgress.sdgScores.sdg2 += amount * 0.1;
-      userProgress.sdgScores.sdg12 += amount * 0.05;
-      break;
-
-    case "carbon":
-      // SDG 13: Climate Action
-      if (amount < 0) {
-        // Carbon reduction (negative amount means reduced emissions)
-        userProgress.sdgScores.sdg13 += Math.abs(amount) * 0.2;
-      } else {
-        // Carbon emissions - negative impact
-        userProgress.sdgScores.sdg13 -= amount * 0.1;
-      }
-      break;
-
-    case "energy":
-      // SDG 7: Affordable and Clean Energy
-      if (amount < 0) {
-        // Energy saving (negative amount means saved energy)
-        userProgress.sdgScores.sdg7 += Math.abs(amount) * 0.15;
-      } else {
-        // Energy usage - small negative impact
-        userProgress.sdgScores.sdg7 -= amount * 0.05;
-      }
-      break;
-
-    case "waste":
-      // SDG 11: Sustainable Cities, SDG 12: Responsible Consumption
-      userProgress.sdgScores.sdg11 += amount * 0.1;
-      userProgress.sdgScores.sdg12 += amount * 0.15;
-      break;
-  }
-
-  // Cap SDG scores between 0 and 100
-  Object.keys(userProgress.sdgScores).forEach((sdg) => {
-    userProgress.sdgScores[sdg] = Math.max(
-      0,
-      Math.min(100, userProgress.sdgScores[sdg])
-    );
-  });
-
-  // Calculate overall sustainability score (average of SDG scores)
-  const sdgValues = Object.values(userProgress.sdgScores);
-  const totalScore = sdgValues.reduce((sum, score) => sum + score, 0);
-  userProgress.score = Math.round(totalScore / sdgValues.length);
-
-  saveUserProgress(userProgress);
-  return userProgress;
-};
-
-// Create carbon offset from harvest or waste reduction
-export const recordCarbonOffset = (amount, sourceType, date = new Date()) => {
-  const userProgress = getUserProgress();
-
-  // Ensure carbon array exists
-  if (!userProgress.resourceUsage.carbon) {
-    userProgress.resourceUsage.carbon = [];
-  }
-
-  // Record a negative carbon amount (offset) with metadata about the source
-  userProgress.resourceUsage.carbon.push({
-    date: date.toISOString(),
-    amount: -Math.abs(amount), // Force negative (reduction)
-    metadata: {
-      activity: "offset",
-      source: sourceType, // 'harvest', 'waste', 'compost', etc.
-    },
-  });
-
-  // Update sustainability metrics
-  updateSustainabilityMetricsFromResource("carbon", -Math.abs(amount), {
-    activity: "offset",
-    source: sourceType,
-  });
-
-  saveUserProgress(userProgress);
-
-  // Emit data changed event
-  if (isClient) {
-    emitDataChanged("carbon-offset-recorded", {
-      amount: -Math.abs(amount),
-      source: sourceType,
-      timestamp: date.toISOString(),
-    });
-  }
-
-  return userProgress;
-};
-
-// Calculate total carbon impact (emissions minus offsets)
-export const calculateNetCarbonImpact = () => {
-  const userProgress = getUserProgress();
-
+  // Update SDG scores for certain resource types
   if (
-    !userProgress.resourceUsage.carbon ||
-    userProgress.resourceUsage.carbon.length === 0
+    resourceType === "water" ||
+    resourceType === "compost" ||
+    resourceType === "carbon"
   ) {
-    return { emissions: 0, reductions: 0, netImpact: 0 };
+    updateSDGScoreForResourceUsage(userProgress, resourceType, amount);
   }
 
-  let emissions = 0;
-  let reductions = 0;
-
-  userProgress.resourceUsage.carbon.forEach((entry) => {
-    const amount = parseFloat(entry.amount);
-    if (amount >= 0) {
-      emissions += amount;
-    } else {
-      reductions += Math.abs(amount);
-    }
-  });
-
-  return {
-    emissions,
-    reductions,
-    netImpact: emissions - reductions,
-  };
+  saveUserProgress(userProgress);
+  return userProgress;
 };
 
 // Get all user progress data
@@ -475,6 +375,47 @@ export const getAllUserProgress = () => {
     saveUserProgress(progress);
   }
   return progress;
+};
+
+// Delete a specific resource usage entry by index
+// Delete resource usage entry function moved to end of file
+
+// Reset all data for a specific resource type
+export const resetResourceData = (resourceType) => {
+  const userProgress = getUserProgress();
+  
+  if (userProgress.resourceUsage[resourceType]) {
+    // Reset the resource type data to empty array
+    userProgress.resourceUsage[resourceType] = [];
+    
+    // If resetting carbon data, we might want to recalculate the overall sustainability score
+    // This is a simplified approach - for more accuracy, you'd recalculate from all remaining data
+    if (resourceType === "carbon") {
+      // For now, just making a small adjustment since detailed history is lost
+      userProgress.sdgScores.sdg13 = Math.max(0, userProgress.sdgScores.sdg13 * 0.8);
+    }
+    
+    // Adjust relevant SDG scores
+    if (resourceType === "water") {
+      userProgress.sdgScores.sdg6 = Math.max(0, userProgress.sdgScores.sdg6 * 0.8);
+      userProgress.sdgScores.sdg12 = Math.max(0, userProgress.sdgScores.sdg12 * 0.9);
+    } else if (resourceType === "compost") {
+      userProgress.sdgScores.sdg12 = Math.max(0, userProgress.sdgScores.sdg12 * 0.9);
+      userProgress.sdgScores.sdg15 = Math.max(0, userProgress.sdgScores.sdg15 * 0.8);
+    }
+    
+    saveUserProgress(userProgress);
+    emitDataChanged(resourceType);
+  }
+  
+  return userProgress;
+};
+
+// Reset all sustainability data (complete reset)
+export const resetAllSustainabilityData = () => {
+  saveUserProgress(defaultUserProgress);
+  emitDataChanged('all');
+  return { ...defaultUserProgress };
 };
 
 // Get practice by ID
@@ -707,5 +648,115 @@ export const completeChallenge = (month, sdgIds = []) => {
       error: error.message,
     });
     return null;
+  }
+};
+
+// Delete a specific resource usage entry by index
+export const deleteResourceUsageEntry = (resourceType, entryIndex) => {
+  if (!isClient) return defaultUserProgress;
+  
+  try {
+    const userProgress = getUserProgress();
+    
+    if (!userProgress.resourceUsage[resourceType]) {
+      return userProgress;
+    }
+    
+    if (entryIndex >= 0 && entryIndex < userProgress.resourceUsage[resourceType].length) {
+      // Get the entry being deleted for potential SDG score adjustment
+      const deletedEntry = userProgress.resourceUsage[resourceType][entryIndex];
+      
+      // Remove the entry
+      userProgress.resourceUsage[resourceType].splice(entryIndex, 1);
+      
+      // If this was a carbon entry, adjust sustainability score
+      if (resourceType === "carbon") {
+        // Reverse the impact that was applied when it was added
+        const reversedImpact = deletedEntry.amount < 0 
+          ? -Math.abs(deletedEntry.amount)  // It was a reduction, so reverse positive impact
+          : deletedEntry.amount * 0.1;      // It was an emission, so reverse negative impact
+        updateSustainabilityScore(userProgress, reversedImpact);
+      }
+      
+      saveUserProgress(userProgress);
+      emitDataChanged(resourceType);
+    }
+    
+    return userProgress;
+  } catch (error) {
+    logger.error("Error deleting resource usage entry", {
+      component: "SustainabilityStore",
+      resourceType,
+      entryIndex,
+      error: error.message,
+    });
+    return getUserProgress();
+  }
+};
+
+// Reset all data for a specific resource type
+export const resetResourceData = (resourceType) => {
+  if (!isClient) return defaultUserProgress;
+  
+  try {
+    const userProgress = getUserProgress();
+    
+    if (userProgress.resourceUsage[resourceType]) {
+      // Reset the resource type data to empty array
+      userProgress.resourceUsage[resourceType] = [];
+      
+      // Adjust relevant SDG scores
+      if (resourceType === "carbon") {
+        userProgress.sdgScores.sdg13 = Math.max(0, userProgress.sdgScores.sdg13 * 0.8);
+      } else if (resourceType === "water") {
+        userProgress.sdgScores.sdg6 = Math.max(0, userProgress.sdgScores.sdg6 * 0.8);
+        userProgress.sdgScores.sdg12 = Math.max(0, userProgress.sdgScores.sdg12 * 0.9);
+      } else if (resourceType === "compost") {
+        userProgress.sdgScores.sdg12 = Math.max(0, userProgress.sdgScores.sdg12 * 0.9);
+        userProgress.sdgScores.sdg15 = Math.max(0, userProgress.sdgScores.sdg15 * 0.8);
+      }
+      
+      saveUserProgress(userProgress);
+      emitDataChanged(resourceType);
+    }
+    
+    return userProgress;
+  } catch (error) {
+    logger.error("Error resetting resource data", {
+      component: "SustainabilityStore",
+      resourceType,
+      error: error.message,
+    });
+    return getUserProgress();
+  }
+};
+
+// Reset all sustainability data
+export const resetAllSustainabilityData = () => {
+  if (!isClient) return defaultUserProgress;
+  
+  try {
+    // Reset to default user progress
+    saveUserProgress({...defaultUserProgress});
+    
+    // Also clear any localStorage challenge data
+    const months = [
+      "January", "February", "March", "April", "May", "June",
+      "July", "August", "September", "October", "November", "December"
+    ];
+    
+    months.forEach(month => {
+      localStorage.removeItem(`accepted-challenge-${month}`);
+      localStorage.removeItem(`completed-challenge-${month}`);
+    });
+    
+    emitDataChanged("all");
+    return defaultUserProgress;
+  } catch (error) {
+    logger.error("Error resetting all sustainability data", {
+      component: "SustainabilityStore",
+      error: error.message,
+    });
+    return defaultUserProgress;
   }
 };
