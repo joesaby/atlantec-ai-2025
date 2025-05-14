@@ -1,6 +1,6 @@
 # Bloom - AI Gardening Assistant
 
-![Bloom Logo](/public/images/bloom-logo.svg|width=200)
+<img src="/public/images/bloom-logo.svg" alt="Bloom Logo" width="200" />
 
 Bloom is an interactive AI-powered gardening assistant designed specifically for Irish gardeners. It helps users select suitable plants, implement sustainable gardening practices, and access personalized advice based on their local conditions.
 
@@ -37,17 +37,19 @@ Bloom is built with a modern web technology stack:
 - **Data Storage**: Structured gardening knowledge in GraphRAG system
 - **API Layer**: Serverless functions for weather data, plant recommendations, and AI interactions
 
-```
-Architecture Overview:
-┌───────────────┐     ┌───────────────┐     ┌───────────────┐
-│  Web Frontend │────▶│   API Layer   │────▶│  AI Services  │
-└───────────────┘     └───────────────┘     └───────────────┘
-        │                     │                     │
-        │                     │                     │
-        ▼                     ▼                     ▼
-┌───────────────┐     ┌───────────────┐     ┌───────────────┐
-│  UI Components│     │ Data Services │     │ Knowledge Base│
-└───────────────┘     └───────────────┘     └───────────────┘
+```mermaid
+flowchart TD
+    A[Web Frontend] --> B[API Layer] --> C[AI Services]
+    A --> D[UI Components]
+    B --> E[Data Services]
+    C --> F[Knowledge Base]
+    
+    style A fill:#d4f1f9,stroke:#05a0c8
+    style B fill:#e6f2ff,stroke:#5394de
+    style C fill:#e6e6fa,stroke:#8a8add
+    style D fill:#d4f1f9,stroke:#05a0c8
+    style E fill:#e6f2ff,stroke:#5394de
+    style F fill:#e6e6fa,stroke:#8a8add
 ```
 
 ## 🌍 Deployment
