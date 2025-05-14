@@ -21,3 +21,16 @@ html {
   max-width: 100%;
   word-break: break-word;
 }
+
+/* Custom color for Bloom chat bubble */
+.chat-bubble-bloom {
+  background-color: #FF6B6B !important;
+  color: white !important;
+  border: 2px solid #FF9E9E;
+  box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);
+}
+
+.chat-bubble-bloom:hover {
+  background-color: #FF5A5A !important;
+  box-shadow: 0 6px 16px rgba(255, 107, 107, 0.4);
+}
