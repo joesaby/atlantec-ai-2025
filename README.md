@@ -6,6 +6,35 @@ Bloom is an interactive AI-powered gardening assistant designed specifically for
 
 **Live Demo:** [https://irish-gardening.netlify.app/](https://irish-gardening.netlify.app/)
 
+## 📅 Project Timeline
+
+```mermaid
+timeline
+    title Bloom Project Development Timeline
+    section Research Phase
+        May 2-6, 2025 : Initial research on agriculture, energy, flood management
+                      : Exploration of SDG enhancement opportunities
+                      : Documentation in src/content/docs/research/
+    section Planning Phase
+        May 6-7, 2025 : Development planning and roadmap creation
+                      : Phase dependencies documentation
+                      : Docs in src/content/docs/devel-phases/
+    section Implementation Phase
+        May 7-8, 2025 : Astro framework & React components setup
+                      : TailwindCSS/daisyUI implementation
+                      : Sample UI cards and demonstrator pages
+        May 8-10, 2025 : Gardening Agent implementation
+                       : Soil and weather data integration
+                       : Dynamic card rendering system
+        May 12-13, 2025 : GraphRAG system implementation
+                        : Knowledge graph integration
+                        : Enhanced AI response quality
+    section Finalization Phase
+        May 13-14, 2025 : Rebranding from "Garden Assistant" to "Bloom"
+                        : Theme, icons and brand asset updates
+                        : Documentation finalization
+```
+
 ## 🌱 Main Features
 
 ### AI Gardening Assistant
@@ -43,7 +72,7 @@ flowchart TD
     A --> D[UI Components]
     B --> E[Data Services]
     C --> F[Knowledge Base]
-    
+
     style A fill:#d4f1f9,stroke:#05a0c8
     style B fill:#e6f2ff,stroke:#5394de
     style C fill:#e6e6fa,stroke:#8a8add
@@ -64,35 +93,6 @@ For detailed information about the project, including
 1. [Getting started](https://irish-gardening.netlify.app/docs/)
 2. [Architecture](https://irish-gardening.netlify.app/docs/arch/01-architecture-overview)
 3. [Development phases](https://irish-gardening.netlify.app/docs/devel-phases/phase-dependencies)
-
-## 📅 Project Timeline
-
-```mermaid
-timeline
-    title Bloom Project Development Timeline
-    section Research Phase
-        May 2-6, 2025 : Initial research on agriculture, energy, flood management
-                      : Exploration of SDG enhancement opportunities
-                      : Documentation in src/content/docs/research/
-    section Planning Phase
-        May 6-7, 2025 : Development planning and roadmap creation
-                      : Phase dependencies documentation
-                      : Docs in src/content/docs/devel-phases/
-    section Implementation Phase
-        May 7-8, 2025 : Astro framework & React components setup
-                      : TailwindCSS/daisyUI implementation
-                      : Sample UI cards and demonstrator pages
-        May 8-10, 2025 : Gardening Agent implementation
-                       : Soil and weather data integration
-                       : Dynamic card rendering system
-        May 12-13, 2025 : GraphRAG system implementation
-                        : Knowledge graph integration
-                        : Enhanced AI response quality
-    section Finalization Phase
-        May 13-14, 2025 : Rebranding from "Garden Assistant" to "Bloom"
-                        : Theme, icons and brand asset updates
-                        : Documentation finalization
-```
 
 ## 💚 Sustainability Focus
 
