@@ -1,0 +1,147 @@
+---
+import { getCollection } from 'astro:content';
+import DocsLayout from '../../layouts/DocsLayout.astro';
+
+export const prerender = true;
+
+// Get all documentation entries
+const docs = await getCollection('docs');
+
+// Group docs by category
+const docsByCategory = docs.reduce((acc, doc) => {
+  const category = doc.data.category || 'general';
+  if (!acc[category]) {
+    acc[category] = [];
+  }
+  acc[category].push(doc);
+  return acc;
+}, {});
+
+// Sort the docs within each category by title
+Object.keys(docsByCategory).forEach(category => {
+  docsByCategory[category].sort((a, b) => 
+    a.data.title.localeCompare(b.data.title)
+  );
+});
+
+// Sort categories
+const sortedCategories = Object.keys(docsByCategory).sort();
+
+// Create frontmatter for the layout
+const frontmatter = {
+  title: "Documentation",
+  description: "Garden Assistant documentation and guides"
+};
+
+// Get a color for each category
+const categoryColors = {
+  'arch': 'primary',
+  'devel-phases': 'secondary',
+  'research': 'accent',
+  'general': 'info'
+};
+
+// Get display names for categories
+const categoryNames = {
+  'arch': 'Architecture',
+  'devel-phases': 'Development Phases',
+  'research': 'Research',
+  'general': 'General'
+};
+---
+
+<DocsLayout frontmatter={frontmatter}>
+  <div class="space-y-8">
+    <div class="prose">
+      <p class="text-lg">
+        Welcome to the Garden Assistant documentation. This documentation covers all aspects of the project,
+        from architecture to development phases and features.
+      </p>
+    </div>
+
+    <div class="card bg-base-100 shadow-xl">
+      <div class="card-body p-0">
+        <!-- Tabs for categories -->
+        <div role="tablist" class="tabs tabs-lifted">
+          {sortedCategories.map((category, index) => (
+            <a 
+              role="tab" 
+              class={`tab ${index === 0 ? 'tab-active' : ''} ${categoryColors[category] ? `text-${categoryColors[category]}` : ''}`}
+              data-category={category}
+            >
+              {categoryNames[category] || category.charAt(0).toUpperCase() + category.slice(1)}
+            </a>
+          ))}
+        </div>
+
+        <!-- Tab content -->
+        {sortedCategories.map((category, index) => (
+          <div 
+            class={`category-content p-6 ${index === 0 ? 'block' : 'hidden'}`} 
+            id={`content-${category}`}
+          >
+            <div class="flex items-center gap-2 mb-4">
+              <div class={`badge badge-${categoryColors[category] || 'primary'} badge-lg`}></div>
+              <h2 class="text-2xl font-bold capitalize">{categoryNames[category] || category}</h2>
+            </div>
+            
+            <div class="overflow-x-auto">
+              <table class="table table-zebra w-full">
+                <thead>
+                  <tr>
+                    <th>Document</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {docsByCategory[category].map(doc => (
+                    <tr class="hover">
+                      <td>
+                        <a 
+                          href={`/docs/${doc.slug}`} 
+                          class="link link-primary font-medium"
+                        >
+                          {doc.data.title}
+                        </a>
+                      </td>
+                      <td>
+                        {doc.data.description || 
+                         `Documentation for ${doc.data.title.toLowerCase()}`}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  </div>
+</DocsLayout>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const tabs = document.querySelectorAll('.tabs [role="tab"]');
+    const contents = document.querySelectorAll('.category-content');
+    
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        // Remove active from all tabs
+        tabs.forEach(t => t.classList.remove('tab-active'));
+        // Add active to clicked tab
+        tab.classList.add('tab-active');
+        
+        // Hide all content
+        contents.forEach(c => c.classList.add('hidden'));
+        
+        // Show selected content
+        const category = tab.getAttribute('data-category');
+        const content = document.getElementById(`content-${category}`);
+        if (content) {
+          content.classList.remove('hidden');
+        }
+      });
+    });
+  });
+</script>

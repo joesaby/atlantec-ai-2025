@@ -1,0 +1,287 @@
+---
+import Layout from './Layout.astro';
+import { getCollection } from 'astro:content';
+
+const { frontmatter, headings } = Astro.props;
+
+// Get all documentation pages for sidebar
+const allDocs = await getCollection('docs');
+
+// Group docs by category
+const docsByCategory = allDocs.reduce((acc, doc) => {
+  const category = doc.data.category || 'general';
+  if (!acc[category]) {
+    acc[category] = [];
+  }
+  acc[category].push(doc);
+  return acc;
+}, {});
+
+// Sort the docs within each category by title
+Object.keys(docsByCategory).forEach(category => {
+  docsByCategory[category].sort((a, b) => 
+    a.data.title.localeCompare(b.data.title)
+  );
+});
+
+// Sort categories
+const sortedCategories = Object.keys(docsByCategory).sort();
+
+// Get a color for each category
+const categoryColors = {
+  'arch': 'primary',
+  'devel-phases': 'secondary',
+  'research': 'accent',
+  'general': 'info'
+};
+---
+
+<Layout title={`${frontmatter.title} | Documentation`} description={frontmatter.description}>
+  <div class="flex flex-col min-h-screen">
+    <div class="flex-grow flex">
+      <!-- Sidebar for desktop -->
+      <aside class="w-64 bg-base-200 hidden lg:block overflow-y-auto fixed left-0 top-16 bottom-0 pt-4">
+        <div class="p-4">
+          <a href="/docs" class="btn btn-ghost normal-case text-xl font-bold mb-2 w-full justify-start hover:bg-base-300">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            Documentation
+          </a>
+          <div class="divider"></div>
+          
+          {sortedCategories.map(category => (
+            <div class="collapse collapse-arrow mb-2 bg-base-100 rounded-box" id={`desktop-category-${category}`}>
+              <input type="checkbox" checked /> 
+              <div class="collapse-title font-medium capitalize flex items-center">
+                <div class={`badge badge-${categoryColors[category] || 'primary'} mr-2`}></div>
+                {category}
+              </div>
+              <div class="collapse-content p-0">
+                <ul class="menu menu-sm menu-compact">
+                  {docsByCategory[category].map(doc => (
+                    <li>
+                      <a 
+                        href={`/docs/${doc.slug}`}
+                        class={`pl-6 ${Astro.url.pathname === `/docs/${doc.slug}` ? 'active bg-primary/10 text-primary font-semibold' : ''}`}
+                      >
+                        {doc.data.title}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          ))}
+        </div>
+      </aside>
+      
+      <!-- Mobile drawer -->
+      <div class="drawer lg:hidden w-full">
+        <input id="docs-drawer" type="checkbox" class="drawer-toggle" />
+        <div class="drawer-content">
+          <div class="p-4">
+            <label for="docs-drawer" class="btn btn-primary drawer-button">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+              Menu
+            </label>
+          </div>
+        </div>
+        <div class="drawer-side">
+          <label for="docs-drawer" class="drawer-overlay"></label>
+          <div class="menu p-4 w-80 h-full bg-base-200 text-base-content">
+            <a href="/docs" class="btn btn-ghost normal-case text-xl font-bold mb-2 w-full justify-start hover:bg-base-300">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              Documentation
+            </a>
+            <div class="divider"></div>
+            
+            {sortedCategories.map(category => (
+              <div class="collapse collapse-arrow mb-2 bg-base-100 rounded-box" id={`mobile-category-${category}`}>
+                <input type="checkbox" checked /> 
+                <div class="collapse-title font-medium capitalize flex items-center">
+                  <div class={`badge badge-${categoryColors[category] || 'primary'} mr-2`}></div>
+                  {category}
+                </div>
+                <div class="collapse-content p-0">
+                  <ul class="menu menu-sm menu-compact">
+                    {docsByCategory[category].map(doc => (
+                      <li>
+                        <a 
+                          href={`/docs/${doc.slug}`}
+                          class={`pl-6 ${Astro.url.pathname === `/docs/${doc.slug}` ? 'active bg-primary/10 text-primary font-semibold' : ''}`}
+                        >
+                          {doc.data.title}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <!-- Main content -->
+      <main class="w-full lg:ml-64">
+        <div class="mx-auto max-w-3xl px-4 py-8">
+          <h1 class="text-3xl font-bold text-primary mb-6">{frontmatter.title}</h1>
+          <div class="markdown-content prose lg:prose-lg max-w-none">
+            <slot />
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+</Layout>
+
+<style>
+  /* Markdown styling */
+  .markdown-content :global(h1),
+  .markdown-content :global(h2),
+  .markdown-content :global(h3),
+  .markdown-content :global(h4),
+  .markdown-content :global(h5),
+  .markdown-content :global(h6) {
+    margin-top: 1.5rem;
+    margin-bottom: 1rem;
+    color: hsl(var(--p));
+    font-weight: bold;
+    line-height: 1.2;
+  }
+
+  .markdown-content :global(h2) {
+    font-size: 1.75rem;
+    border-bottom: 1px solid hsl(var(--p) / 0.2);
+    padding-bottom: 0.5rem;
+  }
+
+  .markdown-content :global(h3) {
+    font-size: 1.5rem;
+  }
+
+  .markdown-content :global(h4) {
+    font-size: 1.25rem;
+  }
+
+  .markdown-content :global(p) {
+    margin-bottom: 1.25rem;
+    line-height: 1.7;
+  }
+
+  .markdown-content :global(ul),
+  .markdown-content :global(ol) {
+    margin-bottom: 1.25rem;
+    padding-left: 1.5rem;
+  }
+
+  .markdown-content :global(li) {
+    margin-bottom: 0.5rem;
+  }
+
+  .markdown-content :global(ul li) {
+    list-style-type: disc;
+  }
+
+  .markdown-content :global(ol li) {
+    list-style-type: decimal;
+  }
+
+  .markdown-content :global(blockquote) {
+    border-left: 4px solid hsl(var(--p));
+    padding-left: 1rem;
+    margin-left: 0;
+    margin-right: 0;
+    font-style: italic;
+    background: hsl(var(--p) / 0.1);
+    padding: 1rem;
+    border-radius: 0.5rem;
+  }
+
+  .markdown-content :global(pre) {
+    background: hsl(var(--b1));
+    padding: 1rem;
+    border-radius: 0.5rem;
+    overflow-x: auto;
+    margin-bottom: 1.5rem;
+  }
+
+  .markdown-content :global(code) {
+    background: hsl(var(--b2));
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.875em;
+  }
+
+  .markdown-content :global(pre code) {
+    background: transparent;
+    padding: 0;
+    border-radius: 0;
+  }
+
+  .markdown-content :global(a) {
+    color: hsl(var(--p));
+    text-decoration: underline;
+  }
+
+  .markdown-content :global(a:hover) {
+    color: hsl(var(--pf));
+  }
+
+  .markdown-content :global(table) {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 1.5rem;
+  }
+
+  .markdown-content :global(th),
+  .markdown-content :global(td) {
+    border: 1px solid hsl(var(--b3));
+    padding: 0.5rem 0.75rem;
+  }
+
+  .markdown-content :global(th) {
+    background: hsl(var(--b2));
+    text-align: left;
+  }
+
+  .markdown-content :global(tr:nth-child(even)) {
+    background: hsl(var(--b1));
+  }
+</style>
+
+<script>
+  // Ensure categories have the active document's category expanded
+  document.addEventListener('DOMContentLoaded', () => {
+    // Get current path
+    const currentPath = window.location.pathname;
+    
+    // Find all links and add extra active styles if they match current path
+    const allLinks = document.querySelectorAll('.menu a');
+    allLinks.forEach(link => {
+      if (link.getAttribute('href') === currentPath) {
+        link.classList.add('bg-primary/10', 'text-primary', 'font-semibold');
+        
+        // Find the parent collapse element and ensure it's open
+        const parentCollapse = link.closest('.collapse-content')?.parentElement;
+        if (parentCollapse) {
+          const checkbox = parentCollapse.querySelector('input[type="checkbox"]');
+          if (checkbox) {
+            checkbox.checked = true;
+          }
+        }
+      }
+    });
+    
+    // Scroll active item into view
+    const activeLink = document.querySelector('.menu a.active');
+    if (activeLink) {
+      setTimeout(() => {
+        activeLink.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 300);
+    }
+  });
+</script>
