@@ -1,6 +1,6 @@
 # Bloom - AI Gardening Assistant
 
-![Bloom Logo](/public/images/bloom-logo.svg | width=200)
+![Bloom Logo](/public/images/bloom-logo.svg|width=200)
 
 Bloom is an interactive AI-powered gardening assistant designed specifically for Irish gardeners. It helps users select suitable plants, implement sustainable gardening practices, and access personalized advice based on their local conditions.
 
