@@ -3,8 +3,16 @@
 <img src="/public/images/bloom-logo.svg" alt="Bloom Logo" width="200" />
 
 Bloom is an interactive AI-powered gardening assistant designed specifically for Irish gardeners. It helps users select suitable plants, implement sustainable gardening practices, and access personalized advice based on their local conditions.
+Bloom is deployed on Netlify and available at:
+[https://irish-gardening.netlify.app/](https://irish-gardening.netlify.app/)
 
-**Live Demo:** [https://irish-gardening.netlify.app/](https://irish-gardening.netlify.app/)
+## 📚 Documentation
+
+For detailed information about the project, including
+
+1. [Getting started](https://irish-gardening.netlify.app/docs/)
+2. [Architecture](https://irish-gardening.netlify.app/docs/arch/01-architecture-overview)
+3. [Development phases](https://irish-gardening.netlify.app/docs/devel-phases/phase-dependencies)
 
 ## 📅 Project Timeline
 
@@ -57,6 +65,16 @@ Bloom includes several specialized modules:
 - **Sustainability Tracker**: Tools to measure and improve the environmental impact of garden practices
 - **GraphRAG Knowledge System**: Graph-based retrieval augmented generation for highly accurate gardening information
 
+### 💚 Sustainability Focus
+
+Bloom promotes sustainable gardening practices by:
+
+- Encouraging native plant selection
+- Providing water conservation guidance
+- Offering biodiversity enhancement advice
+- Measuring environmental impact of gardening choices
+- Supporting sustainable food production
+
 ## 🛠️ Architecture
 
 Bloom is built with a modern web technology stack:
@@ -80,26 +98,3 @@ flowchart TD
     style E fill:#e6f2ff,stroke:#5394de
     style F fill:#e6e6fa,stroke:#8a8add
 ```
-
-## 🌍 Deployment
-
-Bloom is deployed on Netlify and available at:
-[https://irish-gardening.netlify.app/](https://irish-gardening.netlify.app/)
-
-## 📚 Documentation
-
-For detailed information about the project, including
-
-1. [Getting started](https://irish-gardening.netlify.app/docs/)
-2. [Architecture](https://irish-gardening.netlify.app/docs/arch/01-architecture-overview)
-3. [Development phases](https://irish-gardening.netlify.app/docs/devel-phases/phase-dependencies)
-
-## 💚 Sustainability Focus
-
-Bloom promotes sustainable gardening practices by:
-
-- Encouraging native plant selection
-- Providing water conservation guidance
-- Offering biodiversity enhancement advice
-- Measuring environmental impact of gardening choices
-- Supporting sustainable food production
