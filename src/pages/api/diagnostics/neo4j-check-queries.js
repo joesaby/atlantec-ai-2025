@@ -1,13 +1,12 @@
 /**
- * Improved test script for Neo4j gardening database queries
- * This script focuses on practical garden-specific queries with better error handling
+ * API endpoint for Neo4j gardening database queries diagnostics
  */
 
 import {
   verifyConnectivity,
   runQuery,
   closeDriver,
-} from "./database/neo4j-client.js";
+} from "../../../database/neo4j-client.js";
 
 // Set of improved gardening-specific queries
 const improvedGardeningQueries = [
@@ -70,7 +69,7 @@ const improvedGardeningQueries = [
     params: {},
   },
   {
-    name: "Get plants with their suitable soil types (direct node relationships)",
+    name: "Get plants with their suitable soil types",
     query: `
       MATCH (p:Plant)-[:GROWS_WELL_IN]->(s:SoilType)
       RETURN p.name AS plantName, s AS suitableSoil
@@ -79,25 +78,12 @@ const improvedGardeningQueries = [
     params: {},
   },
   {
-    name: "Count plants by type (or missing type)",
+    name: "Count plants by type",
     query: `
       MATCH (p:Plant)
       RETURN CASE WHEN p.type IS NULL THEN 'Unclassified' ELSE p.type END AS plantType,
              count(p) AS count
       ORDER BY count DESC
-    `,
-    params: {},
-  },
-  {
-    name: "Get potentially good plants for various soil types using node IDs",
-    query: `
-      MATCH (p:Plant)-[:GROWS_WELL_IN]->(s)
-      WHERE s:SoilType
-      RETURN p.name AS plantName, 
-             p.type AS plantType,
-             id(s) AS soilNodeId
-      ORDER BY p.name
-      LIMIT 15
     `,
     params: {},
   },
@@ -113,62 +99,66 @@ const improvedGardeningQueries = [
   },
 ];
 
-/**
- * Run improved gardening-specific queries
- */
-async function runImprovedGardeningQueries() {
+export async function GET() {
   try {
     // First verify connectivity
-    console.log("Testing Neo4j connection...");
     const connectionStatus = await verifyConnectivity();
 
     if (!connectionStatus.connected) {
-      console.error(
-        "❌ Failed to connect to Neo4j database. Check credentials and network."
-      );
-      console.error(`Error: ${connectionStatus.error}`);
-      return;
+      return new Response(JSON.stringify({
+        status: "error",
+        message: "Failed to connect to Neo4j database",
+        error: connectionStatus.error
+      }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" }
+      });
     }
 
-    console.log("✅ Successfully connected to Neo4j Aura database.");
-    console.log("\nRunning improved gardening queries...\n");
-
-    // Run each gardening query
+    // Run each gardening query and collect results
+    const queryResults = [];
+    
     for (const query of improvedGardeningQueries) {
-      console.log(`\n📊 QUERY: ${query.name}`);
-      console.log(`Cypher: ${query.query.trim().replace(/\n\s*/g, " ")}`);
-
       try {
         const startTime = Date.now();
         const results = await runQuery(query.query, query.params);
         const duration = Date.now() - startTime;
 
-        console.log(`✅ Query completed in ${duration}ms`);
-        console.log(`Results (${results.length} records):`);
-
-        if (results.length > 0) {
-          // Display results as a formatted table if there are records
-          console.table(results.slice(0, 15)); // Limit to 15 rows for readability
-
-          if (results.length > 15) {
-            console.log(`... and ${results.length - 15} more records`);
-          }
-        } else {
-          console.log("No results returned");
-        }
+        queryResults.push({
+          name: query.name,
+          success: true,
+          duration: duration,
+          resultCount: results.length,
+          results: results.slice(0, 15), // Limit to 15 rows for readability
+          hasMore: results.length > 15
+        });
       } catch (error) {
-        console.error(`❌ Query failed: ${error.message}`);
+        queryResults.push({
+          name: query.name,
+          success: false,
+          error: error.message
+        });
       }
     }
+
+    return new Response(JSON.stringify({
+      status: "success",
+      connection: connectionStatus,
+      queries: queryResults
+    }), {
+      headers: { "Content-Type": "application/json" }
+    });
   } catch (error) {
-    console.error("Test failed:", error);
+    return new Response(JSON.stringify({
+      status: "error",
+      message: error.message,
+      stack: error.stack
+    }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" }
+    });
   } finally {
     // Always close the driver to release resources
-    console.log("\nClosing Neo4j connection...");
     await closeDriver();
-    console.log("Connection closed.");
   }
 }
-
-// Run the improved gardening-specific queries
-runImprovedGardeningQueries();
