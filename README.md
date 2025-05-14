@@ -9,7 +9,9 @@ Bloom is an interactive AI-powered gardening assistant designed specifically for
 ## 🌱 Main Features
 
 ### AI Gardening Assistant
+
 The core of Bloom is the conversational AI assistant that provides:
+
 - Natural language interactions for gardening advice
 - Personalized plant recommendations based on user conditions
 - Seasonal planting guidance with climate considerations
@@ -17,6 +19,7 @@ The core of Bloom is the conversational AI assistant that provides:
 - Troubleshooting help for common gardening problems
 
 ### Demonstrator Features
+
 Bloom includes several specialized modules:
 
 - **Weather & Soil Integration**: Real-time weather data and soil information for Irish counties
@@ -47,33 +50,52 @@ Architecture Overview:
 └───────────────┘     └───────────────┘     └───────────────┘
 ```
 
-## 🚀 Getting Started
-
-```bash
-# Install dependencies
-npm install
-
-# Start development server
-npm run dev
-
-# Build for production
-npm run build
-```
-
-## 📚 Documentation
-
-For detailed information about the project, including implementation details, development phases, and technical documentation, please visit:
-
-[https://irish-gardening.netlify.app/docs/](https://irish-gardening.netlify.app/docs/)
-
 ## 🌍 Deployment
 
 Bloom is deployed on Netlify and available at:
 [https://irish-gardening.netlify.app/](https://irish-gardening.netlify.app/)
 
+## 📚 Documentation
+
+For detailed information about the project, including
+
+1. [Getting started](https://irish-gardening.netlify.app/docs/)
+2. [Architecture](https://irish-gardening.netlify.app/docs/arch/01-architecture-overview)
+3. [Development phases](https://irish-gardening.netlify.app/docs/devel-phases/phase-dependencies)
+
+## 📅 Project Timeline
+
+```mermaid
+timeline
+    title Bloom Project Development Timeline
+    section Research Phase
+        May 2-6, 2025 : Initial research on agriculture, energy, flood management
+                      : Exploration of SDG enhancement opportunities
+                      : Documentation in src/content/docs/research/
+    section Planning Phase
+        May 6-7, 2025 : Development planning and roadmap creation
+                      : Phase dependencies documentation
+                      : Docs in src/content/docs/devel-phases/
+    section Implementation Phase
+        May 7-8, 2025 : Astro framework & React components setup
+                      : TailwindCSS/daisyUI implementation
+                      : Sample UI cards and demonstrator pages
+        May 8-10, 2025 : Gardening Agent implementation
+                       : Soil and weather data integration
+                       : Dynamic card rendering system
+        May 12-13, 2025 : GraphRAG system implementation
+                        : Knowledge graph integration
+                        : Enhanced AI response quality
+    section Finalization Phase
+        May 13-14, 2025 : Rebranding from "Garden Assistant" to "Bloom"
+                        : Theme, icons and brand asset updates
+                        : Documentation finalization
+```
+
 ## 💚 Sustainability Focus
 
 Bloom promotes sustainable gardening practices by:
+
 - Encouraging native plant selection
 - Providing water conservation guidance
 - Offering biodiversity enhancement advice
