@@ -3,14 +3,18 @@ import { defineConfig } from "astro/config";
 import tailwindcss from "@tailwindcss/vite";
 import react from "@astrojs/react";
 import netlify from "@astrojs/netlify";
+import { rehypeHeadingIds } from "@astrojs/markdown-remark";
 
 export default defineConfig({
-  output: 'server',
+  output: "server",
   integrations: [react()],
   adapter: netlify(),
+  markdown: {
+    rehypePlugins: [rehypeHeadingIds],
+  },
   server: {
     port: 4322,
-    host: true
+    host: true,
   },
   vite: {
     plugins: [tailwindcss()],
@@ -26,8 +30,8 @@ export default defineConfig({
     server: {
       hmr: {
         port: 4322,
-        clientPort: 4322
-      }
-    }
+        clientPort: 4322,
+      },
+    },
   },
 });
