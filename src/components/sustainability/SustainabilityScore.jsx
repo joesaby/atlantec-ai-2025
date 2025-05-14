@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { calculateCarbonSavings } from "../../utils/carbon-footprint";
 import { sdgGoals } from "../../data/sustainability-metrics";
+import { getTopSDGs, getSDGImpactLevel } from "../../utils/sdg-utils";
+import { getTopSDGs, getSDGImpactLevel } from "../../utils/sdg-utils";
 
 /**
  * Component to display sustainability score and carbon footprint savings for plants
@@ -64,42 +66,45 @@ const SustainabilityScore = ({
               <span>Supports UN Sustainable Development Goals:</span>
               {metrics.sdgs.length > 5 && (
                 <span className="text-xs opacity-70">
-                  Top {Math.min(5, metrics.sdgs.length)} shown
+                  Top {Math.min(6, metrics.sdgs.length)} shown
                 </span>
               )}
             </h4>
+
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-2">
-              {metrics.sdgs
-                .slice(0, 6) // Show top 6 maximum
-                .map((sdgId) => {
-                  const contribution = metrics.sdgContributions?.[sdgId] || 0;
-                  return (
-                    <div
-                      key={sdgId}
-                      className="tooltip flex items-center gap-2 p-2 rounded-md"
-                      data-tip={`${sdgGoals[sdgId].name}: ${sdgGoals[sdgId].description}`}
-                      style={{ backgroundColor: `${sdgGoals[sdgId].color}15` }}
-                    >
-                      <div className="text-xl">{sdgGoals[sdgId].icon}</div>
-                      <div className="flex-1">
-                        <div className="text-xs font-medium">
-                          Goal {sdgGoals[sdgId].number}
-                        </div>
-                        <div className="text-xs opacity-70 line-clamp-1">
-                          {sdgGoals[sdgId].name}
-                        </div>
+              {getTopSDGs(metrics.sdgContributions || {}, 6).map((sdgId) => {
+                const contribution = metrics.sdgContributions?.[sdgId] || 0;
+                if (!contribution || !sdgGoals[sdgId]) return null;
+
+                const impactLevel = getSDGImpactLevel(contribution);
+
+                return (
+                  <div
+                    key={sdgId}
+                    className="tooltip flex items-center gap-2 p-2 rounded-md"
+                    data-tip={`${sdgGoals[sdgId].name}: ${sdgGoals[sdgId].description}`}
+                    style={{ backgroundColor: `${sdgGoals[sdgId].color}15` }}
+                  >
+                    <div className="text-xl">{sdgGoals[sdgId].icon}</div>
+                    <div className="flex-1">
+                      <div className="text-xs font-medium">
+                        Goal {sdgGoals[sdgId].number}
                       </div>
-                      <div
-                        className="badge badge-sm"
-                        style={{
-                          backgroundColor: `${sdgGoals[sdgId].color}30`,
-                        }}
-                      >
-                        {Math.round(contribution)}
+                      <div className="text-xs opacity-70 line-clamp-1">
+                        {sdgGoals[sdgId].name}
                       </div>
                     </div>
-                  );
-                })}
+                    <div
+                      className={`badge badge-sm ${impactLevel.class}`}
+                      style={{
+                        backgroundColor: `${sdgGoals[sdgId].color}30`,
+                      }}
+                    >
+                      {Math.round(contribution)}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
 
             {metrics.sdgs.length > 6 && (

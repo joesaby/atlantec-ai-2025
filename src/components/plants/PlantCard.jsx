@@ -1,6 +1,13 @@
-import React from "react";
+import React, { useState } from "react";
+import PlantSustainabilityInfo from "./PlantSustainabilityInfo";
 
 const PlantCard = ({ plant }) => {
+  const [showDetails, setShowDetails] = useState(false);
+
+  const toggleDetails = () => {
+    setShowDetails(!showDetails);
+  };
+
   return (
     <div className="card card-compact bg-base-100 shadow-xl overflow-hidden">
       <figure className="h-40 bg-base-200">
@@ -122,8 +129,22 @@ const PlantCard = ({ plant }) => {
         </div>
 
         <div className="card-actions justify-end mt-2">
-          <button className="btn btn-primary btn-sm">Learn More</button>
+          <button className="btn btn-primary btn-sm" onClick={toggleDetails}>
+            {showDetails ? "Hide Details" : "Learn More"}
+          </button>
         </div>
+
+        {showDetails && (
+          <div className="mt-4">
+            <div className="divider">Sustainability Impact</div>
+            <PlantSustainabilityInfo
+              plantName={plant.commonName || plant.latinName}
+              quantity={1}
+              isOrganic={true}
+              showDetailedBreakdown={true}
+            />
+          </div>
+        )}
       </div>
     </div>
   );
