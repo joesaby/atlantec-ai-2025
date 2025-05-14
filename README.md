@@ -1,78 +1,105 @@
-# Irish Garden Assistant
+# Bloom - AI Gardening Assistant
 
-An interactive web application built with Astro and React that helps Irish gardeners select suitable plants and implement sustainable gardening practices based on their local conditions.
+<img src="/public/images/bloom-logo.svg" alt="Bloom Logo" width="200" />
 
-## 🌱 Features
+Bloom is an interactive AI-powered gardening assistant designed specifically for Irish gardeners. It helps users select suitable plants, implement sustainable gardening practices, and access personalized advice based on their local conditions.
 
-- **Weather Integration**: Real-time weather data for Irish counties
-- **Soil Information**: Detailed soil data by location with recommendations
-- **Plant Recommendations**: Personalized plant suggestions based on garden conditions
-- **Seasonal Planner**: Monthly gardening tasks and seasonal overview
-- **Sustainable Gardening**: Focus on native plants and environmentally friendly practices
-- **Gardening Assistant**: AI-powered chat interface for gardening advice and recommendations
+**Live Demo:** [https://irish-gardening.netlify.app/](https://irish-gardening.netlify.app/)
 
-## 🚀 Project Structure
+## 📅 Project Timeline
 
-```text
-/
-├── public/
-│   ├── favicon.svg
-│   └── images/          # Plant and UI images
-├── src/
-│   ├── assets/          # CSS and static assets
-│   ├── components/      # React components by category
-│   │   ├── common/      # Shared components
-│   │   ├── garden/      # Garden-specific components
-│   │   ├── plants/      # Plant-related components
-│   │   ├── sustainability/ # Sustainability tracking components
-│   │   ├── tools/       # Garden tools components
-│   │   └── weather/     # Weather-related components
-│   ├── content/         # Content collections (plants, tasks, regions)
-│   ├── data/            # Static data files
-│   ├── database/        # Database schema and utilities
-│   ├── layouts/         # Page layouts
-│   ├── pages/           # Astro pages and API endpoints
-│   └── utils/           # Utility functions (API clients, helpers)
-└── package.json
+```mermaid
+timeline
+    title Bloom Project Development Timeline
+    section Research Phase
+        May 2-6, 2025 : Initial research on agriculture, energy, flood management
+                      : Exploration of SDG enhancement opportunities
+                      : Documentation in src/content/docs/research/
+    section Planning Phase
+        May 6-7, 2025 : Development planning and roadmap creation
+                      : Phase dependencies documentation
+                      : Docs in src/content/docs/devel-phases/
+    section Implementation Phase
+        May 7-8, 2025 : Astro framework & React components setup
+                      : TailwindCSS/daisyUI implementation
+                      : Sample UI cards and demonstrator pages
+        May 8-10, 2025 : Gardening Agent implementation
+                       : Soil and weather data integration
+                       : Dynamic card rendering system
+        May 12-13, 2025 : GraphRAG system implementation
+                        : Knowledge graph integration
+                        : Enhanced AI response quality
+    section Finalization Phase
+        May 13-14, 2025 : Rebranding from "Garden Assistant" to "Bloom"
+                        : Theme, icons and brand asset updates
+                        : Documentation finalization
 ```
 
-## 🧞 Commands
+## 🌱 Main Features
 
-All commands are run from the root of the project, from a terminal:
+### AI Gardening Assistant
 
-| Command                 | Action                                           |
-| :---------------------- | :----------------------------------------------- |
-| `npm install`           | Installs dependencies                            |
-| `npm run dev -- --host` | Starts local dev server at `localhost:4321`      |
-| `npm run build`         | Build your production site to `./dist/`          |
-| `npm run preview`       | Preview your build locally, before deploying     |
-| `npm run astro ...`     | Run CLI commands like `astro add`, `astro check` |
+The core of Bloom is the conversational AI assistant that provides:
 
-## 🛠️ Tech Stack
+- Natural language interactions for gardening advice
+- Personalized plant recommendations based on user conditions
+- Seasonal planting guidance with climate considerations
+- Sustainable gardening practices tailored to Irish environments
+- Troubleshooting help for common gardening problems
 
-- [Astro](https://astro.build/) - Web framework for content-focused websites
-- [React](https://reactjs.org/) - UI library for interactive components
-- [Tailwind CSS](https://tailwindcss.com/) - Utility-first CSS framework
-- [daisyUI](https://daisyui.com/) - Component library for Tailwind CSS
-- [GraphRAG](https://python.langchain.com/docs/use_cases/graph_rag) - Knowledge base for gardening information
-- [OpenAI](https://openai.com/) - AI model provider for natural language processing
-- [Google Vertex AI](https://cloud.google.com/vertex-ai) - Alternative AI model provider
+### Demonstrator Features
 
-## 🌍 Development Phases
+Bloom includes several specialized modules:
 
-The project is being developed in multiple phases:
+- **Weather & Soil Integration**: Real-time weather data and soil information for Irish counties
+- **Plant Recommendation Engine**: Smart plant suggestions based on location, soil type, and garden conditions
+- **Seasonal Garden Planner**: Monthly task calendar and seasonal overview for year-round gardening
+- **Sustainability Tracker**: Tools to measure and improve the environmental impact of garden practices
+- **GraphRAG Knowledge System**: Graph-based retrieval augmented generation for highly accurate gardening information
 
-1. **Phase 1**: Project setup and data integration (weather & soil)
-2. **Phase 2**: Plant recommendation system
-3. **Phase 3**: Seasonal task management & garden planner
-4. **Phase 4**: Sustainable gardening tracking features
-5. **Phase 5**: GraphRAG knowledge base integration
-6. **Phase 6**: Interactive gardening assistant implementation
-7. **Phase 7**: Multi-provider AI integration (OpenAI & Google Vertex)
+## 🛠️ Architecture
 
-## 📝 Development Notes
+Bloom is built with a modern web technology stack:
 
-- Detailed implementation notes can be found in phase markdown files in the `/docs` directory
-- UI components follow daisyUI design patterns
-- Each feature is developed with both desktop and mobile use in mind
-- The gardening assistant uses a unified AI client that supports multiple providers
+- **Frontend**: Astro framework with React components and TailwindCSS/daisyUI
+- **AI Integration**: Unified client supporting multiple AI providers (OpenAI and Google Vertex AI)
+- **Data Storage**: Structured gardening knowledge in GraphRAG system
+- **API Layer**: Serverless functions for weather data, plant recommendations, and AI interactions
+
+```mermaid
+flowchart TD
+    A[Web Frontend] --> B[API Layer] --> C[AI Services]
+    A --> D[UI Components]
+    B --> E[Data Services]
+    C --> F[Knowledge Base]
+
+    style A fill:#d4f1f9,stroke:#05a0c8
+    style B fill:#e6f2ff,stroke:#5394de
+    style C fill:#e6e6fa,stroke:#8a8add
+    style D fill:#d4f1f9,stroke:#05a0c8
+    style E fill:#e6f2ff,stroke:#5394de
+    style F fill:#e6e6fa,stroke:#8a8add
+```
+
+## 🌍 Deployment
+
+Bloom is deployed on Netlify and available at:
+[https://irish-gardening.netlify.app/](https://irish-gardening.netlify.app/)
+
+## 📚 Documentation
+
+For detailed information about the project, including
+
+1. [Getting started](https://irish-gardening.netlify.app/docs/)
+2. [Architecture](https://irish-gardening.netlify.app/docs/arch/01-architecture-overview)
+3. [Development phases](https://irish-gardening.netlify.app/docs/devel-phases/phase-dependencies)
+
+## 💚 Sustainability Focus
+
+Bloom promotes sustainable gardening practices by:
+
+- Encouraging native plant selection
+- Providing water conservation guidance
+- Offering biodiversity enhancement advice
+- Measuring environmental impact of gardening choices
+- Supporting sustainable food production

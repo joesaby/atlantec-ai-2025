@@ -24,13 +24,21 @@ Object.keys(docsByCategory).forEach(category => {
   );
 });
 
-// Sort categories
-const sortedCategories = Object.keys(docsByCategory).sort();
+// Sort categories with general and getting started first
+const categoryOrder = ['general', 'arch', 'devel-phases', 'research'];
+const sortedCategories = Object.keys(docsByCategory).sort((a, b) => {
+  const indexA = categoryOrder.indexOf(a);
+  const indexB = categoryOrder.indexOf(b);
+  if (indexA === -1 && indexB === -1) return a.localeCompare(b);
+  if (indexA === -1) return 1;
+  if (indexB === -1) return -1;
+  return indexA - indexB;
+});
 
 // Create frontmatter for the layout
 const frontmatter = {
-  title: "Documentation",
-  description: "Bloom documentation and guides"
+  title: "Bloom Documentation",
+  description: "Comprehensive documentation for the Bloom gardening assistant project"
 };
 
 // Get a color for each category
@@ -48,17 +56,119 @@ const categoryNames = {
   'research': 'Research',
   'general': 'General'
 };
+
+// Find getting started guide for quick link
+const gettingStartedDoc = docs.find(doc => 
+  doc.slug.includes('getting-started') || 
+  doc.data.title.includes('Getting Started')
+);
 ---
 
 <DocsLayout frontmatter={frontmatter}>
   <div class="space-y-8">
-    <div class="prose">
-      <p class="text-lg">
-        Welcome to the Bloom documentation. This documentation covers all aspects of the project,
-        from architecture to development phases and features.
+    <div class="prose max-w-none">
+      <h1>Welcome to Bloom Documentation</h1>
+      <p class="lead text-lg">
+        This documentation covers all aspects of Bloom, the AI-powered gardening assistant designed specifically for Irish gardeners.
+      </p>
+      
+      <p>
+        Bloom combines modern web technologies with AI to provide personalized gardening advice, plant recommendations, 
+        seasonal planning tools, and sustainability tracking tailored to Irish growing conditions.
       </p>
     </div>
 
+    <!-- Quick Start Card -->
+    <div class="card bg-base-200 border border-base-300 shadow-md">
+      <div class="card-body">
+        <h2 class="card-title text-primary">Quick Start</h2>
+        <div class="flex flex-col md:flex-row gap-6">
+          <div class="flex-1">
+            <h3 class="font-bold mb-2">Development Setup</h3>
+            <div class="space-y-2">
+              <div class="bg-base-100 border border-base-300 p-3 rounded-md">
+                <code class="text-success">npm install</code>
+                <p class="text-xs mt-1">Install all dependencies</p>
+              </div>
+              <div class="bg-base-100 border border-base-300 p-3 rounded-md">
+                <code class="text-success">npm run dev</code>
+                <p class="text-xs mt-1">Start development server</p>
+              </div>
+              <div class="bg-base-100 border border-base-300 p-3 rounded-md">
+                <code class="text-success">npm run build</code>
+                <p class="text-xs mt-1">Build for production</p>
+              </div>
+            </div>
+          </div>
+          <div class="flex-1">
+            <h3 class="font-bold mb-2">Key Resources</h3>
+            <ul class="space-y-2">
+              {gettingStartedDoc && (
+                <li>
+                  <a href={`/docs/${gettingStartedDoc.slug}`} class="btn btn-outline btn-primary btn-sm btn-block justify-start">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                    Getting Started Guide
+                  </a>
+                </li>
+              )}
+              <li>
+                <a href="/docs/arch/01-architecture-overview" class="btn btn-outline btn-sm btn-block justify-start">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                  </svg>
+                  Architecture Overview
+                </a>
+              </li>
+              <li>
+                <a href="/docs/devel-phases/phase-dependencies" class="btn btn-outline btn-sm btn-block justify-start">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                  </svg>
+                  Development Phases
+                </a>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Dashboard Links -->
+    <div class="card bg-base-100 shadow-xl mb-6">
+      <div class="card-body">
+        <h2 class="card-title">Admin Dashboards</h2>
+        <p class="text-sm mb-4">
+          Bloom includes several administrative interfaces for monitoring and management:
+        </p>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <a href="/admin/dashboard" class="card bg-base-200 hover:bg-base-300 transition-colors">
+            <div class="card-body p-4">
+              <h3 class="font-bold">Main Dashboard</h3>
+              <p class="text-xs">System overview and key metrics</p>
+            </div>
+          </a>
+          
+          <a href="/admin/logs-dashboard" class="card bg-base-200 hover:bg-base-300 transition-colors">
+            <div class="card-body p-4">
+              <h3 class="font-bold">Logs Dashboard</h3>
+              <p class="text-xs">Application logs and debugging</p>
+            </div>
+          </a>
+          
+          <a href="/admin/unified-logs" class="card bg-base-200 hover:bg-base-300 transition-colors">
+            <div class="card-body p-4">
+              <h3 class="font-bold">Unified Logs</h3>
+              <p class="text-xs">Centralized logging system</p>
+            </div>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Documentation Categories -->
     <div class="card bg-base-100 shadow-xl">
       <div class="card-body p-0">
         <!-- Tabs for categories -->
