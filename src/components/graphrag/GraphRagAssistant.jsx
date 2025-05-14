@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import DeterministicQueryCard from "./DeterministicQueryCard";
-import "./GraphRagAssistant.css"; // Import CSS for markdown styling
 
 export default function GraphRagAssistant() {
   const [loading, setLoading] = useState(false);
@@ -38,18 +37,25 @@ export default function GraphRagAssistant() {
   useEffect(() => {
     async function checkApiAvailability() {
       // Changed from /api/direct-auth-test to /api/vertex-auth-test
-      console.log("GraphRAG: Checking API availability at /api/vertex-auth-test");
+      console.log(
+        "GraphRAG: Checking API availability at /api/vertex-auth-test"
+      );
       try {
         const response = await fetch("/api/vertex-auth-test", {
           method: "GET",
         });
 
         console.log("GraphRAG: API check response status:", response.status);
-        
+
         if (!response.ok) {
           const data = await response.json();
-          console.error("GraphRAG: API authentication failed response data:", data);
-          const errorMessage = `AI service unavailable: ${data.error || "Authentication failed"}`;
+          console.error(
+            "GraphRAG: API authentication failed response data:",
+            data
+          );
+          const errorMessage = `AI service unavailable: ${
+            data.error || "Authentication failed"
+          }`;
           console.error("GraphRAG: Setting error message:", errorMessage);
           setApiError(errorMessage);
         } else {
@@ -113,18 +119,15 @@ export default function GraphRagAssistant() {
   };
 
   const askQuestion = async (e) => {
-    e.preventDefault();
-
+    if (e) e.preventDefault();
     if (!question.trim()) return;
 
     setLoading(true);
     setAnswer("");
     setSourceFacts([]);
-    setShowSourceFacts(false);
     setGeneratedQuery("");
-    setShowGeneratedQuery(false);
     setQueryResults([]);
-    setShowQueryResults(false);
+    setApiError(null); // Clear previous errors
 
     try {
       // Always use stochastic endpoint for free-text questions
@@ -304,11 +307,9 @@ export default function GraphRagAssistant() {
       )}
 
       {answer && (
-        <div className="answer-container p-4 bg-emerald-50 rounded-lg">
-          <h3 className="text-lg font-semibold text-emerald-600 mb-2">
-            Answer:
-          </h3>
-          <div className="prose max-w-none markdown-content">
+        <div className="mt-4 p-4 border rounded-lg bg-base-100 shadow">
+          <h3 className="text-lg font-semibold mb-2 text-primary">Answer:</h3>
+          <div className="prose prose-sm sm:prose-base lg:prose-lg xl:prose-xl 2xl:prose-2xl max-w-none overflow-x-auto">
             <ReactMarkdown remarkPlugins={[remarkGfm]}>{answer}</ReactMarkdown>
           </div>
 

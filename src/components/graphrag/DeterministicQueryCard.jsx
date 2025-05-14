@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import "./GraphRagAssistant.css";
 
 const DeterministicQueryCard = ({ onSubmit }) => {
   const [formData, setFormData] = useState({
