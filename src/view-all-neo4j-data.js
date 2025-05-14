@@ -9,6 +9,7 @@ import {
   verifyConnectivity,
   closeDriver,
 } from "./database/neo4j-client.js";
+import logger from "./utils/unified-logger.js";
 
 async function getAllNodeLabels() {
   const session = neo4jDriver.session();
@@ -84,32 +85,32 @@ async function viewAllDatabaseData() {
     // Verify connection
     const connectionStatus = await verifyConnectivity();
     if (!connectionStatus.connected) {
-      console.error("Failed to connect to Neo4j database");
+      logger.error("Failed to connect to Neo4j database");
       return;
     }
 
-    console.log("🌟 Connected to Neo4j database successfully! 🌟\n");
+    logger.info("🌟 Connected to Neo4j database successfully! 🌟\n");
 
     // Get all node labels
     const labels = await getAllNodeLabels();
-    console.log(
+    logger.info(
       `📋 Found ${labels.length} node labels: ${labels.join(", ")}\n`
     );
 
     // Get all nodes by label
-    console.log("📊 NODE DATA BY LABEL:");
-    console.log("====================");
+    logger.info("📊 NODE DATA BY LABEL:");
+    logger.info("====================");
 
     for (const label of labels) {
       const nodes = await getNodesWithLabel(label);
-      console.log(`\n🏷️  ${label} (${nodes.length} nodes):`);
+      logger.info(`\n🏷️  ${label} (${nodes.length} nodes):`);
 
       if (nodes.length === 0) {
-        console.log("   No nodes found with this label");
+        logger.info("   No nodes found with this label");
       } else {
         nodes.forEach((node, i) => {
-          console.log(`   Node #${i + 1} (ID: ${node.id}):`);
-          console.log(
+          logger.info(`   Node #${i + 1} (ID: ${node.id}):`);
+          logger.info(
             `   Properties: ${JSON.stringify(node.properties, null, 2)}`
           );
         });
@@ -118,7 +119,7 @@ async function viewAllDatabaseData() {
 
     // Get all relationship types
     const relationshipTypes = await getAllRelationshipTypes();
-    console.log(
+    logger.info(
       `\n\n🔗 Found ${
         relationshipTypes.length
       } relationship types: ${relationshipTypes.join(", ")}\n`
@@ -126,23 +127,23 @@ async function viewAllDatabaseData() {
 
     // Get all relationships
     const relationships = await getAllRelationships();
-    console.log(`\n🔄 RELATIONSHIPS (${relationships.length} total):`);
-    console.log("======================");
+    logger.info(`\n🔄 RELATIONSHIPS (${relationships.length} total):`);
+    logger.info("======================");
 
     if (relationships.length === 0) {
-      console.log("   No relationships found in the database");
+      logger.info("   No relationships found in the database");
     } else {
       relationships.forEach((rel, i) => {
-        console.log(`\n   Relationship #${i + 1}:`);
-        console.log(`   Type: ${rel.relationship.type}`);
-        console.log(
+        logger.info(`\n   Relationship #${i + 1}:`);
+        logger.info(`   Type: ${rel.relationship.type}`);
+        logger.info(
           `   Source (${rel.source.labels.join(", ")}): ${JSON.stringify(
             rel.source.properties,
             null,
             2
           )}`
         );
-        console.log(
+        logger.info(
           `   Target (${rel.target.labels.join(", ")}): ${JSON.stringify(
             rel.target.properties,
             null,
@@ -150,7 +151,7 @@ async function viewAllDatabaseData() {
           )}`
         );
         if (Object.keys(rel.relationship.properties).length > 0) {
-          console.log(
+          logger.info(
             `   Relationship Properties: ${JSON.stringify(
               rel.relationship.properties,
               null,
@@ -161,22 +162,22 @@ async function viewAllDatabaseData() {
       });
     }
 
-    console.log("\n\n📊 DATABASE SUMMARY:");
-    console.log("==================");
-    console.log(`   Total Node Labels: ${labels.length}`);
-    console.log(`   Total Relationship Types: ${relationshipTypes.length}`);
+    logger.info("\n\n📊 DATABASE SUMMARY:");
+    logger.info("==================");
+    logger.info(`   Total Node Labels: ${labels.length}`);
+    logger.info(`   Total Relationship Types: ${relationshipTypes.length}`);
 
     let totalNodes = 0;
     for (const label of labels) {
       const count = (await getNodesWithLabel(label)).length;
       totalNodes += count;
-      console.log(`   ${label} Nodes: ${count}`);
+      logger.info(`   ${label} Nodes: ${count}`);
     }
 
-    console.log(`   Total Nodes: ${totalNodes}`);
-    console.log(`   Total Relationships: ${relationships.length}`);
+    logger.info(`   Total Nodes: ${totalNodes}`);
+    logger.info(`   Total Relationships: ${relationships.length}`);
   } catch (error) {
-    console.error("Error viewing database data:", error);
+    logger.error("Error viewing database data:", error);
   } finally {
     // Close the driver
     await closeDriver();

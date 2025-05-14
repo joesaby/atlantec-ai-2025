@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import { calculateCarbonSavings } from "../../utils/carbon-footprint";
 import { sdgGoals } from "../../data/sustainability-metrics";
 import { getTopSDGs, getSDGImpactLevel } from "../../utils/sdg-utils";
-import { getTopSDGs, getSDGImpactLevel } from "../../utils/sdg-utils";
 
 /**
  * Component to display sustainability score and carbon footprint savings for plants

@@ -121,26 +121,32 @@ Please answer the following specific question from a gardener:
 
 "${userQuestion}"
 
-Use the following structured data about ${plantType.toLowerCase()} plants in ${countyName} 
+Use the following structured data about ${plantType.toLowerCase()} plants in ${countyName}
 county with ${soilType} soil during the ${season} season to inform your answer:
 
 ${context}
 
 Your response should:
-1. Directly address the question asked
-2. Use specific plants and data from the structured information
-3. Format your response in Markdown with headers, bullet points, and emphasis where appropriate
-4. Be educational and practical for Irish gardeners
-5. Include specific plant names, their Latin names if available, and practical advice about growing them
-6. Mention the ${growingProperty
+1. Directly address the question asked.
+2. Use specific plants and data from the structured information.
+3. Be educational and practical for Irish gardeners.
+4. Include specific plant names, their Latin names (e.g., *Malus domestica*), and practical advice about growing them.
+5. Mention the ${growingProperty
             .replace(/([A-Z])/g, " $1")
-            .toLowerCase()} requirements where relevant
-7. If information about rainfall or temperature is provided, include that as context
-8. Format your response as a comprehensive gardening guide
+            .toLowerCase()} requirements where relevant.
+6. If information about rainfall or temperature is provided, include that as context.
+7. Format your response as a comprehensive gardening guide.
+
+IMPORTANT: Your entire response MUST be in valid Markdown format. This includes:
+- Headings (e.g., # Main Title, ## Section, ### Subsection)
+- Lists (bulleted using - or * , or numbered using 1.)
+- Bold text (e.g., **Important Note**)
+- Italic text (e.g., *Latin name*)
+- Paragraphs (separated by a blank line in the Markdown source)
 `
         : `
 You are a gardening assistant specializing in Irish gardens and growing conditions.
-Please provide a comprehensive guide about ${plantType.toLowerCase()} plants that grow well in ${countyName} 
+Please provide a comprehensive guide about ${plantType.toLowerCase()} plants that grow well in ${countyName}
 county with ${soilType} soil during the ${season} season, focusing on their ${growingProperty
             .replace(/([A-Z])/g, " $1")
             .toLowerCase()} requirements.
@@ -148,15 +154,15 @@ county with ${soilType} soil during the ${season} season, focusing on their ${gr
 Use only the following data to formulate your response:
 ${context}
 
-Format your response in Markdown with:
-- A clear title using # heading
-- Sections with ## subheadings
-- Bullet points for lists of plants or growing tips
-- *Emphasis* for important points
-- Latin names in *italics* when available
-- A summary section at the end
-
 Include specific plant names, practical advice about growing them, and contextual information about the growing conditions.
+
+IMPORTANT: Your entire response MUST be in valid Markdown format. Ensure you use:
+- A clear title (e.g., # Main Title)
+- Sections with subheadings (e.g., ## Section, ### Subsection)
+- Bullet points for lists (e.g., - Tip 1, * Tip 2) or numbered lists (e.g., 1. Step 1)
+- Emphasis using *italics* (e.g., *Malus domestica*) or **bold** (e.g., **Critical Information**).
+- Paragraphs (separated by a blank line in the Markdown source).
+- A summary section at the end.
 `;
 
       answer = await generateText(promptTemplate, {
@@ -180,7 +186,7 @@ The user has asked the following question about gardening in Ireland:
 
 "${userQuestion}"
 
-They were specifically interested in ${plantType.toLowerCase()} plants in ${countyName} county 
+They were specifically interested in ${plantType.toLowerCase()} plants in ${countyName} county
 with ${soilType} soil during the ${season} season, focusing on ${growingProperty
             .replace(/([A-Z])/g, " $1")
             .toLowerCase()} requirements.
@@ -193,14 +199,19 @@ Although I don't have specific data matching these exact criteria in my knowledg
             .replace(/([A-Z])/g, " $1")
             .toLowerCase()} requirements for ${plantType.toLowerCase()} plants
 5. Alternative approaches they might consider
-6. Format your response in Markdown with headers, bullet points, and emphasis
 
 Start by acknowledging that you don't have exact matches for their criteria, but then provide helpful general information.
+
+IMPORTANT: Your entire response MUST be in valid Markdown format. Use Markdown for all formatting, including:
+- Headings (e.g., # Main Title, ## Section)
+- Bullet points (e.g., - Advice 1)
+- Emphasis (e.g., *important point* or **very important**)
+- Paragraphs (separated by a blank line in the Markdown source)
 `
         : `
 You are a gardening assistant specializing in Irish gardens and growing conditions.
 
-The user was looking for information about ${plantType.toLowerCase()} plants that grow well in ${countyName} 
+The user was looking for information about ${plantType.toLowerCase()} plants that grow well in ${countyName}
 county with ${soilType} soil during the ${season} season, focusing on their ${growingProperty
             .replace(/([A-Z])/g, " $1")
             .toLowerCase()} requirements.
@@ -213,9 +224,14 @@ Although I don't have specific data matching these exact criteria in my knowledg
             .replace(/([A-Z])/g, " $1")
             .toLowerCase()} requirements for ${plantType.toLowerCase()} plants
 5. Suggestions for alternatives that might work better in these conditions
-6. Format your response in Markdown with headers, bullet points, and emphasis
 
 Start with an acknowledgment that you don't have exact matches for their criteria, but then provide helpful general information.
+
+IMPORTANT: Your entire response MUST be in valid Markdown format. Use Markdown for all formatting, including:
+- Headings (e.g., # Main Title, ## Section)
+- Bullet points (e.g., - Advice 1)
+- Emphasis (e.g., *important point* or **very important**)
+- Paragraphs (separated by a blank line in the Markdown source)
 `;
 
       // Send to LLM despite not having specific matches

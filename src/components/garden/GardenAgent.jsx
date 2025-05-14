@@ -1,4 +1,6 @@
 import React, { useState, useRef, useEffect, createRef } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { selectCardsForResponse, CARD_TYPES } from "../../utils/cards";
 import { samplePlants } from "../../data/plants";
 import { sampleTasks } from "../../data/gardening-tasks";
@@ -551,13 +553,17 @@ const GardenAgent = () => {
                             message.isGraphRAG
                               ? "bg-emerald-700"
                               : "bg-emerald-800"
-                          } text-white mb-2 overflow-hidden break-words whitespace-pre-wrap`}
+                          } text-white mb-2 overflow-hidden break-words`}
                           style={{
                             maxWidth: "90vw",
                             overflowWrap: "break-word",
                           }}
                         >
-                          {message.content}
+                          <div className="prose prose-invert whitespace-normal prose-sm sm:prose-base lg:prose-lg xl:prose-xl 2xl:prose-2xl max-w-full overflow-x-auto">
+                            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                              {message.content}
+                            </ReactMarkdown>
+                          </div>
                         </div>
 
                         {/* GraphRAG specific UI */}

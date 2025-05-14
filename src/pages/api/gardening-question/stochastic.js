@@ -150,35 +150,105 @@ Return only the Cypher query without any explanation or markdown formatting. Do 
     // Step 3: Generate an answer based on whether we have data or not
     let answer;
 
+    const userQuestion = question ? question.trim() : null;
+
     if (hasSufficientData) {
       // If we have data, use it to generate a contextual answer
       const formatContext = JSON.stringify(contextData, null, 2);
-      const contextualPrompt = `
-You are a gardening assistant that helps people with their gardening questions.
-Use the following context information retrieved from our gardening knowledge graph to answer the user's question.
-Be specific, helpful, and provide practical gardening advice for Irish conditions.
+      const contextualPrompt = userQuestion
+        ? `
+You are a gardening assistant specializing in Irish gardens and growing conditions.
+Please answer the following specific question from a gardener:
 
-User question: "${question}"
+"${userQuestion}"
 
-Context information:
+Use the following structured data to inform your answer:
+
 ${formatContext}
 
-Provide a comprehensive answer using the information in the context.
+Your response should:
+1. Directly address the question asked.
+2. Use specific plants and data from the structured information.
+3. Be educational and practical for Irish gardeners.
+4. Include specific plant names, their Latin names (e.g., *Malus domestica*), and practical advice about growing them.
+5. Mention the requirements where relevant.
+6. If information about rainfall or temperature is provided, include that as context.
+7. Format your response as a comprehensive gardening guide.
+
+IMPORTANT: Your entire response MUST be in valid Markdown format. This includes:
+- Headings (e.g., # Main Title, ## Section, ### Subsection)
+- Lists (bulleted using - or * , or numbered using 1.)
+- Bold text (e.g., **Important Note**)
+- Italic text (e.g., *Latin name*)
+- Paragraphs (separated by a blank line in the Markdown source)
+`
+        : `
+You are a gardening assistant specializing in Irish gardens and growing conditions.
+Please provide a comprehensive guide about plants that grow well in Irish conditions.
+
+Use only the following data to formulate your response:
+${formatContext}
+
+Include specific plant names, practical advice about growing them, and contextual information about the growing conditions.
+
+IMPORTANT: Your entire response MUST be in valid Markdown format. Ensure you use:
+- A clear title (e.g., # Main Title)
+- Sections with subheadings (e.g., ## Section, ### Subsection)
+- Bullet points for lists (e.g., - Tip 1, * Tip 2) or numbered lists (e.g., 1. Step 1)
+- Emphasis using *italics* (e.g., *Malus domestica*) or **bold** (e.g., **Critical Information**).
+- Paragraphs (separated by a blank line in the Markdown source).
+- A summary section at the end.
 `;
+
       answer = await generateText(contextualPrompt, {
         maxTokens: 1024,
         temperature: 0.7,
       });
     } else {
       // If we don't have data, use the LLM directly without mentioning limitations
-      const fallbackPrompt = `
-You are a gardening assistant focused on Irish gardening conditions. 
-Answer this gardening question about Irish gardening based on your general knowledge:
-"${question}"
+      const fallbackPrompt = userQuestion
+        ? `
+You are a gardening assistant specializing in Irish gardens and growing conditions.
+The user has asked the following question about gardening in Ireland:
 
-Provide a helpful and informative answer. Be specific to Irish growing conditions where possible.
-Focus on practical advice a gardener in Ireland could use.
+"${userQuestion}"
+
+Although I don't have specific data matching these exact criteria in my knowledge graph, please provide:
+1. General advice about growing plants in Irish conditions
+2. Information about how soil typically affects plant growth
+3. General gardening tips for Ireland
+4. Typical requirements for plants
+5. Alternative approaches they might consider
+
+Start by acknowledging that you don't have exact matches for their criteria, but then provide helpful general information.
+
+IMPORTANT: Your entire response MUST be in valid Markdown format. Use Markdown for all formatting, including:
+- Headings (e.g., # Main Title, ## Section)
+- Bullet points (e.g., - Advice 1)
+- Emphasis (e.g., *important point* or **very important**)
+- Paragraphs (separated by a blank line in the Markdown source)
+`
+        : `
+You are a gardening assistant specializing in Irish gardens and growing conditions.
+
+The user was looking for information about plants that grow well in Irish conditions.
+
+Although I don't have specific data matching these exact criteria in my knowledge graph, please provide:
+1. A helpful overview about growing plants in Irish conditions
+2. Information about how soil typically affects plant growth
+3. General gardening tips for Ireland
+4. Typical requirements for plants
+5. Suggestions for alternatives that might work better in these conditions
+
+Start with an acknowledgment that you don't have exact matches for their criteria, but then provide helpful general information.
+
+IMPORTANT: Your entire response MUST be in valid Markdown format. Use Markdown for all formatting, including:
+- Headings (e.g., # Main Title, ## Section)
+- Bullet points (e.g., - Advice 1)
+- Emphasis (e.g., *important point* or **very important**)
+- Paragraphs (separated by a blank line in the Markdown source)
 `;
+
       answer = await generateText(fallbackPrompt, {
         maxTokens: 1024,
         temperature: 0.7,
