@@ -478,7 +478,7 @@ const GardenAgent = () => {
                       d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
                     />
                   </svg>
-                  Garden Assistant Chat
+                  Bloom Assistant Chat
                   <span className="text-xs font-normal opacity-70 ml-2">
                     {isGraphRAGMode
                       ? "GraphRAG Mode"
@@ -539,7 +539,7 @@ const GardenAgent = () => {
                     <div className="chat chat-start">
                       <ChatAvatar type="assistant" />
                       <div className="chat-header">
-                        Garden Assistant
+                        Bloom
                         <time className="text-xs opacity-50 ml-1">
                           {formatTime(message.timestamp)}
                         </time>
@@ -709,7 +709,7 @@ const GardenAgent = () => {
                   <ChatAvatar type="assistant" />
                   <div className="chat-bubble bg-emerald-800 text-white flex gap-1 items-center">
                     <span className="loading loading-dots loading-sm"></span>
-                    <span>Garden Assistant is thinking...</span>
+                    <span>Bloom is thinking...</span>
                   </div>
                 </div>
               </div>

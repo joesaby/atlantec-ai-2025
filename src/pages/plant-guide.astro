@@ -2,7 +2,7 @@
 import Layout from '../layouts/Layout.astro';
 ---
 
-<Layout title="Plant Growing Guide | Irish Garden Assistant">
+<Layout title="Plant Growing Guide | Bloom">
     <main class="container mx-auto px-4 py-8">
         <h1 class="text-3xl font-bold text-center text-emerald-800 mb-2">Detailed Plant Growing Guide</h1>
         <p class="text-center text-gray-600 mb-8" id="plant-title">Loading plant information...</p>
@@ -93,7 +93,7 @@ import Layout from '../layouts/Layout.astro';
     // Update page title with plant name
     if (plantName) {
         document.getElementById('plant-title').textContent = `Growing Guide for ${plantName}`;
-        document.title = `${plantName} Growing Guide | Irish Garden Assistant`;
+        document.title = `${plantName} Growing Guide | Bloom`;
     } else {
         document.getElementById('loading').classList.add('hidden');
         document.getElementById('error').classList.remove('hidden');
