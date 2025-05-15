@@ -807,7 +807,7 @@ const ResourceUsageTracker = () => {
     if (score >= 60) return "text-warning";
     return "text-error";
   };
-  
+
   // Generate water saving tips based on user practices
   const generateWaterSavingsTips = () => {
     // Base tips everyone should see
@@ -1282,14 +1282,16 @@ const ResourceUsageTracker = () => {
           >
             <canvas ref={chartRef}></canvas>
           </div>
-          
+
           {/* Water Efficiency Score - only show when water is selected */}
           {resourceType === "water" && (
             <div className="bg-base-200 p-4 rounded-lg mb-6">
               <h4 className="font-semibold mb-2">Water Efficiency Score</h4>
               <div className="flex items-center gap-4">
                 <div
-                  className={`${getWaterEfficiencyClass(calculateWaterEfficiency())}`}
+                  className={`${getWaterEfficiencyClass(
+                    calculateWaterEfficiency()
+                  )}`}
                 >
                   <div
                     className="radial-progress"
@@ -1310,9 +1312,10 @@ const ResourceUsageTracker = () => {
                       : "Needs Improvement"}
                   </p>
                   <p className="text-sm">
-                    <span className="font-semibold">Irish Context:</span> Despite high
-                    rainfall, water management is increasingly important in Ireland
-                    due to seasonal dry spells and projected climate changes.
+                    <span className="font-semibold">Irish Context:</span>{" "}
+                    Despite high rainfall, water management is increasingly
+                    important in Ireland due to seasonal dry spells and
+                    projected climate changes.
                   </p>
                 </div>
               </div>
@@ -1391,7 +1394,9 @@ const ResourceUsageTracker = () => {
           <div className="mt-4 p-4 bg-base-200 rounded-lg">
             {resourceType === "water" ? (
               <>
-                <h4 className="font-bold mb-2">Water Savings Tips for Irish Gardens</h4>
+                <h4 className="font-bold mb-2">
+                  Water Savings Tips for Irish Gardens
+                </h4>
                 <ul className="list-disc pl-5 space-y-2 text-sm">
                   {generateWaterSavingsTips().map((tip, index) => (
                     <li key={index}>{tip}</li>
