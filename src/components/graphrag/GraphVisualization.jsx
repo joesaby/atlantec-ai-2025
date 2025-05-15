@@ -9,6 +9,18 @@ export default function GraphVisualization() {
   const svgRef = useRef(null);
   const tooltipRef = useRef(null);
 
+  // Define relationship types for the legend
+  const relationshipTypes = [
+    { type: "growsWellIn", label: "Grows in" },
+    { type: "companionTo", label: "Companion" },
+    { type: "antagonisticTo", label: "Antagonistic" },
+    { type: "suitableFor", label: "Suitable for" },
+    { type: "plantIn", label: "Plant in" },
+    { type: "harvestIn", label: "Harvest in" },
+    { type: "growTogether", label: "Grow together" },
+    { type: "recommendedPlant", label: "Recommended" },
+  ];
+
   // Fetch graph data from the API - our backend now handles the query directly
   useEffect(() => {
     async function fetchGraphData() {
@@ -266,44 +278,6 @@ export default function GraphVisualization() {
 
     // Create a container group for all elements
     const g = svg.append("g");
-
-    // Add relationship legend
-    const legend = g
-      .append("g")
-      .attr("class", "legend")
-      .attr("transform", `translate(${width - 150}, 20)`);
-
-    const relationshipTypes = [
-      { type: "growsWellIn", label: "Grows in" },
-      { type: "companionTo", label: "Companion" },
-      { type: "antagonisticTo", label: "Antagonistic" },
-      { type: "suitableFor", label: "Suitable for" },
-      { type: "plantIn", label: "Plant in" },
-      { type: "harvestIn", label: "Harvest in" },
-      { type: "growTogether", label: "Grow together" },
-      { type: "recommendedPlant", label: "Recommended" },
-    ];
-
-    relationshipTypes.forEach((rel, i) => {
-      const style = getLineStyleForRelationship(rel.type);
-
-      legend
-        .append("line")
-        .attr("x1", 0)
-        .attr("y1", i * 20)
-        .attr("x2", 20)
-        .attr("y2", i * 20)
-        .attr("stroke", "#555")
-        .attr("stroke-width", style.width)
-        .style("stroke-dasharray", style.dash);
-
-      legend
-        .append("text")
-        .attr("x", 25)
-        .attr("y", i * 20 + 4)
-        .text(rel.label)
-        .attr("font-size", "10px");
-    });
 
     // Create a group for all links
     const link = g
@@ -631,6 +605,28 @@ export default function GraphVisualization() {
               ></span>
               <span>Pollinators</span>
             </div>
+          </div>
+
+          <div className="flex flex-wrap gap-3 mt-4 text-sm">
+            {relationshipTypes.map((rel, i) => {
+              const style = getLineStyleForRelationship(rel.type);
+              return (
+                <div key={i} className="flex items-center">
+                  <svg width="20" height="10">
+                    <line
+                      x1="0"
+                      y1="5"
+                      x2="20"
+                      y2="5"
+                      stroke="#555"
+                      strokeWidth={style.width}
+                      strokeDasharray={style.dash}
+                    />
+                  </svg>
+                  <span className="ml-2">{rel.label}</span>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
