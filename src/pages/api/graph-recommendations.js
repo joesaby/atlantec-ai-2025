@@ -9,7 +9,7 @@ export const prerender = false;
 
 export async function POST({ request }) {
   try {
-    const { county, requirements } = await request.json();
+    const { county, sunExposure, nativeOnly, plantType } = await request.json();
 
     if (!county) {
       return new Response(JSON.stringify({ error: "County is required" }), {
@@ -18,9 +18,15 @@ export async function POST({ request }) {
       });
     }
 
+    if (!sunExposure) {
+      console.warn("sunExposure parameter missing, defaulting to 'Full Sun'");
+    }
+
     const recommendations = await getGraphPlantRecommendations({
       county,
-      ...requirements,
+      sunExposure: sunExposure || "Full Sun", // Provide default to prevent the parameter missing error
+      nativeOnly,
+      plantType,
     });
 
     return new Response(JSON.stringify({ recommendations }), {

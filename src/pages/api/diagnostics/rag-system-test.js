@@ -32,8 +32,28 @@ const getCurrentMonthAndSeason = () => {
   };
 };
 
+/**
+ * Helper function to run a function with a timeout
+ */
+async function withTimeout(fn, timeoutMs = 10000, timeoutMessage = 'Operation timed out') {
+  return Promise.race([
+    fn(),
+    new Promise((_, reject) => 
+      setTimeout(() => reject(new Error(timeoutMessage)), timeoutMs)
+    )
+  ]);
+}
+
 export async function GET(request) {
+  const requestStartTime = Date.now();
+  // Set an overall timeout for the entire test suite
+  const overallTimeout = setTimeout(() => {
+    console.error('RAG system test timeout reached (60 seconds). Forcing process to continue.');
+    // We can't actually abort the request, but this log will help diagnose timeouts
+  }, 60000); // 60 second overall timeout
+  
   try {
+    console.log(`Starting rag-system-test at ${new Date().toISOString()}`);
     // Get query parameters
     const url = new URL(request.url);
     const county = url.searchParams.get('county') || 'Dublin';
@@ -87,7 +107,12 @@ export async function GET(request) {
         const questionResults = [];
         for (const test of testQuestions) {
           const start = Date.now();
-          const answer = await answerGardeningQuestion(test.question, test.context);
+          // Wrap the question answering in a timeout
+          const answer = await withTimeout(
+            async () => answerGardeningQuestion(test.question, test.context),
+            15000, // 15 second timeout per question
+            `Question "${test.question}" timed out after 15 seconds`
+          );
           const duration = Date.now() - start;
           
           questionResults.push({
@@ -105,10 +130,12 @@ export async function GET(request) {
       }
 
       if (testType === 'all' || testType === 'seasonal') {
-        // Test seasonal recommendations
-        const seasonalRecs = await getSeasonalRecommendations(currentMonth, {
-          county,
-        });
+        // Test seasonal recommendations with timeout
+        const seasonalRecs = await withTimeout(
+          async () => getSeasonalRecommendations(currentMonth, { county }),
+          10000, // 10 second timeout for seasonal recommendations
+          `Seasonal recommendations for ${currentMonth} timed out after 10 seconds`
+        );
         
         result.seasonal = {
           month: currentMonth,
@@ -120,13 +147,17 @@ export async function GET(request) {
       }
 
       if (testType === 'all' || testType === 'plants') {
-        // Test plant recommendations
+        // Test plant recommendations with timeout
         const plantCriteria = {
           plantType: "Vegetable",
           plantingMonth: currentMonth,
         };
 
-        const plantRecs = await getPlantRecommendations(plantCriteria);
+        const plantRecs = await withTimeout(
+          async () => getPlantRecommendations(plantCriteria),
+          10000, // 10 second timeout for plant recommendations
+          `Plant recommendations for ${currentMonth} timed out after 10 seconds`
+        );
         
         result.plants = {
           criteria: plantCriteria,
@@ -134,31 +165,51 @@ export async function GET(request) {
         };
       }
       
-      return new Response(JSON.stringify(result), {
+      // Clear the overall timeout since we've completed successfully
+      clearTimeout(overallTimeout);
+      
+      console.log(`Completed rag-system-test in ${Date.now() - requestStartTime}ms`);
+      
+      return new Response(JSON.stringify({
+        ...result,
+        executionTime: Date.now() - requestStartTime
+      }), {
         headers: { "Content-Type": "application/json" }
       });
     } catch (error) {
+      // Clear the timeout on error
+      clearTimeout(overallTimeout);
+      
+      console.error(`Error in rag-system-test after ${Date.now() - requestStartTime}ms:`, error.message);
+      
       return new Response(JSON.stringify({
         status: "error",
         message: error.message,
         stack: error.stack,
-        dbStatus
+        dbStatus,
+        executionTime: Date.now() - requestStartTime
       }), {
         status: 500,
         headers: { "Content-Type": "application/json" }
       });
     }
   } catch (error) {
+    // Clear the timeout on error
+    clearTimeout(overallTimeout);
+    
+    console.error(`Error in rag-system-test after ${Date.now() - requestStartTime}ms:`, error.message);
+    
     return new Response(JSON.stringify({
       status: "error",
       message: error.message,
-      stack: error.stack
+      stack: error.stack,
+      executionTime: Date.now() - requestStartTime
     }), {
       status: 500,
       headers: { "Content-Type": "application/json" }
     });
   } finally {
-    // Close the database connection
-    await closeDriver();
+    // Do not close the driver here, as other requests may still need it
+    // The driver should only be closed when the application is shutting down
   }
 }
