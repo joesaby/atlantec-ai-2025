@@ -5,6 +5,65 @@
 
 import { generateText } from "./vertex-client.js";
 import { runQuery, closeDriver } from "../database/neo4j-client.js";
+import { CARD_TYPES } from "./cards.js";
+
+/**
+ * Determines the type of card to display based on the query content
+ * @param {string} query - The user's query
+ * @returns {string|null} - The type of card to display, or null if no card needed
+ */
+export function determineCardTypeFromQuery(query) {
+  const lowerQuery = query.toLowerCase();
+
+  // Check for plant-related content
+  if (
+    (lowerQuery.includes("plant") &&
+      (lowerQuery.includes("recommend") || lowerQuery.includes("grow"))) ||
+    lowerQuery.includes("what vegetable") ||
+    lowerQuery.includes("what flowers") ||
+    lowerQuery.includes("what plants") ||
+    lowerQuery.includes("companion plant")
+  ) {
+    return CARD_TYPES.PLANT;
+  }
+
+  // Check for task-related content
+  if (
+    (lowerQuery.includes("task") ||
+      lowerQuery.includes("job") ||
+      lowerQuery.includes("what to do") ||
+      lowerQuery.includes("garden chore")) &&
+    (lowerQuery.includes("month") ||
+      lowerQuery.includes("season") ||
+      lowerQuery.includes("spring") ||
+      lowerQuery.includes("summer") ||
+      lowerQuery.includes("autumn") ||
+      lowerQuery.includes("winter"))
+  ) {
+    return CARD_TYPES.TASK;
+  }
+
+  // Check for soil-related content
+  if (
+    lowerQuery.includes("soil") &&
+    (lowerQuery.includes("county") || lowerQuery.includes("type"))
+  ) {
+    return CARD_TYPES.SOIL;
+  }
+
+  // Check for sustainability-related content
+  if (
+    lowerQuery.includes("sustain") ||
+    lowerQuery.includes("environment") ||
+    lowerQuery.includes("carbon") ||
+    lowerQuery.includes("footprint") ||
+    lowerQuery.includes("eco")
+  ) {
+    return CARD_TYPES.SUSTAINABILITY;
+  }
+
+  return null;
+}
 
 /**
  * Core RAG function to answer gardening questions

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import DeterministicQueryCard from "./DeterministicQueryCard";
+import PlantCard from "../plants/PlantCard"; // Import PlantCard component
 
 export default function GraphRagAssistant() {
   const [loading, setLoading] = useState(false);
@@ -16,6 +17,8 @@ export default function GraphRagAssistant() {
   const [showQueryResults, setShowQueryResults] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   const [apiError, setApiError] = useState(null);
+  const [plantCards, setPlantCards] = useState([]); // Add state for plant cards
+  const [showPlantCards, setShowPlantCards] = useState(false);
 
   // Initialize client-side only
   useEffect(() => {
@@ -36,10 +39,7 @@ export default function GraphRagAssistant() {
   // Add new function to verify API availability
   useEffect(() => {
     async function checkApiAvailability() {
-      // Changed from /api/direct-auth-test to /api/vertex-auth-test
-      console.log(
-        "GraphRAG: Checking API availability at /api/vertex-auth-test"
-      );
+      console.log("GraphRAG: Checking API availability");
       try {
         const response = await fetch("/api/vertex-auth-test", {
           method: "GET",
@@ -93,6 +93,8 @@ export default function GraphRagAssistant() {
     setShowGeneratedQuery(false);
     setQueryResults([]);
     setShowQueryResults(false);
+    setPlantCards([]);
+    setShowPlantCards(false);
 
     // Set mode after clearing results
     setIsStochastic(true);
@@ -113,9 +115,30 @@ export default function GraphRagAssistant() {
     setShowGeneratedQuery(false);
     setQueryResults([]);
     setShowQueryResults(false);
+    setPlantCards([]);
+    setShowPlantCards(false);
 
     // Set mode after clearing results
     setIsStochastic(false);
+  };
+
+  // Helper function to extract plant data from query results
+  const extractPlantData = (results) => {
+    if (!results || !Array.isArray(results)) return [];
+    return results.map((result, index) => ({
+      id: result.id || `plant-${index}`,
+      commonName: result.name || result.plantName || "Unknown Plant",
+      latinName: result.latinName || "",
+      description: result.description || "No description available",
+      waterNeeds: result.waterNeeds || "Medium",
+      sunNeeds: result.sunNeeds || "Unknown",
+      soilPreference: result.soilPreference || result.soilType || "Unknown",
+      nativeToIreland: result.nativeToIreland || false,
+      isPerennial: result.isPerennial || false,
+      sustainabilityRating: result.sustainabilityRating || 3,
+      biodiversityValue: result.biodiversityValue || 3,
+      imageUrl: result.imageUrl || "/images/plants/wildflowers.jpg",
+    }));
   };
 
   const askQuestion = async (e) => {
@@ -128,9 +151,11 @@ export default function GraphRagAssistant() {
     setGeneratedQuery("");
     setQueryResults([]);
     setApiError(null); // Clear previous errors
+    setShowQueryResults(false);
+    setPlantCards([]);
+    setShowPlantCards(false);
 
     try {
-      // Always use stochastic endpoint for free-text questions
       const endpoint = "/api/gardening-question/stochastic";
 
       const response = await fetch(endpoint, {
@@ -147,11 +172,29 @@ export default function GraphRagAssistant() {
 
       if (response.ok) {
         setAnswer(data.answer);
+
+        const showingPlantCards = data.answer.includes("SHOWING_PLANT_CARDS");
+
+        if (showingPlantCards) {
+          setAnswer(data.answer.replace("SHOWING_PLANT_CARDS", "").trim());
+        }
+
         if (data.sourceFacts && data.sourceFacts.length > 0) {
           setSourceFacts(data.sourceFacts);
         }
+
         if (data.generatedQuery) {
           setGeneratedQuery(data.generatedQuery);
+        }
+
+        if (data.results && data.results.length > 0) {
+          setQueryResults(data.results);
+
+          if (showingPlantCards) {
+            const extractedPlants = extractPlantData(data.results);
+            setPlantCards(extractedPlants);
+            setShowPlantCards(true);
+          }
         }
       } else {
         console.error("Error fetching answer:", data.error);
@@ -178,6 +221,8 @@ export default function GraphRagAssistant() {
     setShowGeneratedQuery(false);
     setQueryResults([]);
     setShowQueryResults(false);
+    setPlantCards([]);
+    setShowPlantCards(false);
 
     try {
       const response = await fetch("/api/gardening-question/deterministic", {
@@ -192,9 +237,23 @@ export default function GraphRagAssistant() {
 
       if (response.ok) {
         setAnswer(data.answer);
+
+        const showingPlantCards = data.answer.includes("SHOWING_PLANT_CARDS");
+
+        if (showingPlantCards) {
+          setAnswer(data.answer.replace("SHOWING_PLANT_CARDS", "").trim());
+        }
+
         if (data.results && data.results.length > 0) {
           setQueryResults(data.results);
+
+          if (showingPlantCards || formData.entityType === "Plant") {
+            const extractedPlants = extractPlantData(data.results);
+            setPlantCards(extractedPlants);
+            setShowPlantCards(true);
+          }
         }
+
         if (data.query) {
           setGeneratedQuery(data.query);
         }
@@ -218,7 +277,6 @@ export default function GraphRagAssistant() {
     <div className="graph-rag-assistant w-full max-w-4xl mx-auto p-6 bg-white rounded-lg shadow-md">
       <h2 className="text-2xl font-bold text-emerald-700 mb-6">Bloom</h2>
 
-      {/* Mode toggle buttons */}
       <div className="mb-6 flex justify-center">
         <div className="inline-flex rounded-md shadow-sm" role="group">
           <button
@@ -250,7 +308,6 @@ export default function GraphRagAssistant() {
         </div>
       </div>
 
-      {/* Input area with strict mode separation */}
       <div className="mb-6">
         {isStochastic && (
           <div className="stochastic-mode-container">
@@ -310,6 +367,43 @@ export default function GraphRagAssistant() {
           <div className="prose prose-sm sm:prose-base lg:prose-lg xl:prose-xl 2xl:prose-2xl max-w-none overflow-x-auto">
             <ReactMarkdown remarkPlugins={[remarkGfm]}>{answer}</ReactMarkdown>
           </div>
+
+          {plantCards.length > 0 && (
+            <div className="mt-4 pt-3 border-t border-emerald-100">
+              <button
+                onClick={() => setShowPlantCards(!showPlantCards)}
+                className="text-sm text-emerald-600 hover:text-emerald-800 flex items-center"
+              >
+                <svg
+                  className={`w-4 h-4 mr-1 transform ${
+                    showPlantCards ? "rotate-90" : ""
+                  } transition-transform`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M9 5l7 7-7 7"
+                  ></path>
+                </svg>
+                {showPlantCards
+                  ? "Hide Plant Recommendations"
+                  : `Show ${plantCards.length} Plant Recommendations`}
+              </button>
+
+              {showPlantCards && (
+                <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {plantCards.map((plant) => (
+                    <PlantCard key={plant.id} plant={plant} />
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
           {sourceFacts.length > 0 && (
             <div className="mt-4 pt-3 border-t border-emerald-100">
