@@ -6,6 +6,11 @@ import {
   addSustainablePractice,
   removeSustainablePractice,
 } from "../../utils/sustainability-store";
+import {
+  emitPracticeAdded,
+  emitPracticeRemoved,
+  emitDataChanged,
+} from "../../utils/sustainability-events";
 
 const SustainabilityPractices = () => {
   // Get active practices from user progress
@@ -48,15 +53,24 @@ const SustainabilityPractices = () => {
         // Add practice
         addSustainablePractice(id);
         setActivePracticeIds((prev) => [...prev, id]);
+
+        // Emit event for practice added
+        emitPracticeAdded(id);
       } else {
         // Remove practice
         removeSustainablePractice(id);
         setActivePracticeIds((prev) =>
           prev.filter((activeId) => activeId !== id)
         );
+
+        // Emit event for practice removed
+        emitPracticeRemoved(id);
       }
 
-      // Update the parent dashboard component if needed
+      // Emit general data changed event
+      emitDataChanged("practice-update", { practiceId: id, isActive });
+
+      // Update the parent dashboard component if needed (for backward compatibility)
       if (window.updateSustainabilityDashboard) {
         window.updateSustainabilityDashboard();
       }

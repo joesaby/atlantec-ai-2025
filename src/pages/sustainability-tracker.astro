@@ -4,29 +4,37 @@ import { sustainablePractices } from '../data/sustainability-metrics';
 import SustainabilityDashboard from '../components/sustainability/SustainabilityDashboard';
 import ResourceUsageTracker from '../components/sustainability/ResourceUsageTracker';
 import SustainabilityPractices from '../components/sustainability/SustainabilityPractices';
+import EnhancedSustainabilityTracker from '../components/sustainability/EnhancedSustainabilityTracker';
 import SeasonalSustainabilityTips from '../components/sustainability/SeasonalSustainabilityTips';
 import SustainabilityAchievements from '../components/sustainability/SustainabilityAchievements';
-import CarbonFootprintCalculator from '../components/sustainability/CarbonFootprintCalculator';
+
 import BiodiversityImpact from '../components/sustainability/BiodiversityImpact';
-import BiodiversityTracker from '../components/sustainability/BiodiversityTracker';
-import WaterUsageInsights from '../components/sustainability/WaterUsageInsights';
+import CombinedBiodiversityTracker from '../components/sustainability/CombinedBiodiversityTracker';
 import SustainabilityEducation from '../components/sustainability/SustainabilityEducation';
 import FoodSustainabilityComparison from '../components/sustainability/FoodSustainabilityComparison';
-import SDGImpactVisualization from '../components/sustainability/SDGImpactVisualization';
+//SDGImpactVisualization component removed
 ---
 
 <Layout title="Sustainability Tracker - Bloom">
   <div class="container mx-auto px-4 py-8">
     <h1 class="text-3xl font-bold text-center mb-2">Sustainability Tracker</h1>
-    <p class="text-center mb-8 max-w-2xl mx-auto">
+    <p class="text-center mb-6 max-w-2xl mx-auto">
       Monitor your garden's environmental impact and improve your sustainability 
       practices with personalized recommendations for Irish gardening conditions.
     </p>
+    <div class="text-center mb-8">
+      <a href="/sustainability-guide" class="btn btn-sm btn-outline btn-primary gap-2">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+        View Irish Gardening Sustainability Guide
+      </a>
+    </div>
     
     <!-- Navigation tabs for better organization -->
     <div class="tabs tabs-boxed justify-center mb-8">
       <a class="tab tab-active" data-tab="dashboard">Dashboard</a>
-      <a class="tab" data-tab="resources">Impact & Resources</a>
+      <a class="tab" data-tab="resources">Resources</a>
       <a class="tab" data-tab="biodiversity">Biodiversity</a>
       <a class="tab" data-tab="practices">Your Practices</a>
       <a class="tab" data-tab="education">Learn More</a>
@@ -48,31 +56,22 @@ import SDGImpactVisualization from '../components/sustainability/SDGImpactVisual
     
     <!-- Resources Section -->
     <div id="resources-section" class="tab-content hidden mb-16">
-      <h2 class="text-2xl font-bold mb-6 text-center">UN SDGs & Resource Management</h2>
-      
-      <!-- UN SDG Impact Visualization -->
-      <SDGImpactVisualization client:load />
-      
-      <!-- Carbon Footprint Calculator -->
-      <CarbonFootprintCalculator client:load />
-      
-      <!-- Food Sustainability Comparison -->
-      <FoodSustainabilityComparison client:load />
-      
-      <!-- Water Usage Insights -->
-      <WaterUsageInsights client:load />
+      <h2 class="text-2xl font-bold mb-6 text-center">Resource Management</h2>
       
       <!-- Resource Usage Tracker -->
       <ResourceUsageTracker client:load />
+      
+      <!-- Food Sustainability Comparison -->
+      <FoodSustainabilityComparison client:load />
     </div>
     
     <!-- Biodiversity Section -->
     <div id="biodiversity-section" class="tab-content hidden mb-16">
       <h2 class="text-2xl font-bold mb-6 text-center">Biodiversity Impact</h2>
       
-      <!-- Biodiversity Score Tracker -->
+      <!-- Combined Biodiversity Tracker that keeps the original impact dashboard and adds wildlife logging and species guide -->
       <div class="mb-8">
-        <BiodiversityImpact client:load />
+        <CombinedBiodiversityTracker client:load />
       </div>
     </div>
     
@@ -80,13 +79,25 @@ import SDGImpactVisualization from '../components/sustainability/SDGImpactVisual
     <div id="practices-section" class="tab-content hidden mb-16">
       <h2 class="text-2xl font-bold mb-6 text-center">Sustainable Gardening Practices</h2>
       
-      <!-- Sustainable Practices Categories -->
-      <SustainabilityPractices client:load />
+      <!-- Enhanced Sustainable Practices Tracker -->
+      <EnhancedSustainabilityTracker client:load />
     </div>
     
     <!-- Education Section -->
     <div id="education-section" class="tab-content hidden mb-16">
       <h2 class="text-2xl font-bold mb-6 text-center">Learn About Sustainability</h2>
+      
+      <div class="alert alert-info mb-6 flex justify-between items-center">
+        <div>
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <span>Looking for more in-depth sustainability information?</span>
+        </div>
+        <a href="/sustainability-guide" class="btn btn-sm btn-primary">
+          View Complete Sustainability Guide
+        </a>
+      </div>
       
       <!-- Educational Content -->
       <SustainabilityEducation client:load />
@@ -164,8 +175,8 @@ import SDGImpactVisualization from '../components/sustainability/SDGImpactVisual
           
           <div class="card bg-base-100">
             <div class="card-body p-4">
-              <h4 class="card-title text-sm">Track Your SDG Impact</h4>
-              <p class="text-sm">Your garden's impact on these goals is tracked in the SDG Impact Visualization section. Increase your impact by:</p>
+              <h4 class="card-title text-sm">Increase Your Sustainability Impact</h4>
+              <p class="text-sm">Your gardening practices contribute to important environmental goals. Increase your impact by:</p>
               <ul class="list-disc pl-5 text-sm mt-2">
                 <li>Growing more diverse crops and plants</li>
                 <li>Using sustainable practices like rainwater harvesting</li>
@@ -175,11 +186,7 @@ import SDGImpactVisualization from '../components/sustainability/SDGImpactVisual
           </div>
         </div>
         
-        <div class="text-center">
-          <a href="#resources-section" class="btn btn-primary btn-sm" onclick="document.querySelector('.tab[data-tab=resources]').click()">
-            View Your SDG Impact
-          </a>
-        </div>
+        <!-- SDG Impact button removed -->
       </div>
     </div>
   </div>
