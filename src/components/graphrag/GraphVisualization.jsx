@@ -245,13 +245,13 @@ export default function GraphVisualization() {
         d3
           .forceLink(validLinks)
           .id((d) => d.id)
-          .distance(100)
+          .distance(300) // Increased from 200 to 300 for even more separation
       )
-      .force("charge", d3.forceManyBody().strength(-300))
+      .force("charge", d3.forceManyBody().strength(-1200)) // Increased from -800 to -1200 for stronger repulsion
       .force("center", d3.forceCenter(width / 2, height / 2))
       .force(
         "collision",
-        d3.forceCollide().radius((d) => d.radius * 1.5)
+        d3.forceCollide().radius((d) => d.radius * 3.5) // Increased from 2.5 to 3.5 for larger collision detection
       );
 
     // Add zoom capabilities
@@ -557,9 +557,29 @@ export default function GraphVisualization() {
               className="bg-emerald-100 hover:bg-emerald-200 text-emerald-800 px-3 py-1 rounded text-sm"
               onClick={() => {
                 if (svgRef.current) {
+                  // Completely randomize node positions
+                  const width = svgRef.current.clientWidth;
+                  const height = svgRef.current.clientHeight;
+
+                  // Create a new copy of graph data with randomized positions
+                  const randomizedNodes = graphData.nodes.map((node) => ({
+                    ...node,
+                    // Assign random positions within the SVG boundaries
+                    x: Math.random() * width,
+                    y: Math.random() * height,
+                    // Remove any fixed positions
+                    fx: null,
+                    fy: null,
+                  }));
+
+                  // Clear existing visualization
                   d3.select(svgRef.current).selectAll("*").remove();
-                  // Force re-render by updating state with a copy
-                  setGraphData({ ...graphData });
+
+                  // Update state with randomized node positions
+                  setGraphData({
+                    nodes: randomizedNodes,
+                    links: [...graphData.links],
+                  });
                 }
               }}
             >

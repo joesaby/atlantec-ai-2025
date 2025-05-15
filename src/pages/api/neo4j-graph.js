@@ -15,47 +15,139 @@ export async function POST({ request }) {
     let result;
 
     try {
-      // First query - get all nodes
-      const nodesQuery = `
-        MATCH (n)
-        RETURN COLLECT(n) as nodes
-      `;
+      if (query && query.trim() !== "") {
+        // If a query is provided, use it to filter the graph
+        console.log(`Filtering graph data with query: ${query}`);
 
-      const nodesResult = await session.run(nodesQuery);
-      const allNodes = nodesResult.records[0].get("nodes") || [];
+        // Use full-text search to find matching nodes
+        const nodesQuery = `
+          MATCH (n)
+          WHERE n.name =~ $queryPattern OR n.description =~ $queryPattern OR any(label IN labels(n) WHERE label =~ $queryPattern)
+          WITH collect(n) as matchedNodes
+          RETURN matchedNodes as nodes
+        `;
 
-      console.log(`Found ${allNodes.length} nodes in database`);
+        const nodesResult = await session.run(nodesQuery, {
+          queryPattern: `(?i).*${query}.*`, // Case-insensitive regex pattern
+        });
 
-      // Second query - get all relationships directly with RETURN
-      // Using string concatenation for ID to avoid Infinity issues
-      const relsQuery = `
-        MATCH (a)-[r]->(b)
-        RETURN COLLECT({
-          stringId: toString(id(r)),
-          type: type(r),
-          source: toString(id(a)),
-          target: toString(id(b)),
-          properties: properties(r)
-        }) as relationships
-      `;
+        const matchedNodes = nodesResult.records[0].get("nodes") || [];
+        console.log(
+          `Found ${matchedNodes.length} nodes matching query: ${query}`
+        );
 
-      const relsResult = await session.run(relsQuery);
-      const allRels = relsResult.records[0].get("relationships") || [];
+        if (matchedNodes.length === 0) {
+          // If no matches found, return the full graph instead of empty graph
+          console.log(
+            `No matches found for query: ${query}, returning full graph`
+          );
 
-      console.log(
-        `Found ${allRels.length} relationships with direct ID mapping`
-      );
+          // First query - get all nodes
+          const allNodesQuery = `
+            MATCH (n)
+            RETURN COLLECT(n) as nodes
+          `;
 
-      // Debug the first few relationships
-      if (allRels.length > 0) {
-        console.log("First 3 relationships:", allRels.slice(0, 3));
+          const allNodesResult = await session.run(allNodesQuery);
+          const allNodes = allNodesResult.records[0].get("nodes") || [];
+
+          console.log(`Returning ${allNodes.length} nodes from full graph`);
+
+          // Second query - get all relationships directly with RETURN
+          const allRelsQuery = `
+            MATCH (a)-[r]->(b)
+            RETURN COLLECT({
+              stringId: toString(id(r)),
+              type: type(r),
+              source: toString(id(a)),
+              target: toString(id(b)),
+              properties: properties(r)
+            }) as relationships
+          `;
+
+          const allRelsResult = await session.run(allRelsQuery);
+          const allRels = allRelsResult.records[0].get("relationships") || [];
+
+          console.log(
+            `Returning ${allRels.length} relationships from full graph`
+          );
+
+          result = {
+            nodes: allNodes,
+            relationships: allRels,
+          };
+        } else {
+          // Get relationships between the matched nodes
+          const relsQuery = `
+            MATCH (a)-[r]->(b)
+            WHERE id(a) IN $nodeIds AND id(b) IN $nodeIds
+            WITH collect({
+              stringId: toString(id(r)),
+              type: type(r),
+              source: toString(id(a)),
+              target: toString(id(b)),
+              properties: properties(r)
+            }) as filteredRels
+            RETURN filteredRels as relationships
+          `;
+
+          const nodeIds = matchedNodes.map((node) => node.identity.toNumber());
+          const relsResult = await session.run(relsQuery, { nodeIds });
+          const filteredRels = relsResult.records[0].get("relationships") || [];
+
+          console.log(
+            `Found ${filteredRels.length} relationships between matched nodes`
+          );
+
+          result = {
+            nodes: matchedNodes,
+            relationships: filteredRels,
+          };
+        }
+      } else {
+        // If no query is provided, return the full graph
+        // First query - get all nodes
+        const nodesQuery = `
+          MATCH (n)
+          RETURN COLLECT(n) as nodes
+        `;
+
+        const nodesResult = await session.run(nodesQuery);
+        const allNodes = nodesResult.records[0].get("nodes") || [];
+
+        console.log(`Found ${allNodes.length} nodes in database`);
+
+        // Second query - get all relationships directly with RETURN
+        // Using string concatenation for ID to avoid Infinity issues
+        const relsQuery = `
+          MATCH (a)-[r]->(b)
+          RETURN COLLECT({
+            stringId: toString(id(r)),
+            type: type(r),
+            source: toString(id(a)),
+            target: toString(id(b)),
+            properties: properties(r)
+          }) as relationships
+        `;
+
+        const relsResult = await session.run(relsQuery);
+        const allRels = relsResult.records[0].get("relationships") || [];
+
+        console.log(
+          `Found ${allRels.length} relationships with direct ID mapping`
+        );
+
+        // Debug the first few relationships
+        if (allRels.length > 0) {
+          console.log("First 3 relationships:", allRels.slice(0, 3));
+        }
+
+        // Combine the results manually
+        result = {
+          nodes: allNodes,
+          relationships: allRels,
+        };
       }
-
-      // Combine the results manually
-      result = {
-        nodes: allNodes,
-        relationships: allRels,
-      };
     } finally {
       await session.close();
     }
@@ -72,6 +164,7 @@ export async function POST({ request }) {
         debug: {
           nodeCount: result.nodes.length,
           relationshipCount: result.relationships.length,
+          query: query || "none",
         },
       }),
       {

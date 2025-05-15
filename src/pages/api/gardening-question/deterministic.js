@@ -1,6 +1,8 @@
 // filepath: /workspaces/atlantec-ai-2025/src/pages/api/gardening-question/deterministic.js
 import { neo4jDriver } from "../../../database/neo4j-client.js";
 import { generateText } from "../../../utils/vertex-client.js";
+import { executeWithFallback } from "../../../database/fallback-query.js";
+import { plants as localPlants } from "../../../data/plants.js"; // Import local plant data
 
 // System instruction for gardening focus
 const GRAPHRAG_SYSTEM_INSTRUCTION = `You are Bloom's GraphRAG system, an expert Irish gardening assistant powered by a knowledge graph.
@@ -68,12 +70,12 @@ Answer with ONLY "GARDENING: YES" or "GARDENING: NO" and nothing else.`;
       }
     }
 
-    // Validate all required parameters are present
-    if (!countyName || !plantType || !soilType || !season || !growingProperty) {
+    // Validate required parameters are present
+    if (!countyName || !plantType) {
       return new Response(
         JSON.stringify({
           error:
-            "Missing required parameters. Please provide countyName, plantType, soilType, season, and growingProperty.",
+            "Missing required parameters. Please provide countyName and plantType.",
         }),
         {
           status: 400,
@@ -84,85 +86,191 @@ Answer with ONLY "GARDENING: YES" or "GARDENING: NO" and nothing else.`;
       );
     }
 
-    // Generate a deterministic Cypher query based on the parameters
-    let cypherQuery;
+    // Use default values for optional parameters if not provided
+    const params = {
+      countyName,
+      plantType,
+      soilType: soilType || "",
+      season: season || "",
+      growingProperty: growingProperty || "general", // Default value
+    };
 
-    // Different query patterns based on what we're looking for
-    if (
-      growingProperty === "harvestSeason" ||
-      growingProperty === "growingSeason"
-    ) {
-      // Query for seasonal information
-      cypherQuery = `
-        MATCH (county:County {name: "${countyName}"})
-        MATCH (plant:Plant)-[:SUITABLE_FOR]->(gc:GrowingCondition)-[:SUITABLE_FOR]->(county)
-        MATCH (plant)-[:GROWS_WELL_IN]->(soil:SoilType {name: "${soilType}"})
-        MATCH (plant)-[:${
-          growingProperty === "harvestSeason" ? "HARVEST_IN" : "PLANT_IN"
-        }]->(month:Month)
-        WHERE month.season = "${season}" AND plant.type = "${plantType}"
-        RETURN plant.name as plantName, plant.latinName as latinName, plant.description as description, 
-               plant.${growingProperty} as seasonInfo, month.name as specificMonth, 
-               soil.name as soilName, soil.characteristics as soilCharacteristics
-        ORDER BY month.order ASC
-      `;
-    } else if (
-      growingProperty === "waterNeeds" ||
-      growingProperty === "sunNeeds"
-    ) {
-      // Query for growing requirements
-      cypherQuery = `
-        MATCH (county:County {name: "${countyName}"})
-        MATCH (plant:Plant)-[:SUITABLE_FOR]->(gc:GrowingCondition)-[:SUITABLE_FOR]->(county)
-        MATCH (plant)-[:GROWS_WELL_IN]->(soil:SoilType {name: "${soilType}"})
-        WHERE plant.type = "${plantType}"
-        RETURN plant.name as plantName, plant.latinName as latinName, plant.description as description, 
-               plant.${growingProperty} as requirements, soil.name as soilName, 
-               soil.characteristics as soilCharacteristics, 
-               gc.rainfallMm as rainfall, gc.avgTempC as temperature
-        ORDER BY plant.name ASC
-      `;
-    } else {
-      // General query for soil preference or other properties
-      cypherQuery = `
-        MATCH (county:County {name: "${countyName}"})
-        MATCH (plant:Plant)-[:SUITABLE_FOR]->(gc:GrowingCondition)-[:SUITABLE_FOR]->(county)
-        MATCH (plant)-[:GROWS_WELL_IN]->(soil:SoilType {name: "${soilType}"})
-        WHERE plant.type = "${plantType}"
-        RETURN plant.name as plantName, plant.latinName as latinName, plant.description as description, 
-               plant.${growingProperty} as propertyValue, soil.name as soilName, 
-               soil.characteristics as soilCharacteristics
-        ORDER BY plant.name ASC
-      `;
+    // Function to build a Cypher query based on parameters
+    // Uses only properties that actually exist in the database
+    const buildQuery = (params) => {
+      let cypherQuery = `MATCH (county:County {name: "${params.countyName}"})`;
+
+      // Basic county-plant relationship for suitability
+      cypherQuery += `\nMATCH (county)-[:suitableFor]->(plant:Plant)`;
+
+      // Add soil type filter if provided
+      if (params.soilType) {
+        cypherQuery += `\nMATCH (soil:SoilType {name: "${params.soilType}"})`;
+        cypherQuery += `\nMATCH (plant)-[:GROWS_IN]->(soil)`;
+      }
+
+      // Add season filter if provided
+      if (params.season) {
+        const seasonMonths = getMonthsForSeason(params.season);
+        if (seasonMonths && seasonMonths.length > 0) {
+          cypherQuery += `\nMATCH (plant)-[:plantIn|harvestIn]->(month:Month)`;
+          cypherQuery += `\nWHERE month.name IN [${seasonMonths
+            .map((m) => `"${m}"`)
+            .join(", ")}]`;
+        }
+      }
+
+      // Filter plants by type using the WHERE clause
+      if (params.plantType === "Vegetable") {
+        cypherQuery += params.season
+          ? `\nAND plant.name IN ["Potato", "Cabbage", "Kale", "Leek", "Onion"]`
+          : `\nWHERE plant.name IN ["Potato", "Cabbage", "Kale", "Leek", "Onion"]`;
+      } else if (params.plantType === "Wildflower") {
+        cypherQuery += params.season
+          ? `\nAND plant.name IN ["Irish Wildflower Mix", "Irish Primrose"]`
+          : `\nWHERE plant.name IN ["Irish Wildflower Mix", "Irish Primrose"]`;
+      } else if (params.plantType === "Tree") {
+        cypherQuery += params.season
+          ? `\nAND plant.name IN ["Hawthorn"]`
+          : `\nWHERE plant.name IN ["Hawthorn"]`;
+      }
+
+      // Add optional matches for additional data based on growingProperty
+      if (params.growingProperty === "pollinators") {
+        cypherQuery += `\nOPTIONAL MATCH (plant)-[:ATTRACTS]->(pollinator:PollinatorType)`;
+      } else if (params.growingProperty === "soilPreference") {
+        cypherQuery += `\nOPTIONAL MATCH (plant)-[:GROWS_IN]->(soilType:SoilType)`;
+      } else if (params.growingProperty === "growingCondition") {
+        cypherQuery += `\nOPTIONAL MATCH (plant)-[:PREFERS]->(condition:GrowingCondition)`;
+      } else if (params.growingProperty === "plantingSeason") {
+        cypherQuery += `\nOPTIONAL MATCH (plant)-[:plantIn]->(plantMonth:Month)`;
+      } else if (params.growingProperty === "harvestSeason") {
+        cypherQuery += `\nOPTIONAL MATCH (plant)-[:harvestIn]->(harvestMonth:Month)`;
+      }
+
+      // Return clause with all collected data
+      cypherQuery += `\nRETURN DISTINCT plant.name as plantName, plant.id as plantId, 
+                      plant.color as plantColor, plant.size as plantSize`;
+
+      // Add collection operations based on growingProperty
+      if (params.growingProperty === "pollinators") {
+        cypherQuery += `,\nCOLLECT(DISTINCT pollinator.name) as pollinators`;
+      } else {
+        cypherQuery += `,\n[] as pollinators`;
+      }
+
+      if (params.growingProperty === "soilPreference") {
+        cypherQuery += `,\nCOLLECT(DISTINCT soilType.name) as soilTypes`;
+      } else {
+        cypherQuery += `,\n[] as soilTypes`;
+      }
+
+      if (params.growingProperty === "growingCondition") {
+        cypherQuery += `,\nCOLLECT(DISTINCT condition.name) as growingConditions`;
+      } else {
+        cypherQuery += `,\n[] as growingConditions`;
+      }
+
+      if (params.growingProperty === "plantingSeason") {
+        cypherQuery += `,\nCOLLECT(DISTINCT plantMonth.name) as plantingMonths`;
+      } else {
+        cypherQuery += `,\n[] as plantingMonths`;
+      }
+
+      if (params.growingProperty === "harvestSeason") {
+        cypherQuery += `,\nCOLLECT(DISTINCT harvestMonth.name) as harvestMonths`;
+      } else {
+        cypherQuery += `,\n[] as harvestMonths`;
+      }
+
+      cypherQuery += `\nORDER BY plantName ASC`;
+
+      return cypherQuery;
+    };
+
+    // Helper function to map seasons to their corresponding months
+    function getMonthsForSeason(season) {
+      switch (season.toLowerCase()) {
+        case "spring":
+          return ["March", "April", "May"];
+        case "summer":
+          return ["June", "July", "August"];
+        case "autumn":
+          return ["September", "October", "November"];
+        case "winter":
+          return ["December", "January", "February"];
+        default:
+          return null;
+      }
     }
 
-    console.log("Executing Cypher query:", cypherQuery);
+    console.log("Executing Cypher query with fallback mechanism");
 
-    // Execute the Cypher query
-    const session = neo4jDriver.session();
-    let result;
+    // Use the fallback mechanism to execute the query with progressive relaxation
+    const fallbackResult = await executeWithFallback(params, buildQuery);
 
-    try {
-      result = await session.run(cypherQuery);
-    } finally {
-      await session.close();
-    }
+    const records = fallbackResult.records || [];
+    console.log(
+      `Query returned ${records.length} results ${
+        fallbackResult.fallbackUsed
+          ? "after using fallback"
+          : "on first attempt"
+      }`
+    );
 
-    const records = result.records || [];
+    // Format results and enhance with local data
+    const formattedResults = [];
 
-    // Format results
-    const formattedResults = records.map((record) => {
-      const recordObj = {};
-      record.keys.forEach((key) => {
-        recordObj[key] = record.get(key);
-      });
-      return recordObj;
+    // Create a map of local plants by name for quick lookups
+    const plantNameMap = new Map();
+    localPlants.forEach((plant) => {
+      plantNameMap.set(plant.commonName.toLowerCase(), plant);
+    });
+
+    // Enhance Neo4j results with local plant data
+    records.forEach((record) => {
+      if (record.plantName) {
+        const localPlant = plantNameMap.get(record.plantName.toLowerCase());
+
+        // Create a merged record with data from Neo4j and local plants
+        const enhancedRecord = {
+          // Neo4j data (guaranteed to exist)
+          plantName: record.plantName,
+          plantId: record.plantId,
+
+          // Optional Neo4j data
+          pollinators: record.pollinators || [],
+          soilTypes: record.soilTypes || [],
+          growingConditions: record.growingConditions || [],
+          plantingMonths: record.plantingMonths || [],
+          harvestMonths: record.harvestMonths || [],
+        };
+
+        // Add local plant data if available
+        if (localPlant) {
+          enhancedRecord.latinName = localPlant.latinName;
+          enhancedRecord.description = localPlant.description;
+          enhancedRecord.waterNeeds = localPlant.waterNeeds;
+          enhancedRecord.sunNeeds = localPlant.sunNeeds;
+          enhancedRecord.soilPreference = localPlant.soilPreference;
+          enhancedRecord.nativeToIreland = localPlant.nativeToIreland;
+          enhancedRecord.isPerennial = localPlant.isPerennial;
+          enhancedRecord.harvestSeason = localPlant.harvestSeason;
+          enhancedRecord.imageUrl = localPlant.imageUrl;
+          enhancedRecord.sustainabilityRating = localPlant.sustainabilityRating;
+          enhancedRecord.waterConservationRating =
+            localPlant.waterConservationRating;
+          enhancedRecord.biodiversityValue = localPlant.biodiversityValue;
+        }
+
+        formattedResults.push(enhancedRecord);
+      }
     });
 
     // Generate natural language response using the structured data
     let answer;
 
-    const GARDENING_STRICT_GUIDELINES = `You are an expert Irish gardening assistant focused EXCLUSIVELY on gardening topics.
+    const GARDENING_STRICT_GUIDELINES = `You are an expert gardening assistant focused EXCLUSIVELY on gardening topics.
 
 STRICT RESPONSE POLICY:
 - You MUST ONLY respond to gardening-related queries. For ANY non-gardening topic, respond ONLY with: "I'm Bloom, your gardening assistant. I can only help with gardening-related questions. Please ask me something about plants, gardening, or sustainable garden practices."
@@ -220,15 +328,33 @@ Format your response as plain text with one of these indicators at the very end 
       // More comprehensive prompt - balanced detail level
       const userQuestion = question ? question.trim() : null;
 
-      // Improved prompt with system instruction - more detailed but still efficient
+      // Build fallback explanation if needed
+      let fallbackExplanation = "";
+      if (fallbackResult.fallbackUsed) {
+        const successfulStrategy = fallbackResult.fallbackAttempts.find(
+          (attempt) => attempt.resultCount > 0
+        );
+
+        fallbackExplanation = `\n\nNOTE: The user's exact search criteria (${countyName} county, ${plantType}${
+          params.soilType ? ", " + params.soilType + " soil" : ""
+        }${
+          params.season ? ", " + params.season + " season" : ""
+        }) didn't return any results.
+Instead, I found results by ${successfulStrategy.description}.
+Please be clear about this in your response and explain that while these aren't exact matches to their criteria, they're the closest available information.`;
+      }
+
+      // Build a dynamic prompt based on whether user has a specific question or not
       const promptTemplate = userQuestion
         ? `${GARDENING_STRICT_GUIDELINES}
 
 User question: "${userQuestion}"
 
 Context information from Irish gardening knowledge graph about ${plantType.toLowerCase()} plants in ${countyName} 
-county with ${soilType} soil during the ${season} season:
-${context}
+county${params.soilType ? " with " + params.soilType + " soil" : ""}${
+            params.season ? " during the " + params.season + " season" : ""
+          }:
+${context}${fallbackExplanation}
 
 Answer the user's question using ONLY the information in the context above.
 Remember to follow all the guidelines above for formatting and tone.
@@ -236,12 +362,14 @@ Include SHOWING_PLANT_CARDS at the end of your response.`
         : `${GARDENING_STRICT_GUIDELINES}
 
 Please provide information about ${plantType.toLowerCase()} plants that grow well in ${countyName} 
-county with ${soilType} soil during the ${season} season, focusing on their ${growingProperty
+county${params.soilType ? " with " + params.soilType + " soil" : ""}${
+            params.season ? " during the " + params.season + " season" : ""
+          }, focusing on their ${(params.growingProperty || "general growing")
             .replace(/([A-Z])/g, " $1")
             .toLowerCase()} requirements.
 
 Context information from Irish gardening knowledge graph:
-${context}
+${context}${fallbackExplanation}
 
 Provide information using ONLY the data in the context above.
 Remember to follow all the guidelines above for formatting and tone.
@@ -252,45 +380,37 @@ Include SHOWING_PLANT_CARDS at the end of your response.`;
         temperature: 0.7,
       });
     } else {
-      // Log that no plants were found matching the criteria
+      // No plants were found even after all fallback attempts
       console.log(
-        `No plants found matching criteria: ${plantType} in ${countyName} with ${soilType} soil during ${season} season`
+        `No plants found matching criteria or any fallback criteria: ${plantType} in ${countyName}${
+          params.soilType ? " with " + params.soilType + " soil" : ""
+        }${params.season ? " during " + params.season + " season" : ""}`
       );
 
-      // More comprehensive fallback prompt
-      const userQuestion = question ? question.trim() : null;
+      // Create a prompt that acknowledges the lack of specific data
+      const promptTemplate = `${GARDENING_STRICT_GUIDELINES}
 
-      // Improved fallback prompt - more balanced
-      const promptTemplate = userQuestion
-        ? `${GARDENING_STRICT_GUIDELINES}
+The user searched for ${plantType.toLowerCase()} plants in ${countyName} county 
+${params.soilType ? "with " + params.soilType + " soil" : ""}${
+        params.season ? " during the " + params.season + " season" : ""
+      }${
+        params.growingProperty
+          ? ", focusing on " +
+            params.growingProperty.replace(/([A-Z])/g, " $1").toLowerCase() +
+            " requirements"
+          : ""
+      }.
 
-User question: "${userQuestion}"
+Unfortunately, we don't have any data matching these criteria in our knowledge graph, 
+even after trying several fallback searches with fewer constraints.
 
 The user was specifically interested in ${plantType.toLowerCase()} plants in ${countyName} county 
 with ${soilType} soil during the ${season} season, focusing on ${growingProperty
-            .replace(/([A-Z])/g, " $1")
-            .toLowerCase()} considerations during ${season}
+        .replace(/([A-Z])/g, " $1")
+        .toLowerCase()} considerations during ${season}
 - Alternative plants that might thrive in these conditions
 
-We don't have specific data matching these exact criteria in our knowledge graph.
-Please provide general gardening advice about growing ${plantType.toLowerCase()} plants in Irish conditions similar to ${countyName}.
-Focus on ${soilType} soil information and ${season} season gardening tips for Ireland.
-
-Remember to follow all the guidelines above for formatting and tone.
-Include SHOWING_PLANT_CARDS at the end of your response if appropriate.`
-        : `${GARDENING_STRICT_GUIDELINES}
-
-Request for information about ${plantType.toLowerCase()} plants that grow well in ${countyName} 
-county with ${soilType} soil during the ${season} season, focusing on their ${growingProperty
-            .replace(/([A-Z])/g, " $1")
-            .toLowerCase()} requirements.
-
-We don't have specific data matching these exact criteria in our knowledge graph.
-Please provide general gardening advice about growing ${plantType.toLowerCase()} plants in Irish conditions similar to ${countyName}.
-Focus on ${soilType} soil information and ${season} season gardening tips for Ireland.
-
-Remember to follow all the guidelines above for formatting and tone.
-Include SHOWING_PLANT_CARDS at the end of your response if appropriate.`;
+Remember to follow all the guidelines above for formatting and tone.`;
 
       // Send to LLM despite not having specific matches
       answer = await generateText(promptTemplate, {
@@ -303,13 +423,19 @@ Include SHOWING_PLANT_CARDS at the end of your response if appropriate.`;
       JSON.stringify({
         answer,
         results: formattedResults,
-        query: cypherQuery,
+        query: fallbackResult.query,
+        fallbackInfo: {
+          fallbackUsed: fallbackResult.fallbackUsed,
+          originalParams: fallbackResult.originalParams,
+          finalParams: fallbackResult.currentParams,
+          attempts: fallbackResult.fallbackAttempts,
+        },
         params: {
           countyName,
           plantType,
-          soilType,
-          season,
-          growingProperty,
+          soilType: params.soilType,
+          season: params.season,
+          growingProperty: params.growingProperty,
           question,
         },
       }),

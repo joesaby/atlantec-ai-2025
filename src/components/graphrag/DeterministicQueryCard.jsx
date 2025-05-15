@@ -6,7 +6,7 @@ const DeterministicQueryCard = ({ onSubmit }) => {
     plantType: "Vegetable",
     soilType: "",
     season: "",
-    growingProperty: "waterNeeds",
+    growingProperty: "",
     question: "",
   });
 
@@ -15,19 +15,14 @@ const DeterministicQueryCard = ({ onSubmit }) => {
   // Add debugging
   console.log("DeterministicQueryCard rendering");
 
-  // Data from knowledge graph
+  // Data from knowledge graph - updated to match actual Neo4j data
   const counties = [
-    "Antrim",
-    "Armagh",
     "Carlow",
     "Cavan",
     "Clare",
     "Cork",
-    "Derry",
     "Donegal",
-    "Down",
     "Dublin",
-    "Fermanagh",
     "Galway",
     "Kerry",
     "Kildare",
@@ -44,31 +39,33 @@ const DeterministicQueryCard = ({ onSubmit }) => {
     "Roscommon",
     "Sligo",
     "Tipperary",
-    "Tyrone",
     "Waterford",
     "Westmeath",
     "Wexford",
     "Wicklow",
   ];
 
-  const plantTypes = ["Vegetable", "Fruit", "Flower", "Tree", "Fruit Tree"];
-
-  const soilTypes = [
-    "Brown Earth",
-    "Grey-Brown Podzolic",
-    "Gley",
-    "Peat",
-    "Acid Brown Earth",
+  // Plant types based on actual plants in the database
+  const plantTypes = [
+    "Vegetable", // Leek, Kale, Potato, Cabbage, Onion
+    "Wildflower", // Irish Wildflower Mix, Irish Primrose
+    "Tree", // Hawthorn
   ];
 
+  // Soil types as they appear in the database
+  const soilTypes = ["Clay", "Sandy", "Loam", "Peat", "Chalky"];
+
+  // Seasons based on planting/harvesting months in the database
   const seasons = ["Spring", "Summer", "Autumn", "Winter"];
 
+  // Growing properties based on actual relationships in the database
   const growingProperties = [
-    { value: "waterNeeds", label: "Water Requirements" },
-    { value: "sunNeeds", label: "Sun Requirements" },
     { value: "soilPreference", label: "Soil Preference" },
-    { value: "growingSeason", label: "Growing Season" },
+    { value: "plantingSeason", label: "Planting Season" },
     { value: "harvestSeason", label: "Harvest Season" },
+    { value: "growingCondition", label: "Growing Conditions" },
+    { value: "pollinators", label: "Pollinators Attracted" },
+    { value: "companionPlants", label: "Companion Plants" },
   ];
 
   const handleChange = (e) => {
@@ -98,17 +95,7 @@ const DeterministicQueryCard = ({ onSubmit }) => {
       newErrors.plantType = "Plant type is required";
     }
 
-    if (!formData.soilType) {
-      newErrors.soilType = "Soil type is required";
-    }
-
-    if (!formData.season) {
-      newErrors.season = "Season is required";
-    }
-
-    if (!formData.growingProperty) {
-      newErrors.growingProperty = "Growing property is required";
-    }
+    // Optional fields - no validation required
 
     setErrors(newErrors);
 
@@ -134,8 +121,8 @@ const DeterministicQueryCard = ({ onSubmit }) => {
         Structured Plant Query
       </h3>
       <p className="text-sm text-emerald-600 mb-4">
-        Complete all fields below to get precise answers about plants and
-        growing conditions for specific Irish counties.
+        Complete the required fields below to get precise answers about plants
+        and growing conditions for specific Irish counties.
       </p>
 
       <form onSubmit={handleSubmit}>
@@ -204,16 +191,14 @@ const DeterministicQueryCard = ({ onSubmit }) => {
               htmlFor="soilType"
               className="block text-sm font-medium text-gray-700 mb-1"
             >
-              Soil Type <span className="text-red-500">*</span>
+              Soil Type (Optional)
             </label>
             <select
               name="soilType"
               id="soilType"
               value={formData.soilType}
               onChange={handleChange}
-              className={`w-full p-2 border rounded-md ${
-                errors.soilType ? "border-red-500" : "border-gray-300"
-              } focus:ring-emerald-500 focus:border-emerald-500`}
+              className="w-full p-2 border border-gray-300 rounded-md focus:ring-emerald-500 focus:border-emerald-500"
             >
               <option value="">Select soil type</option>
               {soilTypes.map((soil) => (
@@ -222,11 +207,6 @@ const DeterministicQueryCard = ({ onSubmit }) => {
                 </option>
               ))}
             </select>
-            {errors.soilType && (
-              <span className="text-red-500 text-xs mt-1">
-                {errors.soilType}
-              </span>
-            )}
           </div>
 
           <div className="form-group">
@@ -234,16 +214,14 @@ const DeterministicQueryCard = ({ onSubmit }) => {
               htmlFor="season"
               className="block text-sm font-medium text-gray-700 mb-1"
             >
-              Season <span className="text-red-500">*</span>
+              Season (Optional)
             </label>
             <select
               name="season"
               id="season"
               value={formData.season}
               onChange={handleChange}
-              className={`w-full p-2 border rounded-md ${
-                errors.season ? "border-red-500" : "border-gray-300"
-              } focus:ring-emerald-500 focus:border-emerald-500`}
+              className="w-full p-2 border border-gray-300 rounded-md focus:ring-emerald-500 focus:border-emerald-500"
             >
               <option value="">Select a season</option>
               {seasons.map((season) => (
@@ -252,9 +230,6 @@ const DeterministicQueryCard = ({ onSubmit }) => {
                 </option>
               ))}
             </select>
-            {errors.season && (
-              <span className="text-red-500 text-xs mt-1">{errors.season}</span>
-            )}
           </div>
 
           <div className="form-group">
@@ -262,28 +237,22 @@ const DeterministicQueryCard = ({ onSubmit }) => {
               htmlFor="growingProperty"
               className="block text-sm font-medium text-gray-700 mb-1"
             >
-              Growing Property <span className="text-red-500">*</span>
+              Growing Property (Optional)
             </label>
             <select
               name="growingProperty"
               id="growingProperty"
               value={formData.growingProperty}
               onChange={handleChange}
-              className={`w-full p-2 border rounded-md ${
-                errors.growingProperty ? "border-red-500" : "border-gray-300"
-              } focus:ring-emerald-500 focus:border-emerald-500`}
+              className="w-full p-2 border border-gray-300 rounded-md focus:ring-emerald-500 focus:border-emerald-500"
             >
+              <option value="">Select growing property</option>
               {growingProperties.map((property) => (
                 <option key={property.value} value={property.value}>
                   {property.label}
                 </option>
               ))}
             </select>
-            {errors.growingProperty && (
-              <span className="text-red-500 text-xs mt-1">
-                {errors.growingProperty}
-              </span>
-            )}
           </div>
         </div>
 

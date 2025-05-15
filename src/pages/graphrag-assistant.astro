@@ -12,7 +12,13 @@ import GraphVisualization from '../components/graphrag/GraphVisualization';
         <div class="mb-12">
             <GraphRagAssistant client:load />
         </div>
-        
+
+        <div class="max-w-4xl mx-auto p-6 bg-white rounded-lg shadow-md mb-8">
+            <details>
+                <summary class="text-2xl font-bold text-emerald-700 mb-4 cursor-pointer">Graph Visualization</summary>
+                <GraphVisualization client:load />
+            </details>
+        </div>
         <div class="max-w-4xl mx-auto p-6 bg-white rounded-lg shadow-md mb-8">
             <h2 class="text-2xl font-bold text-emerald-700 mb-4">About GraphRAG Technology</h2>
             <div class="prose max-w-none">
@@ -34,9 +40,6 @@ import GraphVisualization from '../components/graphrag/GraphVisualization';
             </div>
         </div>
         
-        <div class="max-w-4xl mx-auto p-6 bg-white rounded-lg shadow-md mb-8">
-            <GraphVisualization client:load />
-        </div>
     </main>
 </Layout>
 
@@ -55,5 +58,24 @@ import GraphVisualization from '../components/graphrag/GraphVisualization';
     
     .prose li {
         margin-bottom: 0.5rem;
+    }
+    
+    details > summary {
+        list-style: none;
+    }
+    
+    details > summary::-webkit-details-marker {
+        display: none;
+    }
+    
+    details > summary::before {
+        content: '▶';
+        display: inline-block;
+        margin-right: 0.5rem;
+        transition: transform 0.3s;
+    }
+    
+    details[open] > summary::before {
+        transform: rotate(90deg);
     }
 </style>
