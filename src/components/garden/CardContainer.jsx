@@ -113,8 +113,6 @@ const CardContainer = ({
     switch (card.type) {
       case CARD_TYPES.PLANT:
         return <PlantCard plant={card.data} key={card.data.id} />;
-      case CARD_TYPES.TASK:
-        return <TaskCard task={card.data} key={card.data.id} />;
       case CARD_TYPES.SUSTAINABILITY:
         // Check if this is a food sustainability card with crop data
         if (card.data.isFoodSustainability) {
