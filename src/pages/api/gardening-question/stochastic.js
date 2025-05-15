@@ -51,8 +51,21 @@ function cleanCypherQuery(query) {
   return cleaned;
 }
 
+/**
+ * Helper function to run a function with a timeout
+ */
+async function withTimeout(fn, timeoutMs = 10000, timeoutMessage = 'Operation timed out') {
+  return Promise.race([
+    fn(),
+    new Promise((_, reject) => 
+      setTimeout(() => reject(new Error(timeoutMessage)), timeoutMs)
+    )
+  ]);
+}
+
 export async function POST({ request }) {
-  console.log("Starting stochastic endpoint processing...");
+  const requestStartTime = Date.now();
+  console.log(`Starting stochastic endpoint processing at ${new Date().toISOString()}...`);
   try {
     const { question, conversationHistory } = await request.json();
     console.log(`Received question: "${question}"`);
@@ -272,10 +285,14 @@ Focus on practical Irish gardening advice with specific examples.
 Include growing conditions, seasonal considerations, and care instructions.
 Format using Markdown with clear headings and organized sections.`;
 
-      answer = await generateText(contextualPrompt, {
-        maxTokens: 768, // Increased from 512 to allow more detailed responses
-        temperature: 0.7,
-      });
+      answer = await withTimeout(
+        async () => generateText(contextualPrompt, {
+          maxTokens: 768, // Increased from 512 to allow more detailed responses
+          temperature: 0.7,
+        }),
+        15000, // 15 second timeout for answer generation
+        'Answer generation timed out'
+      );
     } else {
       // Balanced fallback prompt - not too brief
       const fallbackPrompt = userQuestion
@@ -291,12 +308,19 @@ Provide guidance on plants for Irish gardens.
 Include information on seasonal considerations, growing conditions, and care instructions.
 Format as a helpful guide using Markdown with appropriate headings and structure.`;
 
-      answer = await generateText(fallbackPrompt, {
-        maxTokens: 512, // Increased from 384 to allow more complete responses
-        temperature: 0.7,
-      });
+      answer = await withTimeout(
+        async () => generateText(fallbackPrompt, {
+          maxTokens: 512, // Increased from 384 to allow more complete responses
+          temperature: 0.7,
+        }),
+        15000, // 15 second timeout for fallback answer generation
+        'Fallback answer generation timed out'
+      );
     }
 
+    const executionTime = Date.now() - requestStartTime;
+    console.log(`Completed stochastic endpoint in ${executionTime}ms`);
+    
     return new Response(
       JSON.stringify({
         answer,
@@ -316,10 +340,15 @@ Format as a helpful guide using Markdown with appropriate headings and structure
     );
   } catch (error) {
     console.error("Error in stochastic GraphRAG endpoint:", error);
+    const executionTime = Date.now() - requestStartTime;
+    console.error(`Error in stochastic endpoint after ${executionTime}ms:`, error.message);
+    
     return new Response(
       JSON.stringify({
         error: "Failed to process your question. Please try again.",
         message: error.message,
+        errorType: error.name,
+        executionTime,
       }),
       {
         status: 500,

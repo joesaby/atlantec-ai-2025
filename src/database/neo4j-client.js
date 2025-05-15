@@ -17,15 +17,21 @@ const NEO4J_PASSWORD = process.env.NEO4J_PASSWORD || "";
 // Track driver state
 let isDriverClosed = false;
 
-// Create a driver instance
+// Create a driver instance with optimized timeout settings
 export let neo4jDriver = neo4j.driver(
   NEO4J_URI,
   neo4j.auth.basic(NEO4J_USERNAME, NEO4J_PASSWORD),
   {
     maxConnectionLifetime: 3 * 60 * 60 * 1000, // 3 hours
     maxConnectionPoolSize: 20, // Reduced from 50 to avoid resource exhaustion
-    connectionAcquisitionTimeout: 2 * 60 * 1000, // 2 minutes
+    connectionAcquisitionTimeout: 15000, // 15 seconds (reduced from 2 minutes)
+    connectionTimeout: 10000, // 10 second connection timeout
+    maxTransactionRetryTime: 15000, // 15 seconds max retry time for transactions
     disableLosslessIntegers: true,
+    logging: {
+      level: 'warn', // Log only warnings and errors
+      logger: (level, message) => console.log(`[Neo4j ${level}]: ${message}`)
+    }
   }
 );
 
@@ -52,10 +58,16 @@ export function ensureDriverAvailable() {
       NEO4J_URI,
       neo4j.auth.basic(NEO4J_USERNAME, NEO4J_PASSWORD),
       {
-        maxConnectionLifetime: 3 * 60 * 60 * 1000,
-        maxConnectionPoolSize: 20, // Reduced from 50
-        connectionAcquisitionTimeout: 2 * 60 * 1000,
+        maxConnectionLifetime: 3 * 60 * 60 * 1000, // 3 hours
+        maxConnectionPoolSize: 20, // Reduced from 50 to avoid resource exhaustion
+        connectionAcquisitionTimeout: 15000, // 15 seconds (reduced from 2 minutes)
+        connectionTimeout: 10000, // 10 second connection timeout
+        maxTransactionRetryTime: 15000, // 15 seconds max retry time for transactions
         disableLosslessIntegers: true,
+        logging: {
+          level: 'warn', // Log only warnings and errors
+          logger: (level, message) => console.log(`[Neo4j ${level}]: ${message}`)
+        }
       }
     );
     isDriverClosed = false;

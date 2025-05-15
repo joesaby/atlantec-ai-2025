@@ -45,33 +45,53 @@ const TEST_QUESTIONS = [
 ];
 
 /**
- * Makes a direct API call to test the stochastic endpoint
+ * Helper function to run a function with a timeout
+ */
+async function withTimeout(fn, timeoutMs = 10000, timeoutMessage = 'Operation timed out') {
+  return Promise.race([
+    fn(),
+    new Promise((_, reject) => 
+      setTimeout(() => reject(new Error(timeoutMessage)), timeoutMs)
+    )
+  ]);
+}
+
+/**
+ * Makes a direct API call to test the stochastic endpoint with timeout
  */
 async function testStochasticEndpoint(question, baseUrl) {
   try {
-    const response = await fetch(
-      `${baseUrl}/api/gardening-question/stochastic`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ question, isStochastic: true }),
-      }
+    // Wrap the fetch call in a timeout
+    return await withTimeout(
+      async () => {
+        const response = await fetch(
+          `${baseUrl}/api/gardening-question/stochastic`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ question, isStochastic: true }),
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error(`API request failed with status ${response.status}`);
+        }
+
+        return await response.json();
+      },
+      15000, // 15 second timeout for endpoint test
+      `Stochastic endpoint test for "${question}" timed out after 15 seconds`
     );
-
-    if (!response.ok) {
-      throw new Error(`API request failed with status ${response.status}`);
-    }
-
-    return await response.json();
   } catch (error) {
-    return { error: error.message };
+    console.error(`Error in stochastic endpoint test for "${question}":`, error.message);
+    return { error: error.message, timedOut: error.message.includes('timed out') };
   }
 }
 
 /**
- * Test stochastic query generation directly
+ * Test stochastic query generation directly with timeout
  * This emulates how the stochastic endpoint generates Cypher queries
  */
 async function testStochasticQueryGeneration(question) {
@@ -79,7 +99,10 @@ async function testStochasticQueryGeneration(question) {
   const defaultResponse = "MATCH (p:Plant) WHERE p.type = 'Vegetable' RETURN p.name AS name, p.type AS type LIMIT 10";
   
   try {
-    const prompt = `
+    // Wrap the query generation in a timeout
+    return await withTimeout(
+      async () => {
+        const prompt = `
 You are an expert in Neo4j and Cypher query language. 
 Create a Cypher query to extract information from a garden knowledge graph database about the following question:
 "${question}"
@@ -123,12 +146,16 @@ IMPORTANT GUIDELINES:
 IMPORTANT: Provide only the raw Cypher query. Start directly with MATCH, CREATE or another valid keyword. No markdown, no comments, no explanations.
 `;
 
-    const generatedQuery = await generateText(prompt, {
-      temperature: 0.5, // Lower temperature for more consistent results
-      maxTokens: 500,
-    });
+        const generatedQuery = await generateText(prompt, {
+          temperature: 0.5, // Lower temperature for more consistent results
+          maxTokens: 500,
+        });
 
-    return generatedQuery || defaultResponse;
+        return generatedQuery || defaultResponse;
+      },
+      10000, // 10 second timeout for query generation
+      `Query generation for "${question}" timed out after 10 seconds`
+    );
   } catch (error) {
     console.error('Error generating query:', error);
     return defaultResponse;
@@ -245,7 +272,15 @@ function evaluateCypherQuery(query, expectedEntities, expectedRelationships) {
 }
 
 export async function GET(request) {
+  const requestStartTime = Date.now();
+  // Set an overall timeout for the entire test suite
+  const overallTimeout = setTimeout(() => {
+    console.error('Test suite timeout reached (60 seconds). Forcing process to continue.');
+    // We can't actually abort the request, but this log will help diagnose timeouts
+  }, 60000); // 60 second overall timeout
+  
   try {
+    console.log(`Starting stochastic-rag-test at ${new Date().toISOString()}`);
     // Basic response to check if endpoint is working
     // Wrap database operations in try/catch to provide better error messages
     let dbStatus;
@@ -404,19 +439,31 @@ export async function GET(request) {
       }
     };
 
+    // Clear the overall timeout since we've completed successfully
+    clearTimeout(overallTimeout);
+    
+    console.log(`Completed stochastic-rag-test in ${Date.now() - requestStartTime}ms`);
+    
     return new Response(JSON.stringify({
       dbStatus,
       summary,
-      results
+      results,
+      executionTime: Date.now() - requestStartTime
     }), {
       headers: { "Content-Type": "application/json" }
     });
   } catch (error) {
     console.error('Error in stochastic-rag-test endpoint:', error);
+    // Clear the timeout on error
+    clearTimeout(overallTimeout);
+    
+    console.error(`Error in stochastic-rag-test after ${Date.now() - requestStartTime}ms:`, error.message);
+    
     return new Response(JSON.stringify({
       status: "error",
       message: error.message,
-      stack: error.stack
+      stack: error.stack,
+      executionTime: Date.now() - requestStartTime
     }), {
       status: 200, // Use 200 even for errors to provide info to the client
       headers: { "Content-Type": "application/json" }
