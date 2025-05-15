@@ -170,7 +170,132 @@ LIMIT 5
       }
       
       console.log("Executing Cypher query...");
-      const result = await session.run(generatedQuery);
+      
+      // Extract all parameter names from the query
+      const paramRegex = /\$([a-zA-Z0-9_]+)/g;
+      const requiredParams = new Set();
+      let match;
+      
+      while ((match = paramRegex.exec(generatedQuery)) !== null) {
+        requiredParams.add(match[1]);
+      }
+      
+      // Declare query parameters and result outside of conditional blocks
+      let queryParams = {};
+      let result;
+      
+      // Check if parameters are required
+      if (requiredParams.size === 0) {
+        console.log("No parameters required for this query");
+        
+        // Execute without parameters
+        result = await withTimeout(
+          async () => session.run(generatedQuery),
+          10000, // 10 second timeout
+          'Neo4j query execution timed out'
+        );
+      } else {
+        // Set default values for common parameters
+        const defaultValues = {
+          // County-related parameter naming variations
+          'county': 'Dublin',
+          'countyName': 'Dublin',
+          'County': 'Dublin',
+          'countyCork': 'Cork',
+          'countyGalway': 'Galway',
+          'countyKerry': 'Kerry',
+          'countyMayo': 'Mayo',
+          
+          // Growing conditions
+          'sunExposure': 'Full Sun',
+          'soilType': 'Loam',
+          'soilPH': '6.5',
+          
+          // Plant-related parameters
+          'plantType': 'Vegetable',
+          'plantName': 'Potato',
+          'plant': 'Potato',
+          
+          // Time-related parameters
+          'season': 'Summer',
+          'month': new Date().toLocaleString('en-US', { month: 'long' }),
+          'currentMonth': new Date().toLocaleString('en-US', { month: 'long' }),
+          
+          // General catch-all parameters
+          'limit': 10,
+          'name': 'Vegetable'
+        };
+        
+        try {
+          // Detect user context from question to set better defaults
+          const { question } = await request.json();
+          if (question) {
+            const lowerQuestion = question.toLowerCase();
+            
+            // Extract county name if mentioned
+            const countyMatches = lowerQuestion.match(/county\s+([a-z]+)/i);
+            if (countyMatches && countyMatches[1]) {
+              const county = countyMatches[1].charAt(0).toUpperCase() + countyMatches[1].slice(1);
+              defaultValues['county'] = county;
+              defaultValues['countyName'] = county;
+              defaultValues['County'] = county;
+            }
+            
+            // Extract plant type if mentioned
+            if (lowerQuestion.includes('vegetable')) defaultValues['plantType'] = 'Vegetable';
+            if (lowerQuestion.includes('fruit')) defaultValues['plantType'] = 'Fruit';
+            if (lowerQuestion.includes('flower')) defaultValues['plantType'] = 'Flower';
+            if (lowerQuestion.includes('herb')) defaultValues['plantType'] = 'Herb';
+            
+            // Extract specific plant if mentioned
+            const commonPlants = ['Potato', 'Carrot', 'Cabbage', 'Tomato', 'Apple', 'Rose', 'Tulip'];
+            for (const plant of commonPlants) {
+              if (lowerQuestion.includes(plant.toLowerCase())) {
+                defaultValues['plantName'] = plant;
+                defaultValues['plant'] = plant;
+                break;
+              }
+            }
+          }
+        } catch (error) {
+          console.warn("Error extracting context from question:", error.message);
+          // Continue with default values if there's an error
+        }
+        
+        // Add parameters needed by the query
+        for (const param of requiredParams) {
+          if (defaultValues[param] !== undefined) {
+            queryParams[param] = defaultValues[param];
+            console.log(`Using parameter: ${param} = ${defaultValues[param]}`);
+          } else {
+            // For any unknown parameter, try to derive a reasonable default
+            // First check if it's a compound name that contains a known parameter
+            let foundMatch = false;
+            for (const [key, value] of Object.entries(defaultValues)) {
+              if (param.includes(key)) {
+                queryParams[param] = value;
+                console.log(`Using derived parameter: ${param} = ${value} (from ${key})`);
+                foundMatch = true;
+                break;
+              }
+            }
+            
+            if (!foundMatch) {
+              console.warn(`Unknown parameter: ${param}, using empty string`);
+              queryParams[param] = '';
+            }
+          }
+        }
+        
+        console.log("Query parameters:", JSON.stringify(queryParams));
+        
+        // Execute the query with the prepared parameters
+        result = await withTimeout(
+          async () => session.run(generatedQuery, queryParams),
+          10000, // 10 second timeout
+          'Neo4j query execution timed out'
+        );
+      }
       console.log(
         "Cypher query executed",
         result.records
