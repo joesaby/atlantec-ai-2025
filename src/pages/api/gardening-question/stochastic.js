@@ -25,6 +25,12 @@ Your gardening knowledge encompasses:
 
 // Helper function to clean the query from markdown formatting and validate it's a Cypher query
 function cleanCypherQuery(query) {
+  // Ensure we have a string
+  if (!query || typeof query !== 'string') {
+    console.warn("Invalid query input:", query);
+    return "MATCH (n:Plant) WHERE n.name = 'NO_RESULTS' RETURN n LIMIT 0";
+  }
+
   // Remove markdown code block syntax if present
   const cleaned = query
     .replace(/```cypher\n?/g, "")
@@ -108,22 +114,18 @@ QUERY PATTERNS:
 - Soil types: MATCH (plant:Plant)-[:GROWS_WELL_IN]->(soil:SoilType)
 - Planting times: MATCH (plant:Plant)-[:PLANT_IN]->(month:Month)
 
-RESPONSE FORMAT:
-- You must start with "```cypher"
-- Then provide ONLY a valid Cypher query with no explanations
-- End with "```"
-- Your query MUST start with: MATCH, MERGE, CREATE, or another valid Cypher keyword
-- Your query MUST include RETURN clause
+RESPONSE FORMAT INSTRUCTIONS:
+- Begin your response with the word 'MATCH' or another valid Cypher keyword 
+- Provide ONLY a valid Cypher query with no explanations
+- Your query MUST include a RETURN clause
 - LIMIT all results to 5-10 items maximum
-- DO NOT include any text other than the Cypher query itself
+- Do not include any text, comments, or markdown formatting
 
-Example valid response:
-"```cypher
+Example valid response format:
 MATCH (p:Plant)-[:GROWS_WELL_IN]->(s:SoilType)
 WHERE s.name = 'Clay'
 RETURN p.name as PlantName, p.type as PlantType
 LIMIT 5
-```"
 `;
 
     console.log("Sending prompt to Vertex AI...");
