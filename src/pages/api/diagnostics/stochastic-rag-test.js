@@ -120,7 +120,7 @@ IMPORTANT GUIDELINES:
 5. For questions about planting times, use the PLANTED_IN relationship to Season nodes
 6. For questions about pollinators, use the ATTRACTS relationship to BeneficialInsect nodes
 
-Return only the Cypher query without any explanation or markdown formatting:
+Return only the Cypher query without any explanation or markdown formatting.
 `;
 
     const generatedQuery = await generateText(prompt, {

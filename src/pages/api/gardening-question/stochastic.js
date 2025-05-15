@@ -109,21 +109,21 @@ QUERY PATTERNS:
 - Planting times: MATCH (plant:Plant)-[:PLANT_IN]->(month:Month)
 
 RESPONSE FORMAT:
-- You must start with ```cypher
+- You must start with "```cypher"
 - Then provide ONLY a valid Cypher query with no explanations
-- End with ```
+- End with "```"
 - Your query MUST start with: MATCH, MERGE, CREATE, or another valid Cypher keyword
 - Your query MUST include RETURN clause
 - LIMIT all results to 5-10 items maximum
 - DO NOT include any text other than the Cypher query itself
 
 Example valid response:
-```cypher
+"```cypher
 MATCH (p:Plant)-[:GROWS_WELL_IN]->(s:SoilType)
 WHERE s.name = 'Clay'
 RETURN p.name as PlantName, p.type as PlantType
 LIMIT 5
-```
+```"
 `;
 
     console.log("Sending prompt to Vertex AI...");

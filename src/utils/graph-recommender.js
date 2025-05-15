@@ -25,7 +25,8 @@ export async function getGraphPlantRecommendations(conditions) {
     
     console.log("Using plant recommendation conditions:", JSON.stringify(safeConditions));
     
-    // Base query parts
+    // Base query parts with more defensive query construction
+    // Using more explicit query format to avoid syntax issues
     let matchClause = `
       MATCH (county:County {name: $county})-[:HAS_DOMINANT_SOIL]->(soil:SoilType)
       MATCH (plant:Plant)-[:GROWS_WELL_IN]->(soil)
