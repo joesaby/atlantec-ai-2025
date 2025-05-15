@@ -26,7 +26,7 @@ Your gardening knowledge encompasses:
 // Helper function to clean the query from markdown formatting and validate it's a Cypher query
 function cleanCypherQuery(query) {
   // Ensure we have a string
-  if (!query || typeof query !== 'string') {
+  if (!query || typeof query !== "string") {
     console.warn("Invalid query input:", query);
     return "MATCH (n:Plant) WHERE n.name = 'NO_RESULTS' RETURN n LIMIT 0";
   }
@@ -37,35 +37,54 @@ function cleanCypherQuery(query) {
     .replace(/```\n?/g, "")
     .replace(/```sql\n?/g, "")
     .trim();
-  
+
   // Check if it's actually a Cypher query by looking for common Cypher keywords
-  const cypherKeywords = ['MATCH', 'RETURN', 'WHERE', 'CREATE', 'MERGE', 'WITH', 'OPTIONAL'];
-  const isCypherQuery = cypherKeywords.some(keyword => cleaned.toUpperCase().includes(keyword));
-  
+  const cypherKeywords = [
+    "MATCH",
+    "RETURN",
+    "WHERE",
+    "CREATE",
+    "MERGE",
+    "WITH",
+    "OPTIONAL",
+  ];
+  const isCypherQuery = cypherKeywords.some((keyword) =>
+    cleaned.toUpperCase().includes(keyword)
+  );
+
   if (!isCypherQuery) {
-    console.warn("Generated text does not appear to be a valid Cypher query:", cleaned);
+    console.warn(
+      "Generated text does not appear to be a valid Cypher query:",
+      cleaned
+    );
     // Return a simple query that will work but return no results
     return "MATCH (n:Plant) WHERE n.name = 'NO_RESULTS' RETURN n LIMIT 0";
   }
-  
+
   return cleaned;
 }
 
 /**
  * Helper function to run a function with a timeout
  */
-async function withTimeout(fn, timeoutMs = 10000, timeoutMessage = 'Operation timed out') {
+async function withTimeout(
+  fn,
+  timeoutMs = 10000,
+  timeoutMessage = "Operation timed out"
+) {
   return Promise.race([
     fn(),
-    new Promise((_, reject) => 
+    new Promise((_, reject) =>
       setTimeout(() => reject(new Error(timeoutMessage)), timeoutMs)
-    )
+    ),
   ]);
 }
 
 export async function POST({ request }) {
   const requestStartTime = Date.now();
-  console.log(`Starting stochastic endpoint processing at ${new Date().toISOString()}...`);
+  console.log(
+    `Starting stochastic endpoint processing at ${new Date().toISOString()}...`
+  );
   try {
     const { question, conversationHistory } = await request.json();
     console.log(`Received question: "${question}"`);
@@ -89,7 +108,7 @@ Answer with ONLY "GARDENING: YES" or "GARDENING: NO" and nothing else.`;
 
     // Log the topic check response for debugging
     console.log("Topic check response:", topicCheckResponse);
-    
+
     // Use a stricter check to ensure we're getting proper responses
     const isGardeningTopic = topicCheckResponse.trim() === "GARDENING: YES";
 
@@ -150,7 +169,7 @@ LIMIT 5
 
     // Log the raw response for debugging
     console.log("Raw response from Vertex AI:", rawGeneratedQuery);
-    
+
     // Clean the query from any markdown formatting and validate it's a proper Cypher query
     const generatedQuery = cleanCypherQuery(rawGeneratedQuery);
     console.log("Cleaned Cypher query:", generatedQuery);
@@ -164,104 +183,124 @@ LIMIT 5
     try {
       // Additional safety check to ensure we don't execute invalid queries
       if (generatedQuery.trim().startsWith("I'm Bloom")) {
-        console.log("Detected assistant response instead of Cypher query, using safe fallback query");
+        console.log(
+          "Detected assistant response instead of Cypher query, using safe fallback query"
+        );
         // Use a safe fallback query that will simply return no results
-        generatedQuery = "MATCH (n:Plant) WHERE n.name = 'NO_RESULTS' RETURN n LIMIT 0";
+        generatedQuery =
+          "MATCH (n:Plant) WHERE n.name = 'NO_RESULTS' RETURN n LIMIT 0";
       }
-      
+
       console.log("Executing Cypher query...");
-      
+
       // Extract all parameter names from the query
       const paramRegex = /\$([a-zA-Z0-9_]+)/g;
       const requiredParams = new Set();
       let match;
-      
+
       while ((match = paramRegex.exec(generatedQuery)) !== null) {
         requiredParams.add(match[1]);
       }
-      
+
       // Declare query parameters and result outside of conditional blocks
       let queryParams = {};
       let result;
-      
+
       // Check if parameters are required
       if (requiredParams.size === 0) {
         console.log("No parameters required for this query");
-        
+
         // Execute without parameters
         result = await withTimeout(
           async () => session.run(generatedQuery),
           10000, // 10 second timeout
-          'Neo4j query execution timed out'
+          "Neo4j query execution timed out"
         );
       } else {
         // Set default values for common parameters
         const defaultValues = {
           // County-related parameter naming variations
-          'county': 'Dublin',
-          'countyName': 'Dublin',
-          'County': 'Dublin',
-          'countyCork': 'Cork',
-          'countyGalway': 'Galway',
-          'countyKerry': 'Kerry',
-          'countyMayo': 'Mayo',
-          
+          county: "Dublin",
+          countyName: "Dublin",
+          County: "Dublin",
+          countyCork: "Cork",
+          countyGalway: "Galway",
+          countyKerry: "Kerry",
+          countyMayo: "Mayo",
+
           // Growing conditions
-          'sunExposure': 'Full Sun',
-          'soilType': 'Loam',
-          'soilPH': '6.5',
-          
+          sunExposure: "Full Sun",
+          soilType: "Loam",
+          soilPH: "6.5",
+
           // Plant-related parameters
-          'plantType': 'Vegetable',
-          'plantName': 'Potato',
-          'plant': 'Potato',
-          
+          plantType: "Vegetable",
+          plantName: "Potato",
+          plant: "Potato",
+
           // Time-related parameters
-          'season': 'Summer',
-          'month': new Date().toLocaleString('en-US', { month: 'long' }),
-          'currentMonth': new Date().toLocaleString('en-US', { month: 'long' }),
-          
+          season: "Summer",
+          month: new Date().toLocaleString("en-US", { month: "long" }),
+          currentMonth: new Date().toLocaleString("en-US", { month: "long" }),
+
           // General catch-all parameters
-          'limit': 10,
-          'name': 'Vegetable'
+          limit: 10,
+          name: "Vegetable",
         };
-        
+
         try {
           // Detect user context from question to set better defaults
           const { question } = await request.json();
           if (question) {
             const lowerQuestion = question.toLowerCase();
-            
+
             // Extract county name if mentioned
             const countyMatches = lowerQuestion.match(/county\s+([a-z]+)/i);
             if (countyMatches && countyMatches[1]) {
-              const county = countyMatches[1].charAt(0).toUpperCase() + countyMatches[1].slice(1);
-              defaultValues['county'] = county;
-              defaultValues['countyName'] = county;
-              defaultValues['County'] = county;
+              const county =
+                countyMatches[1].charAt(0).toUpperCase() +
+                countyMatches[1].slice(1);
+              defaultValues["county"] = county;
+              defaultValues["countyName"] = county;
+              defaultValues["County"] = county;
             }
-            
+
             // Extract plant type if mentioned
-            if (lowerQuestion.includes('vegetable')) defaultValues['plantType'] = 'Vegetable';
-            if (lowerQuestion.includes('fruit')) defaultValues['plantType'] = 'Fruit';
-            if (lowerQuestion.includes('flower')) defaultValues['plantType'] = 'Flower';
-            if (lowerQuestion.includes('herb')) defaultValues['plantType'] = 'Herb';
-            
+            if (lowerQuestion.includes("vegetable"))
+              defaultValues["plantType"] = "Vegetable";
+            if (lowerQuestion.includes("fruit"))
+              defaultValues["plantType"] = "Fruit";
+            if (lowerQuestion.includes("flower"))
+              defaultValues["plantType"] = "Flower";
+            if (lowerQuestion.includes("herb"))
+              defaultValues["plantType"] = "Herb";
+
             // Extract specific plant if mentioned
-            const commonPlants = ['Potato', 'Carrot', 'Cabbage', 'Tomato', 'Apple', 'Rose', 'Tulip'];
+            const commonPlants = [
+              "Potato",
+              "Carrot",
+              "Cabbage",
+              "Tomato",
+              "Apple",
+              "Rose",
+              "Tulip",
+            ];
             for (const plant of commonPlants) {
               if (lowerQuestion.includes(plant.toLowerCase())) {
-                defaultValues['plantName'] = plant;
-                defaultValues['plant'] = plant;
+                defaultValues["plantName"] = plant;
+                defaultValues["plant"] = plant;
                 break;
               }
             }
           }
         } catch (error) {
-          console.warn("Error extracting context from question:", error.message);
+          console.warn(
+            "Error extracting context from question:",
+            error.message
+          );
           // Continue with default values if there's an error
         }
-        
+
         // Add parameters needed by the query
         for (const param of requiredParams) {
           if (defaultValues[param] !== undefined) {
@@ -274,26 +313,28 @@ LIMIT 5
             for (const [key, value] of Object.entries(defaultValues)) {
               if (param.includes(key)) {
                 queryParams[param] = value;
-                console.log(`Using derived parameter: ${param} = ${value} (from ${key})`);
+                console.log(
+                  `Using derived parameter: ${param} = ${value} (from ${key})`
+                );
                 foundMatch = true;
                 break;
               }
             }
-            
+
             if (!foundMatch) {
               console.warn(`Unknown parameter: ${param}, using empty string`);
-              queryParams[param] = '';
+              queryParams[param] = "";
             }
           }
         }
-        
+
         console.log("Query parameters:", JSON.stringify(queryParams));
-        
+
         // Execute the query with the prepared parameters
         result = await withTimeout(
           async () => session.run(generatedQuery, queryParams),
           10000, // 10 second timeout
-          'Neo4j query execution timed out'
+          "Neo4j query execution timed out"
         );
       }
       console.log(
@@ -361,6 +402,10 @@ LIMIT 5
     // Step 4: Generate an answer based on whether we have data or not
     let answer;
 
+    // Determine the card type based on the user's question
+    const cardType = determineCardTypeFromQuery(question);
+    console.log(`Determined card type: ${cardType}`);
+
     const userQuestion = question ? question.trim() : null;
 
     if (hasSufficientData) {
@@ -411,12 +456,13 @@ Include growing conditions, seasonal considerations, and care instructions.
 Format using Markdown with clear headings and organized sections.`;
 
       answer = await withTimeout(
-        async () => generateText(contextualPrompt, {
-          maxTokens: 768, // Increased from 512 to allow more detailed responses
-          temperature: 0.7,
-        }),
+        async () =>
+          generateText(contextualPrompt, {
+            maxTokens: 768, // Increased from 512 to allow more detailed responses
+            temperature: 0.7,
+          }),
         15000, // 15 second timeout for answer generation
-        'Answer generation timed out'
+        "Answer generation timed out"
       );
     } else {
       // Balanced fallback prompt - not too brief
@@ -434,18 +480,19 @@ Include information on seasonal considerations, growing conditions, and care ins
 Format as a helpful guide using Markdown with appropriate headings and structure.`;
 
       answer = await withTimeout(
-        async () => generateText(fallbackPrompt, {
-          maxTokens: 512, // Increased from 384 to allow more complete responses
-          temperature: 0.7,
-        }),
+        async () =>
+          generateText(fallbackPrompt, {
+            maxTokens: 512, // Increased from 384 to allow more complete responses
+            temperature: 0.7,
+          }),
         15000, // 15 second timeout for fallback answer generation
-        'Fallback answer generation timed out'
+        "Fallback answer generation timed out"
       );
     }
 
     const executionTime = Date.now() - requestStartTime;
     console.log(`Completed stochastic endpoint in ${executionTime}ms`);
-    
+
     return new Response(
       JSON.stringify({
         answer,
@@ -466,8 +513,11 @@ Format as a helpful guide using Markdown with appropriate headings and structure
   } catch (error) {
     console.error("Error in stochastic GraphRAG endpoint:", error);
     const executionTime = Date.now() - requestStartTime;
-    console.error(`Error in stochastic endpoint after ${executionTime}ms:`, error.message);
-    
+    console.error(
+      `Error in stochastic endpoint after ${executionTime}ms:`,
+      error.message
+    );
+
     return new Response(
       JSON.stringify({
         error: "Failed to process your question. Please try again.",
