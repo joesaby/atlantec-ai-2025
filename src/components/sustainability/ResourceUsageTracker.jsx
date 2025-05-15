@@ -871,17 +871,31 @@ const ResourceUsageTracker = () => {
   return (
     <div className="bg-base-100 rounded-lg shadow-lg p-6 mb-8">
       <h2 className="text-2xl font-bold mb-4">Track Resource Usage</h2>
-      
+
       {/* New feature highlight */}
       <div className="alert alert-success mb-6 shadow-sm">
-        <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="stroke-current shrink-0 h-6 w-6"
+          fill="none"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="2"
+            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+          />
         </svg>
         <div>
-          <h3 className="font-bold">Enhanced Data Visualization Now Available!</h3>
+          <h3 className="font-bold">
+            Enhanced Data Visualization Now Available!
+          </h3>
           <div className="text-sm">
-            Unlock powerful insights with our new advanced charts: yearly comparisons, seasonal patterns, and intensity maps.
-            Click "Show Advanced Charts" below the basic usage chart to explore your data in new ways.
+            Unlock powerful insights with our new advanced charts: yearly
+            comparisons, seasonal patterns, and intensity maps. Click "Show
+            Advanced Charts" below the basic usage chart to explore your data in
+            new ways.
           </div>
         </div>
       </div>
@@ -1295,11 +1309,13 @@ const ResourceUsageTracker = () => {
           <div className="bg-base-200 p-4 rounded-lg mb-6">
             <div className="flex justify-between items-center mb-3">
               <h4 className="font-semibold">Basic Usage Chart</h4>
-              <button 
+              <button
                 className="btn btn-sm btn-outline btn-primary"
                 onClick={() => setShowEnhancedCharts(!showEnhancedCharts)}
               >
-                {showEnhancedCharts ? 'Hide Advanced Charts' : 'Show Advanced Charts'}
+                {showEnhancedCharts
+                  ? "Hide Advanced Charts"
+                  : "Show Advanced Charts"}
               </button>
             </div>
             <div style={{ height: "250px" }}>
@@ -1308,23 +1324,37 @@ const ResourceUsageTracker = () => {
           </div>
 
           {/* Enhanced Data Visualization */}
-          {showEnhancedCharts && userProgress.resourceUsage[resourceType] && 
-           userProgress.resourceUsage[resourceType].length > 0 ? (
+          {showEnhancedCharts &&
+          userProgress.resourceUsage[resourceType] &&
+          userProgress.resourceUsage[resourceType].length > 0 ? (
             <EnhancedCharts resourceType={resourceType} />
-           ) : showEnhancedCharts && (
-            <div className="alert alert-info mb-6">
-              <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <div>
-                <h3 className="font-bold">Enhanced Charts</h3>
-                <div className="text-sm">
-                  Start tracking your {resourceType} usage to unlock advanced visualizations! 
-                  These charts will help you identify yearly trends, seasonal patterns, and usage intensity.
+          ) : (
+            showEnhancedCharts && (
+              <div className="alert alert-info mb-6">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="stroke-current shrink-0 h-6 w-6"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+                <div>
+                  <h3 className="font-bold">Enhanced Charts</h3>
+                  <div className="text-sm">
+                    Start tracking your {resourceType} usage to unlock advanced
+                    visualizations! These charts will help you identify yearly
+                    trends, seasonal patterns, and usage intensity.
+                  </div>
                 </div>
               </div>
-            </div>
-           )}
+            )
+          )}
 
           {/* Water Efficiency Score - only show when water is selected */}
           {resourceType === "water" && (

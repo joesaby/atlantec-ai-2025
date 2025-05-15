@@ -4,6 +4,7 @@ import { sustainablePractices } from '../data/sustainability-metrics';
 import SustainabilityDashboard from '../components/sustainability/SustainabilityDashboard';
 import ResourceUsageTracker from '../components/sustainability/ResourceUsageTracker';
 import SustainabilityPractices from '../components/sustainability/SustainabilityPractices';
+import EnhancedSustainabilityTracker from '../components/sustainability/EnhancedSustainabilityTracker';
 import SeasonalSustainabilityTips from '../components/sustainability/SeasonalSustainabilityTips';
 import SustainabilityAchievements from '../components/sustainability/SustainabilityAchievements';
 
@@ -78,8 +79,8 @@ import FoodSustainabilityComparison from '../components/sustainability/FoodSusta
     <div id="practices-section" class="tab-content hidden mb-16">
       <h2 class="text-2xl font-bold mb-6 text-center">Sustainable Gardening Practices</h2>
       
-      <!-- Sustainable Practices Categories -->
-      <SustainabilityPractices client:load />
+      <!-- Enhanced Sustainable Practices Tracker -->
+      <EnhancedSustainabilityTracker client:load />
     </div>
     
     <!-- Education Section -->

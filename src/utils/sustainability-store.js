@@ -709,3 +709,57 @@ export const completeChallenge = (month, sdgIds = []) => {
     return null;
   }
 };
+
+// Helper to update practice data (progress, notes, goals, etc.)
+export const updatePracticeData = (practiceId, data) => {
+  if (!isClient) {
+    logger.debug("Running in SSR mode, can't update practice data", {
+      component: "SustainabilityStore",
+    });
+    return null;
+  }
+
+  try {
+    const userProgress = getUserProgress();
+    
+    // Find the practice in activePractices
+    const practiceIndex = userProgress.activePractices.findIndex(
+      (practice) => practice.id === practiceId
+    );
+    
+    if (practiceIndex === -1) {
+      logger.warn("Practice not found in user's active practices", {
+        component: "SustainabilityStore",
+        practiceId,
+      });
+      return null;
+    }
+    
+    // Update practice with new data
+    userProgress.activePractices[practiceIndex] = {
+      ...userProgress.activePractices[practiceIndex],
+      ...data,
+      lastUpdated: new Date().toISOString(),
+    };
+    
+    saveUserProgress(userProgress);
+    
+    // Emit data change event
+    if (isClient) {
+      emitDataChanged("practice-data-updated", {
+        practiceId,
+        data,
+        timestamp: new Date().toISOString(),
+      });
+    }
+    
+    return userProgress;
+  } catch (error) {
+    logger.error("Error updating practice data", {
+      component: "SustainabilityStore",
+      practiceId,
+      error: error.message,
+    });
+    return null;
+  }
+};
