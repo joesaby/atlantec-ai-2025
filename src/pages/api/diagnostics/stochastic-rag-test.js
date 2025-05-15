@@ -422,12 +422,7 @@ export async function GET(request) {
       headers: { "Content-Type": "application/json" }
     });
   } finally {
-    try {
-      // Close database connection
-      await closeDriver();
-    } catch (closeErr) {
-      console.error('Error closing database connection:', closeErr);
-      // Don't throw, as we're already in finally
-    }
+    // Do not close the driver here, as other requests may still need it
+    // The driver should only be closed when the application is shutting down
   }
 }

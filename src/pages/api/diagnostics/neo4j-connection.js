@@ -41,7 +41,7 @@ export async function GET() {
       }
     });
   } finally {
-    // Close the driver
-    await closeDriver();
+    // Do not close the driver here, as other requests may still need it
+    // The driver should only be closed when the application is shutting down
   }
 }

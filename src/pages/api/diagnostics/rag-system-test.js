@@ -158,7 +158,7 @@ export async function GET(request) {
       headers: { "Content-Type": "application/json" }
     });
   } finally {
-    // Close the database connection
-    await closeDriver();
+    // Do not close the driver here, as other requests may still need it
+    // The driver should only be closed when the application is shutting down
   }
 }

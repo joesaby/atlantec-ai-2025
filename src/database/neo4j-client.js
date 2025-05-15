@@ -14,13 +14,16 @@ const NEO4J_URI =
 const NEO4J_USERNAME = process.env.NEO4J_USERNAME || "neo4j";
 const NEO4J_PASSWORD = process.env.NEO4J_PASSWORD || "";
 
+// Track driver state
+let isDriverClosed = false;
+
 // Create a driver instance
-export const neo4jDriver = neo4j.driver(
+export let neo4jDriver = neo4j.driver(
   NEO4J_URI,
   neo4j.auth.basic(NEO4J_USERNAME, NEO4J_PASSWORD),
   {
     maxConnectionLifetime: 3 * 60 * 60 * 1000, // 3 hours
-    maxConnectionPoolSize: 50,
+    maxConnectionPoolSize: 20, // Reduced from 50 to avoid resource exhaustion
     connectionAcquisitionTimeout: 2 * 60 * 1000, // 2 minutes
     disableLosslessIntegers: true,
   }
@@ -29,6 +32,8 @@ export const neo4jDriver = neo4j.driver(
 // Helper function to validate database connection
 export async function verifyConnectivity() {
   try {
+    // Ensure driver is available before verifying connectivity
+    ensureDriverAvailable();
     await neo4jDriver.verifyConnectivity();
     console.log("Connected to Neo4j Aura successfully!");
     return { connected: true };
@@ -38,9 +43,43 @@ export async function verifyConnectivity() {
   }
 }
 
+// Function to ensure the driver is available
+export function ensureDriverAvailable() {
+  if (isDriverClosed) {
+    // Recreate the driver if it was closed
+    console.log("Reinitializing Neo4j driver...");
+    neo4jDriver = neo4j.driver(
+      NEO4J_URI,
+      neo4j.auth.basic(NEO4J_USERNAME, NEO4J_PASSWORD),
+      {
+        maxConnectionLifetime: 3 * 60 * 60 * 1000,
+        maxConnectionPoolSize: 20, // Reduced from 50
+        connectionAcquisitionTimeout: 2 * 60 * 1000,
+        disableLosslessIntegers: true,
+      }
+    );
+    isDriverClosed = false;
+    console.log("Neo4j driver reinitialized");
+  }
+}
+
 // Helper to run Cypher queries with parameter validation
 export async function runQuery(query, params = {}) {
-  const session = neo4jDriver.session();
+  // Ensure driver is available before creating a session
+  ensureDriverAvailable();
+  
+  // Catch and handle any potential errors when creating a session
+  let session;
+  try {
+    session = neo4jDriver.session();
+  } catch (sessionError) {
+    console.error("Error creating Neo4j session:", sessionError);
+    // Try to reinitialize the driver and create a new session
+    isDriverClosed = true;
+    ensureDriverAvailable();
+    session = neo4jDriver.session();
+  }
+  
   try {
     // Validate and sanitize parameters to prevent malformed queries
     const safeParams = {};
@@ -157,5 +196,16 @@ export async function runQuery(query, params = {}) {
 
 // Graceful shutdown
 export async function closeDriver() {
-  await neo4jDriver.close();
+  try {
+    if (!isDriverClosed) {
+      console.log("Closing Neo4j driver connection pool...");
+      await neo4jDriver.close();
+      isDriverClosed = true;
+      console.log("Neo4j driver connection pool closed successfully");
+    } else {
+      console.log("Driver already closed, skipping closeDriver call");
+    }
+  } catch (error) {
+    console.error("Error closing Neo4j driver:", error);
+  }
 }
