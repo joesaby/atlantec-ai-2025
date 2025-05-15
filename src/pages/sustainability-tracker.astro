@@ -9,7 +9,7 @@ import SeasonalSustainabilityTips from '../components/sustainability/SeasonalSus
 import SustainabilityAchievements from '../components/sustainability/SustainabilityAchievements';
 
 import BiodiversityImpact from '../components/sustainability/BiodiversityImpact';
-import BiodiversityTracker from '../components/sustainability/BiodiversityTracker';
+import CombinedBiodiversityTracker from '../components/sustainability/CombinedBiodiversityTracker';
 import SustainabilityEducation from '../components/sustainability/SustainabilityEducation';
 import FoodSustainabilityComparison from '../components/sustainability/FoodSustainabilityComparison';
 //SDGImpactVisualization component removed
@@ -69,9 +69,9 @@ import FoodSustainabilityComparison from '../components/sustainability/FoodSusta
     <div id="biodiversity-section" class="tab-content hidden mb-16">
       <h2 class="text-2xl font-bold mb-6 text-center">Biodiversity Impact</h2>
       
-      <!-- Biodiversity Score Tracker -->
+      <!-- Combined Biodiversity Tracker that keeps the original impact dashboard and adds wildlife logging and species guide -->
       <div class="mb-8">
-        <BiodiversityImpact client:load />
+        <CombinedBiodiversityTracker client:load />
       </div>
     </div>
     
