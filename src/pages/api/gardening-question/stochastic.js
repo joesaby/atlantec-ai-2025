@@ -23,14 +23,26 @@ Your gardening knowledge encompasses:
 - Seasonal gardening tasks and timing
 - Sustainable gardening practices`;
 
-// Helper function to clean the query from markdown formatting
+// Helper function to clean the query from markdown formatting and validate it's a Cypher query
 function cleanCypherQuery(query) {
   // Remove markdown code block syntax if present
-  return query
+  const cleaned = query
     .replace(/```cypher\n?/g, "")
     .replace(/```\n?/g, "")
     .replace(/```sql\n?/g, "")
     .trim();
+  
+  // Check if it's actually a Cypher query by looking for common Cypher keywords
+  const cypherKeywords = ['MATCH', 'RETURN', 'WHERE', 'CREATE', 'MERGE', 'WITH', 'OPTIONAL'];
+  const isCypherQuery = cypherKeywords.some(keyword => cleaned.toUpperCase().includes(keyword));
+  
+  if (!isCypherQuery) {
+    console.warn("Generated text does not appear to be a valid Cypher query:", cleaned);
+    // Return a simple query that will work but return no results
+    return "MATCH (n:Plant) WHERE n.name = 'NO_RESULTS' RETURN n LIMIT 0";
+  }
+  
+  return cleaned;
 }
 
 export async function POST({ request }) {
@@ -81,7 +93,7 @@ Answer with ONLY "GARDENING: YES" or "GARDENING: NO" and nothing else.`;
     const cypherPrompt = `
 ${GRAPHRAG_SYSTEM_INSTRUCTION}
 
-Create a concise Neo4j Cypher query for the gardening question: "${question}"
+TASK: Create a valid Neo4j Cypher query for the gardening question: "${question}"
 
 NODE LABELS: Plant, County, SoilType, GrowingCondition, Season, Month
 RELATIONSHIPS: GROWS_IN, HAS_SOIL, SUITABLE_FOR, PLANTED_IN, HARVEST_IN, ATTRACTS, COMPANION_TO, ANTAGONISTIC_TO
@@ -92,8 +104,23 @@ QUERY PATTERNS:
 - Soil types: MATCH (plant:Plant)-[:GROWS_WELL_IN]->(soil:SoilType)
 - Planting times: MATCH (plant:Plant)-[:PLANT_IN]->(month:Month)
 
-Return query only, no explanations.
-LIMIT all results to 5-10 items maximum.`;
+RESPONSE FORMAT:
+- You must start with ```cypher
+- Then provide ONLY a valid Cypher query with no explanations
+- End with ```
+- Your query MUST start with: MATCH, MERGE, CREATE, or another valid Cypher keyword
+- Your query MUST include RETURN clause
+- LIMIT all results to 5-10 items maximum
+- DO NOT include any text other than the Cypher query itself
+
+Example valid response:
+```cypher
+MATCH (p:Plant)-[:GROWS_WELL_IN]->(s:SoilType)
+WHERE s.name = 'Clay'
+RETURN p.name as PlantName, p.type as PlantType
+LIMIT 5
+```
+`;
 
     console.log("Sending prompt to Vertex AI...");
     const rawGeneratedQuery = await generateText(cypherPrompt, {
@@ -102,7 +129,10 @@ LIMIT all results to 5-10 items maximum.`;
     });
     console.log("Received response from Vertex AI");
 
-    // Clean the query from any markdown formatting
+    // Log the raw response for debugging
+    console.log("Raw response from Vertex AI:", rawGeneratedQuery);
+    
+    // Clean the query from any markdown formatting and validate it's a proper Cypher query
     const generatedQuery = cleanCypherQuery(rawGeneratedQuery);
     console.log("Cleaned Cypher query:", generatedQuery);
 
