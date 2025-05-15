@@ -2,6 +2,22 @@
 import { neo4jDriver } from "../../../database/neo4j-client.js";
 import { generateText } from "../../../utils/vertex-client.js";
 
+// System instruction for gardening focus
+const GRAPHRAG_SYSTEM_INSTRUCTION = `You are Bloom's GraphRAG system, an expert Irish gardening assistant powered by a knowledge graph.
+
+STRICT TOPIC POLICY:
+- You MUST ONLY process gardening-related queries about plants, soil, gardening tasks, etc.
+- For non-gardening topics, respond: "I'm Bloom, your gardening assistant. I can only help with gardening-related questions."
+- NEVER provide responses about politics, technology, news, or other non-gardening topics
+- Keep all responses focused on Irish gardening practices and conditions
+
+Your gardening expertise covers:
+- Irish native and non-native plants suitable for Irish gardens
+- Irish soil types and growing conditions by county
+- Plant relationships (companions, antagonists)
+- Seasonal gardening tasks and timing
+- Sustainable gardening practices`;
+
 export async function POST({ request }) {
   try {
     const {
@@ -12,6 +28,45 @@ export async function POST({ request }) {
       growingProperty,
       question,
     } = await request.json();
+
+    // Check if any user-provided question is gardening-related using system instruction
+    if (question) {
+      const topicCheckPrompt = `
+${GRAPHRAG_SYSTEM_INSTRUCTION}
+
+QUERY: "${question}"
+
+TASK: Determine if this is a gardening-related query that I should respond to.
+If it IS gardening-related, respond with "GARDENING: YES"
+If it is NOT gardening-related, respond with "GARDENING: NO"
+
+Answer with ONLY "GARDENING: YES" or "GARDENING: NO" and nothing else.`;
+
+      const topicCheckResponse = await generateText(topicCheckPrompt, {
+        maxTokens: 16,
+        temperature: 0.1,
+      });
+
+      const isGardeningTopic = topicCheckResponse.includes("GARDENING: YES");
+
+      // Reject non-gardening queries
+      if (!isGardeningTopic) {
+        console.log(`Rejecting non-gardening query: "${question}"`);
+        return new Response(
+          JSON.stringify({
+            answer:
+              "I'm Bloom, your gardening assistant. I can only help with gardening-related questions. Please ask me something about plants, gardening, or sustainable garden practices.",
+            isGardeningTopic: false,
+          }),
+          {
+            status: 200,
+            headers: {
+              "Content-Type": "application/json",
+            },
+          }
+        );
+      }
+    }
 
     // Validate all required parameters are present
     if (!countyName || !plantType || !soilType || !season || !growingProperty) {
@@ -108,65 +163,43 @@ export async function POST({ request }) {
     let answer;
 
     if (formattedResults.length > 0) {
-      const context = JSON.stringify(formattedResults, null, 2);
+      // Limit to a reasonable number of results
+      const limitedResults = formattedResults.slice(0, 5);
+      const context = JSON.stringify(limitedResults, null, 1);
 
-      // Create a prompt template that incorporates both structured data and the optional question
+      // More comprehensive prompt - balanced detail level
       const userQuestion = question ? question.trim() : null;
 
-      // Build a dynamic prompt based on whether user has a specific question or not
+      // Improved prompt with system instruction - more detailed but still efficient
       const promptTemplate = userQuestion
-        ? `
-You are a gardening assistant specializing in Irish gardens and growing conditions.
-Please answer the following specific question from a gardener:
+        ? `${GRAPHRAG_SYSTEM_INSTRUCTION}
 
-"${userQuestion}"
+Question: "${userQuestion}"
+About: ${plantType} plants in ${countyName} with ${soilType} soil during ${season} season
+Focus: ${growingProperty.replace(/([A-Z])/g, " $1").toLowerCase()}
 
-Use the following structured data about ${plantType.toLowerCase()} plants in ${countyName}
-county with ${soilType} soil during the ${season} season to inform your answer:
-
+Data:
 ${context}
 
-Your response should:
-1. Directly address the question asked.
-2. Use specific plants and data from the structured information.
-3. Be educational and practical for Irish gardeners.
-4. Include specific plant names, their Latin names (e.g., *Malus domestica*), and practical advice about growing them.
-5. Mention the ${growingProperty
-            .replace(/([A-Z])/g, " $1")
-            .toLowerCase()} requirements where relevant.
-6. If information about rainfall or temperature is provided, include that as context.
-7. Format your response as a comprehensive gardening guide.
+Provide a comprehensive answer with specific advice for Irish gardening conditions.
+Include plant names in italic and use descriptive examples that reference the data.
+Format with Markdown using appropriate headings, lists, and structured sections.`
+        : `${GRAPHRAG_SYSTEM_INSTRUCTION}
 
-IMPORTANT: Your entire response MUST be in valid Markdown format. This includes:
-- Headings (e.g., # Main Title, ## Section, ### Subsection)
-- Lists (bulleted using - or * , or numbered using 1.)
-- Bold text (e.g., **Important Note**)
-- Italic text (e.g., *Latin name*)
-- Paragraphs (separated by a blank line in the Markdown source)
-`
-        : `
-You are a gardening assistant specializing in Irish gardens and growing conditions.
-Please provide a comprehensive guide about ${plantType.toLowerCase()} plants that grow well in ${countyName}
-county with ${soilType} soil during the ${season} season, focusing on their ${growingProperty
+Create a guide about ${plantType} plants in ${countyName} with ${soilType} soil during ${season} season
+Focus on ${growingProperty
             .replace(/([A-Z])/g, " $1")
-            .toLowerCase()} requirements.
+            .toLowerCase()} requirements
 
-Use only the following data to formulate your response:
+Data:
 ${context}
 
-Include specific plant names, practical advice about growing them, and contextual information about the growing conditions.
-
-IMPORTANT: Your entire response MUST be in valid Markdown format. Ensure you use:
-- A clear title (e.g., # Main Title)
-- Sections with subheadings (e.g., ## Section, ### Subsection)
-- Bullet points for lists (e.g., - Tip 1, * Tip 2) or numbered lists (e.g., 1. Step 1)
-- Emphasis using *italics* (e.g., *Malus domestica*) or **bold** (e.g., **Critical Information**).
-- Paragraphs (separated by a blank line in the Markdown source).
-- A summary section at the end.
-`;
+Provide comprehensive information with specific examples from the data.
+Include growing techniques, seasonal considerations, and care instructions.
+Format using Markdown with clear headings, lists, and organized sections.`;
 
       answer = await generateText(promptTemplate, {
-        maxTokens: 1024,
+        maxTokens: 768, // Increased from 512 to allow more detailed responses
         temperature: 0.7,
       });
     } else {
@@ -175,68 +208,38 @@ IMPORTANT: Your entire response MUST be in valid Markdown format. Ensure you use
         `No plants found matching criteria: ${plantType} in ${countyName} with ${soilType} soil during ${season} season`
       );
 
-      // Instead of just returning a generic message, send the question to the LLM anyway
+      // More comprehensive fallback prompt
       const userQuestion = question ? question.trim() : null;
 
-      // Create a prompt that acknowledges the lack of specific data but still provides helpful information
+      // Improved fallback prompt - more balanced
       const promptTemplate = userQuestion
-        ? `
-You are a gardening assistant specializing in Irish gardens and growing conditions.
-The user has asked the following question about gardening in Ireland:
+        ? `${GRAPHRAG_SYSTEM_INSTRUCTION}
 
-"${userQuestion}"
+Question: "${userQuestion}"
+No specific data found for ${plantType} plants in ${countyName} with ${soilType} soil during ${season} season
+Focus area: ${growingProperty.replace(/([A-Z])/g, " $1").toLowerCase()}
 
-They were specifically interested in ${plantType.toLowerCase()} plants in ${countyName} county
-with ${soilType} soil during the ${season} season, focusing on ${growingProperty
+Provide informative general gardening advice for Irish conditions.
+Include practical tips on soil preparation, planting techniques, and seasonal considerations.
+Suggest similar plants that might work well in these conditions.
+Format with Markdown using appropriate structure and organization.`
+        : `${GRAPHRAG_SYSTEM_INSTRUCTION}
+
+No specific data found for ${plantType} plants in ${countyName} with ${soilType} soil during ${season} season
+
+Provide general guidance on:
+- Growing similar plants in Irish conditions
+- Working with ${soilType} soil in ${countyName}
+- ${growingProperty
             .replace(/([A-Z])/g, " $1")
-            .toLowerCase()} requirements.
+            .toLowerCase()} considerations during ${season}
+- Alternative plants that might thrive in these conditions
 
-Although I don't have specific data matching these exact criteria in my knowledge graph, please provide:
-1. General advice about growing ${plantType.toLowerCase()} plants in Irish conditions similar to ${countyName}
-2. Information about how ${soilType} soil typically affects plant growth
-3. General ${season} season gardening tips for Ireland
-4. Typical ${growingProperty
-            .replace(/([A-Z])/g, " $1")
-            .toLowerCase()} requirements for ${plantType.toLowerCase()} plants
-5. Alternative approaches they might consider
+Include practical advice and format using Markdown with clear sections.`;
 
-Start by acknowledging that you don't have exact matches for their criteria, but then provide helpful general information.
-
-IMPORTANT: Your entire response MUST be in valid Markdown format. Use Markdown for all formatting, including:
-- Headings (e.g., # Main Title, ## Section)
-- Bullet points (e.g., - Advice 1)
-- Emphasis (e.g., *important point* or **very important**)
-- Paragraphs (separated by a blank line in the Markdown source)
-`
-        : `
-You are a gardening assistant specializing in Irish gardens and growing conditions.
-
-The user was looking for information about ${plantType.toLowerCase()} plants that grow well in ${countyName}
-county with ${soilType} soil during the ${season} season, focusing on their ${growingProperty
-            .replace(/([A-Z])/g, " $1")
-            .toLowerCase()} requirements.
-
-Although I don't have specific data matching these exact criteria in my knowledge graph, please provide:
-1. A helpful overview about growing ${plantType.toLowerCase()} plants in Irish conditions similar to ${countyName}
-2. Information about how ${soilType} soil typically affects plant growth
-3. General ${season} season gardening tips for Ireland
-4. Typical ${growingProperty
-            .replace(/([A-Z])/g, " $1")
-            .toLowerCase()} requirements for ${plantType.toLowerCase()} plants
-5. Suggestions for alternatives that might work better in these conditions
-
-Start with an acknowledgment that you don't have exact matches for their criteria, but then provide helpful general information.
-
-IMPORTANT: Your entire response MUST be in valid Markdown format. Use Markdown for all formatting, including:
-- Headings (e.g., # Main Title, ## Section)
-- Bullet points (e.g., - Advice 1)
-- Emphasis (e.g., *important point* or **very important**)
-- Paragraphs (separated by a blank line in the Markdown source)
-`;
-
-      // Send to LLM despite not having specific matches
+      // Send to LLM despite not having specific matches with adjusted token count
       answer = await generateText(promptTemplate, {
-        maxTokens: 1024,
+        maxTokens: 640, // Increased from 1024 to allow more complete responses
         temperature: 0.7,
       });
     }

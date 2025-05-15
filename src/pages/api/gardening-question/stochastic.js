@@ -5,6 +5,23 @@ import { generateText } from "../../../utils/vertex-client.js";
 // Mark this endpoint as server-rendered
 export const prerender = false;
 
+// System instruction for gardening focus
+const GRAPHRAG_SYSTEM_INSTRUCTION = `You are Bloom's GraphRAG system, an expert Irish gardening assistant powered by a knowledge graph.
+
+STRICT TOPIC POLICY:
+- You MUST ONLY process gardening-related queries about plants, soil, gardening tasks, etc.
+- For non-gardening topics, respond: "I'm Bloom, your gardening assistant. I can only help with gardening-related questions."
+- NEVER provide responses about politics, technology, news, or other non-gardening topics
+- When generating Cypher queries, ensure they are properly formatted and limited in scope
+- Keep all responses focused on Irish gardening practices and conditions
+
+Your gardening knowledge encompasses:
+- Irish native and non-native plants suitable for Irish gardens
+- Irish soil types and growing conditions
+- Plant relationships (companions, antagonists)
+- Seasonal gardening tasks and timing
+- Sustainable gardening practices`;
+
 // Helper function to clean the query from markdown formatting
 function cleanCypherQuery(query) {
   // Remove markdown code block syntax if present
@@ -21,58 +38,65 @@ export async function POST({ request }) {
     const { question } = await request.json();
     console.log(`Received question: "${question}"`);
 
-    // Step 1: Generate a Cypher query using LLM
+    // Step 1: Check if the query is gardening-related with a mini-prompt
+    const topicCheckPrompt = `
+${GRAPHRAG_SYSTEM_INSTRUCTION}
+
+QUERY: "${question}"
+
+TASK: Determine if this is a gardening-related query that I should respond to.
+If it IS gardening-related, respond with "GARDENING: YES"
+If it is NOT gardening-related, respond with "GARDENING: NO"
+
+Answer with ONLY "GARDENING: YES" or "GARDENING: NO" and nothing else.`;
+
+    const topicCheckResponse = await generateText(topicCheckPrompt, {
+      maxTokens: 16,
+      temperature: 0.1,
+    });
+
+    const isGardeningTopic = topicCheckResponse.includes("GARDENING: YES");
+
+    // Reject non-gardening queries
+    if (!isGardeningTopic) {
+      console.log(`Rejecting non-gardening query: "${question}"`);
+      return new Response(
+        JSON.stringify({
+          answer:
+            "I'm Bloom, your gardening assistant. I can only help with gardening-related questions. Please ask me something about plants, gardening, or sustainable garden practices.",
+          isGardeningTopic: false,
+        }),
+        {
+          status: 200,
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+    }
+
+    // Step 2: Generate Cypher query (continuing with gardening-related queries)
     console.log("Generating Cypher query with Vertex AI...");
     const cypherPrompt = `
-You are an expert in Neo4j and Cypher query language. 
-Create a Cypher query to extract information from a garden knowledge graph database about the following question:
-"${question}"
+${GRAPHRAG_SYSTEM_INSTRUCTION}
 
-The graph database has the following structure:
-- Nodes with labels: Plant, County, SoilType, GrowingCondition, Pest, Disease, Season, BeneficialInsect
-- Relationships between nodes like: GROWS_IN, HAS_SOIL, SUITABLE_FOR, AFFECTED_BY, TREATED_WITH, PLANTED_IN, ATTRACTS
+Create a concise Neo4j Cypher query for the gardening question: "${question}"
 
-Plants have properties like:
-- name (e.g., "Potato", "Cabbage", "Kale")
-- type (e.g., "Vegetable", "Fruit", "Flower", "Tree")
-- properties: soilPreference, sunNeeds, waterNeeds, biodiversityValue
+NODE LABELS: Plant, County, SoilType, GrowingCondition, Season, Month
+RELATIONSHIPS: GROWS_IN, HAS_SOIL, SUITABLE_FOR, PLANTED_IN, HARVEST_IN, ATTRACTS, COMPANION_TO, ANTAGONISTIC_TO
 
-Counties have a name property (e.g., "Dublin", "Cork", "Galway").
+QUERY PATTERNS:
+- Vegetables in county: MATCH (plant:Plant)-[:SUITABLE_FOR]->(:GrowingCondition)-[:SUITABLE_FOR]->(county:County {name: "CountyName"})
+- Companions: MATCH (plant:Plant {name: "X"})-[:COMPANION_TO]->(companion:Plant)
+- Soil types: MATCH (plant:Plant)-[:GROWS_WELL_IN]->(soil:SoilType)
+- Planting times: MATCH (plant:Plant)-[:PLANT_IN]->(month:Month)
 
-SoilTypes have properties:
-- name (e.g., "Clay", "Loam", "Sandy")
-- properties: texture, drainage, nutrients
-
-GrowingCondition nodes connect plants to soil types and counties.
-
-BeneficialInsect nodes have a name property (e.g., "Bee", "Butterfly").
-
-IMPORTANT GUIDELINES:
-1. For queries about vegetables and county-specific needs, use:
-   MATCH (county:County {name: "CountyName"})
-   MATCH (plant:Plant)-[:SUITABLE_FOR]->(gc:GrowingCondition)-[:SUITABLE_FOR]->(county)
-   WHERE plant.type = "Vegetable"
-
-2. For queries about companion planting, find plants that share similar growing conditions:
-   MATCH (plant1:Plant {name: "Specific Plant"})-[:SUITABLE_FOR]->(condition:GrowingCondition)<-[:SUITABLE_FOR]-(plant2:Plant)
-   WHERE NOT plant1 = plant2
-
-3. For questions about soils, use the HAS_SOIL relationship:
-   MATCH (soil:SoilType {name: "Clay"})<-[:HAS_SOIL]-(condition:GrowingCondition)<-[:SUITABLE_FOR]-(plant:Plant)
-
-4. For questions about planting times, use the PLANTED_IN relationship:
-   MATCH (plant:Plant)-[:PLANTED_IN]->(season:Season {name: "March"})
-
-5. For questions about pollinators, use the ATTRACTS relationship:
-   MATCH (plant:Plant)-[:ATTRACTS]->(insect:BeneficialInsect)
-   WHERE insect.name IN ["Butterfly", "Bee"]
-
-Return only the Cypher query without any explanation or markdown formatting. Do not use backticks or code blocks.
-`;
+Return query only, no explanations.
+LIMIT all results to 5-10 items maximum.`;
 
     console.log("Sending prompt to Vertex AI...");
     const rawGeneratedQuery = await generateText(cypherPrompt, {
-      maxTokens: 1024,
+      maxTokens: 512, // Reduced from 1024
       temperature: 0.2,
     });
     console.log("Received response from Vertex AI");
@@ -81,7 +105,7 @@ Return only the Cypher query without any explanation or markdown formatting. Do 
     const generatedQuery = cleanCypherQuery(rawGeneratedQuery);
     console.log("Cleaned Cypher query:", generatedQuery);
 
-    // Step 2: Execute the generated Cypher query against Neo4j
+    // Step 3: Execute the generated Cypher query against Neo4j
     console.log("Connecting to Neo4j...");
     const session = neo4jDriver.session();
     console.log("Neo4j session created");
@@ -99,7 +123,9 @@ Return only the Cypher query without any explanation or markdown formatting. Do 
 
       // Process Neo4j results into a usable context format
       if (result.records && result.records.length > 0) {
-        contextData = result.records.map((record) => {
+        // Limit the number of records processed to avoid overly large contexts
+        const limitedRecords = result.records.slice(0, 10);
+        contextData = limitedRecords.map((record) => {
           const recordObj = {};
           record.keys.forEach((key) => {
             const value = record.get(key);
@@ -122,17 +148,20 @@ Return only the Cypher query without any explanation or markdown formatting. Do 
       console.log("Neo4j session closed");
     }
 
-    // Format the retrieved data into a readable context
-    const sourceFacts = contextData.map((item) => {
-      // Create a human-readable representation of each data item
-      return Object.entries(item)
-        .map(([key, value]) => {
-          if (typeof value === "object" && value !== null) {
-            return `${key}: ${JSON.stringify(value)}`;
-          }
-          return `${key}: ${value}`;
-        })
-        .join(", ");
+    // Format the retrieved data into a readable context - limit the number of facts
+    const sourceFacts = contextData.slice(0, 5).map((item) => {
+      // Create a more concise representation of each data item
+      const factParts = [];
+      for (const [key, value] of Object.entries(item)) {
+        if (typeof value === "object" && value !== null) {
+          // Only include name, type and 1-2 key properties
+          if (value.name) factParts.push(`${key}: ${value.name}`);
+          if (value.type) factParts.push(`type: ${value.type}`);
+        } else {
+          factParts.push(`${key}: ${value}`);
+        }
+      }
+      return factParts.join(", ");
     });
 
     // Check if we have sufficient data from the knowledge graph
@@ -147,110 +176,79 @@ Return only the Cypher query without any explanation or markdown formatting. Do 
       );
     }
 
-    // Step 3: Generate an answer based on whether we have data or not
+    // Step 4: Generate an answer based on whether we have data or not
     let answer;
 
     const userQuestion = question ? question.trim() : null;
 
     if (hasSufficientData) {
-      // If we have data, use it to generate a contextual answer
-      const formatContext = JSON.stringify(contextData, null, 2);
+      // Create a simplified context - only include essential data
+      const simplifiedContext = contextData.slice(0, 5).map((item) => {
+        // Filter out complex objects and only keep key properties
+        const simplified = {};
+        for (const [key, value] of Object.entries(item)) {
+          if (typeof value === "object" && value !== null && value.properties) {
+            simplified[key] = {
+              name: value.name || "Unknown",
+              type: value.type || "Unknown",
+            };
+          } else if (typeof value === "object" && value !== null) {
+            // Simplify nested objects, keeping only name and type
+            const simpleObj = {};
+            if (value.name) simpleObj.name = value.name;
+            if (value.type) simpleObj.type = value.type;
+            simplified[key] = simpleObj;
+          } else {
+            simplified[key] = value;
+          }
+        }
+        return simplified;
+      });
+
+      const formatContext = JSON.stringify(simplifiedContext, null, 1);
+
+      // More balanced prompt - not too verbose but not too short
       const contextualPrompt = userQuestion
-        ? `
-You are a gardening assistant specializing in Irish gardens and growing conditions.
-Please answer the following specific question from a gardener:
+        ? `${GRAPHRAG_SYSTEM_INSTRUCTION}
 
-"${userQuestion}"
+Answer this gardening question: "${userQuestion}"
 
-Use the following structured data to inform your answer:
-
+Use these facts from our Irish gardening database:
 ${formatContext}
 
-Your response should:
-1. Directly address the question asked.
-2. Use specific plants and data from the structured information.
-3. Be educational and practical for Irish gardeners.
-4. Include specific plant names, their Latin names (e.g., *Malus domestica*), and practical advice about growing them.
-5. Mention the requirements where relevant.
-6. If information about rainfall or temperature is provided, include that as context.
-7. Format your response as a comprehensive gardening guide.
+Provide detailed, practical advice specific to Irish growing conditions. 
+Include plant names in italic and use descriptive examples.
+Format with Markdown using headings, lists, and paragraphs as appropriate.`
+        : `${GRAPHRAG_SYSTEM_INSTRUCTION}
 
-IMPORTANT: Your entire response MUST be in valid Markdown format. This includes:
-- Headings (e.g., # Main Title, ## Section, ### Subsection)
-- Lists (bulleted using - or * , or numbered using 1.)
-- Bold text (e.g., **Important Note**)
-- Italic text (e.g., *Latin name*)
-- Paragraphs (separated by a blank line in the Markdown source)
-`
-        : `
-You are a gardening assistant specializing in Irish gardens and growing conditions.
-Please provide a comprehensive guide about plants that grow well in Irish conditions.
-
-Use only the following data to formulate your response:
+Create a gardening guide based on:
 ${formatContext}
 
-Include specific plant names, practical advice about growing them, and contextual information about the growing conditions.
-
-IMPORTANT: Your entire response MUST be in valid Markdown format. Ensure you use:
-- A clear title (e.g., # Main Title)
-- Sections with subheadings (e.g., ## Section, ### Subsection)
-- Bullet points for lists (e.g., - Tip 1, * Tip 2) or numbered lists (e.g., 1. Step 1)
-- Emphasis using *italics* (e.g., *Malus domestica*) or **bold** (e.g., **Critical Information**).
-- Paragraphs (separated by a blank line in the Markdown source).
-- A summary section at the end.
-`;
+Focus on practical Irish gardening advice with specific examples.
+Include growing conditions, seasonal considerations, and care instructions.
+Format using Markdown with clear headings and organized sections.`;
 
       answer = await generateText(contextualPrompt, {
-        maxTokens: 1024,
+        maxTokens: 768, // Increased from 512 to allow more detailed responses
         temperature: 0.7,
       });
     } else {
-      // If we don't have data, use the LLM directly without mentioning limitations
+      // Balanced fallback prompt - not too brief
       const fallbackPrompt = userQuestion
-        ? `
-You are a gardening assistant specializing in Irish gardens and growing conditions.
-The user has asked the following question about gardening in Ireland:
+        ? `${GRAPHRAG_SYSTEM_INSTRUCTION}
 
-"${userQuestion}"
+Answer: "${userQuestion}"
+No specific garden data available. Provide general Irish gardening advice that addresses the question.
+Include practical tips, seasonal considerations, and growing conditions common in Ireland.
+Use Markdown format with appropriate structure.`
+        : `${GRAPHRAG_SYSTEM_INSTRUCTION}
 
-Although I don't have specific data matching these exact criteria in my knowledge graph, please provide:
-1. General advice about growing plants in Irish conditions
-2. Information about how soil typically affects plant growth
-3. General gardening tips for Ireland
-4. Typical requirements for plants
-5. Alternative approaches they might consider
-
-Start by acknowledging that you don't have exact matches for their criteria, but then provide helpful general information.
-
-IMPORTANT: Your entire response MUST be in valid Markdown format. Use Markdown for all formatting, including:
-- Headings (e.g., # Main Title, ## Section)
-- Bullet points (e.g., - Advice 1)
-- Emphasis (e.g., *important point* or **very important**)
-- Paragraphs (separated by a blank line in the Markdown source)
-`
-        : `
-You are a gardening assistant specializing in Irish gardens and growing conditions.
-
-The user was looking for information about plants that grow well in Irish conditions.
-
-Although I don't have specific data matching these exact criteria in my knowledge graph, please provide:
-1. A helpful overview about growing plants in Irish conditions
-2. Information about how soil typically affects plant growth
-3. General gardening tips for Ireland
-4. Typical requirements for plants
-5. Suggestions for alternatives that might work better in these conditions
-
-Start with an acknowledgment that you don't have exact matches for their criteria, but then provide helpful general information.
-
-IMPORTANT: Your entire response MUST be in valid Markdown format. Use Markdown for all formatting, including:
-- Headings (e.g., # Main Title, ## Section)
-- Bullet points (e.g., - Advice 1)
-- Emphasis (e.g., *important point* or **very important**)
-- Paragraphs (separated by a blank line in the Markdown source)
-`;
+Provide guidance on plants for Irish gardens.
+Include information on seasonal considerations, growing conditions, and care instructions.
+Format as a helpful guide using Markdown with appropriate headings and structure.`;
 
       answer = await generateText(fallbackPrompt, {
-        maxTokens: 1024,
+        maxTokens: 512, // Increased from 384 to allow more complete responses
         temperature: 0.7,
       });
     }
