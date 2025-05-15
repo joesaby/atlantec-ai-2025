@@ -721,12 +721,12 @@ export const updatePracticeData = (practiceId, data) => {
 
   try {
     const userProgress = getUserProgress();
-    
+
     // Find the practice in activePractices
     const practiceIndex = userProgress.activePractices.findIndex(
       (practice) => practice.id === practiceId
     );
-    
+
     if (practiceIndex === -1) {
       logger.warn("Practice not found in user's active practices", {
         component: "SustainabilityStore",
@@ -734,16 +734,16 @@ export const updatePracticeData = (practiceId, data) => {
       });
       return null;
     }
-    
+
     // Update practice with new data
     userProgress.activePractices[practiceIndex] = {
       ...userProgress.activePractices[practiceIndex],
       ...data,
       lastUpdated: new Date().toISOString(),
     };
-    
+
     saveUserProgress(userProgress);
-    
+
     // Emit data change event
     if (isClient) {
       emitDataChanged("practice-data-updated", {
@@ -752,7 +752,7 @@ export const updatePracticeData = (practiceId, data) => {
         timestamp: new Date().toISOString(),
       });
     }
-    
+
     return userProgress;
   } catch (error) {
     logger.error("Error updating practice data", {
