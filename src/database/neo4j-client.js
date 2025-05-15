@@ -38,11 +38,60 @@ export async function verifyConnectivity() {
   }
 }
 
-// Helper to run Cypher queries
+// Helper to run Cypher queries with parameter validation
 export async function runQuery(query, params = {}) {
   const session = neo4jDriver.session();
   try {
-    const result = await session.run(query, params);
+    // Validate and sanitize parameters to prevent malformed queries
+    const safeParams = {};
+    
+    // Extract all required parameters from the query using regex
+    const paramRegex = /\$([a-zA-Z0-9_]+)/g;
+    const requiredParams = new Set();
+    let match;
+    
+    while ((match = paramRegex.exec(query)) !== null) {
+      requiredParams.add(match[1]);
+    }
+    
+    // Check for missing parameters and set default values
+    const missingParams = [];
+    
+    for (const param of requiredParams) {
+      if (params[param] === undefined) {
+        missingParams.push(param);
+      } else {
+        // Copy valid parameters to safe params object
+        safeParams[param] = params[param];
+      }
+    }
+    
+    // Handle missing parameters
+    if (missingParams.length > 0) {
+      console.error(`Missing required parameters: ${missingParams.join(', ')}`);
+      
+      // Add default values for certain common parameters
+      const defaultValues = {
+        'sunExposure': 'Full Sun',
+        'county': 'Dublin',
+        'plantType': []
+      };
+      
+      // Add default values for missing parameters where possible
+      for (const param of missingParams) {
+        if (defaultValues[param] !== undefined) {
+          console.warn(`Using default value for missing parameter: ${param} = ${defaultValues[param]}`);
+          safeParams[param] = defaultValues[param];
+        } else {
+          // For parameters with no defaults, throw an error
+          throw new Error(`Missing required parameter: ${param}`);
+        }
+      }
+    }
+    
+    // Execute the query with validated parameters
+    const result = await session.run(query, safeParams);
+    
     return result.records.map((record) => {
       return record.keys.reduce((obj, key) => {
         const value = record.get(key);

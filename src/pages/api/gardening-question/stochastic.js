@@ -68,7 +68,11 @@ Answer with ONLY "GARDENING: YES" or "GARDENING: NO" and nothing else.`;
       temperature: 0.1,
     });
 
-    const isGardeningTopic = topicCheckResponse.includes("GARDENING: YES");
+    // Log the topic check response for debugging
+    console.log("Topic check response:", topicCheckResponse);
+    
+    // Use a stricter check to ensure we're getting proper responses
+    const isGardeningTopic = topicCheckResponse.trim() === "GARDENING: YES";
 
     // Reject non-gardening queries
     if (!isGardeningTopic) {
@@ -143,6 +147,13 @@ LIMIT 5
 
     let contextData = [];
     try {
+      // Additional safety check to ensure we don't execute invalid queries
+      if (generatedQuery.trim().startsWith("I'm Bloom")) {
+        console.log("Detected assistant response instead of Cypher query, using safe fallback query");
+        // Use a safe fallback query that will simply return no results
+        generatedQuery = "MATCH (n:Plant) WHERE n.name = 'NO_RESULTS' RETURN n LIMIT 0";
+      }
+      
       console.log("Executing Cypher query...");
       const result = await session.run(generatedQuery);
       console.log(

@@ -15,6 +15,16 @@ import { runQuery } from "../database/neo4j-client.js";
  */
 export async function getGraphPlantRecommendations(conditions) {
   try {
+    // Ensure we have valid conditions object with defaults
+    const safeConditions = {
+      county: conditions?.county || 'Dublin',
+      sunExposure: conditions?.sunExposure || 'Full Sun',
+      nativeOnly: conditions?.nativeOnly || false,
+      plantType: Array.isArray(conditions?.plantType) ? conditions.plantType : []
+    };
+    
+    console.log("Using plant recommendation conditions:", JSON.stringify(safeConditions));
+    
     // Base query parts
     let matchClause = `
       MATCH (county:County {name: $county})-[:HAS_DOMINANT_SOIL]->(soil:SoilType)
@@ -23,26 +33,26 @@ export async function getGraphPlantRecommendations(conditions) {
     `;
 
     // Additional filters based on conditions
-    if (conditions.nativeOnly) {
+    if (safeConditions.nativeOnly) {
       matchClause += ` AND plant.nativeToIreland = true`;
     }
 
     // Filter by plant type
-    if (conditions.plantType && conditions.plantType.length > 0) {
+    if (safeConditions.plantType && safeConditions.plantType.length > 0) {
       const plantTypeConditions = [];
 
       if (
-        conditions.plantType.includes("vegetable") ||
-        conditions.plantType.includes("fruit")
+        safeConditions.plantType.includes("vegetable") ||
+        safeConditions.plantType.includes("fruit")
       ) {
         plantTypeConditions.push(`plant.harvestSeason IS NOT NULL`);
       }
 
-      if (conditions.plantType.includes("flower")) {
+      if (safeConditions.plantType.includes("flower")) {
         plantTypeConditions.push(`plant.floweringSeason IS NOT NULL`);
       }
 
-      if (conditions.plantType.includes("tree")) {
+      if (safeConditions.plantType.includes("tree")) {
         plantTypeConditions.push(
           `(plant.isPerennial = true AND plant.name CONTAINS 'Tree')`
         );
@@ -82,8 +92,8 @@ export async function getGraphPlantRecommendations(conditions) {
     `;
 
     const result = await runQuery(query, {
-      county: conditions.county,
-      sunExposure: conditions.sunExposure,
+      county: safeConditions.county,
+      sunExposure: safeConditions.sunExposure,
     });
 
     // Transform Neo4j results to match the existing application structure
